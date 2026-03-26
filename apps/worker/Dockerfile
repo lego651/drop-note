@@ -14,6 +14,6 @@ WORKDIR /app
 
 # tsup bundles @drop-note/shared inline — only need npm packages + compiled output
 COPY --from=builder /app/apps/worker/dist ./dist
-COPY --from=builder /app/apps/worker/node_modules ./node_modules
+COPY --from=builder /app/node_modules ./node_modules
 
 CMD ["node", "dist/index.js"]

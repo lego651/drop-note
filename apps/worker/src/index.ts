@@ -1,4 +1,3 @@
-import 'dotenv/config'
 import IORedis from 'ioredis'
 import { Worker } from 'bullmq'
 import { QUEUE_NAME } from '@drop-note/shared'
