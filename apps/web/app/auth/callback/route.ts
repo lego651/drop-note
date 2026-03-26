@@ -16,13 +16,19 @@ export async function GET(request: Request) {
       if (user?.email) {
         const { data: profile } = await supabase
           .from('users')
-          .select('created_at')
+          .select('welcome_email_sent')
           .eq('id', user.id)
           .maybeSingle()
 
-        if (profile && Date.now() - new Date(profile.created_at).getTime() < 30_000) {
+        if (profile && !profile.welcome_email_sent) {
           // Fire-and-forget — do not await
           void sendWelcomeEmail(user.email)
+          // Mark as sent (best-effort, fire-and-forget)
+          // TODO: remove cast after pnpm gen:types is re-run
+          void supabase
+            .from('users')
+            .update({ welcome_email_sent: true } as never)
+            .eq('id', user.id)
         }
       }
 

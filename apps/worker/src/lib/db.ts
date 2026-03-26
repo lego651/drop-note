@@ -55,17 +55,36 @@ export async function upsertTags(userId: string, itemId: string, tagNames: strin
   const normalized = normalizeTags(tagNames)
   if (normalized.length === 0) return
 
-  for (const name of normalized) {
-    const { data: tag, error: tagError } = await supabaseAdmin
-      .from('tags')
-      .upsert({ user_id: userId, name }, { onConflict: 'user_id,name' })
-      .select('id')
-      .single()
+  // Upsert all tags in parallel
+  const tagResults = await Promise.all(
+    normalized.map((name) =>
+      supabaseAdmin
+        .from('tags')
+        .upsert({ user_id: userId, name }, { onConflict: 'user_id,name' })
+        .select('id')
+        .single()
+    )
+  )
 
-    if (tagError || !tag) continue
+  const validTagIds: string[] = []
+  for (let i = 0; i < tagResults.length; i++) {
+    const { data: tag, error: tagError } = tagResults[i]
+    if (tagError || !tag) {
+      console.warn(`[db] Failed to upsert tag "${normalized[i]}":`, tagError?.message)
+      continue
+    }
+    validTagIds.push(tag.id)
+  }
 
-    await supabaseAdmin
-      .from('item_tags')
-      .upsert({ item_id: itemId, tag_id: tag.id }, { onConflict: 'item_id,tag_id' })
+  if (validTagIds.length === 0) return
+
+  // Batch upsert all item_tag links in one call
+  const pairs = validTagIds.map((tagId) => ({ item_id: itemId, tag_id: tagId }))
+  const { error: linkError } = await supabaseAdmin
+    .from('item_tags')
+    .upsert(pairs, { onConflict: 'item_id,tag_id' })
+
+  if (linkError) {
+    console.warn(`[db] Failed to upsert item_tags for item ${itemId}:`, linkError.message)
   }
 }
