@@ -16,6 +16,7 @@ RUN pnpm --filter @drop-note/worker build
 RUN pnpm deploy --filter @drop-note/worker --prod --legacy /deploy
 
 FROM node:20-alpine AS runner
+ENV NODE_ENV=production
 WORKDIR /app
 
 # /deploy/node_modules is flat — no pnpm virtual store, no symlinks

@@ -1,0 +1,20 @@
+# Dependencies
+**/node_modules
+
+# Environment files — never send to Docker build daemon
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Build outputs
+**/.next
+**/dist
+**/.turbo
+
+# Test artifacts
+**/coverage
+**/playwright-report
+**/test-results
+
+# Dev tooling
+**/.git
