@@ -1,2 +1,7 @@
 export * from './auth'
+export * from './email'
+export * from './prompts'
+export * from './queue'
+export * from './ratelimit'
+export * from './tags'
 export type { Database } from './database.types'

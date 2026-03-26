@@ -29,6 +29,10 @@ General consumers. Anyone who wants to save interesting content without friction
 
 **v1 inbox model:** Shared address (`drop@dropnote.com`), user identified by `from` email. Per-user unique token addresses (`drop+[token]@dropnote.com`) are a v2 migration target — the DB schema (`users.drop_token uuid unique`) is designed to support this transition without a redesign.
 
+**Dev/pre-launch inbox:** Until `dropnote.com` is acquired and MX records are configured, the inbound address is `legogao651@gmail.com`. Users send emails to that Gmail address; the pipeline catches them the same way — `/api/ingest` receives the SendGrid payload, looks up the sender, and saves to DB. All code is identical; only the destination address changes. Switching to `drop@dropnote.com` is purely a DNS + SendGrid config step (S201) scheduled as the last stop before release.
+
+**Domain acquisition:** Buying `dropnote.com` and completing S201 (MX records + SendGrid Inbound Parse) is the final pre-launch task, not a development dependency.
+
 ---
 
 ## Item Counting Rules
