@@ -3,6 +3,9 @@ import { SUMMARIZE_EMAIL_PROMPT, IMAGE_DESCRIPTION_PROMPT } from '@drop-note/sha
 
 const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
+const AI_MODEL = process.env.AI_MODEL ?? 'gpt-4o-mini'
+const VISION_MODEL = process.env.AI_VISION_MODEL ?? process.env.AI_MODEL ?? 'gpt-4o-mini'
+
 const MAX_INPUT_CHARS = 50_000
 const IMAGE_MAX_BASE64_SIZE = 5 * 1024 * 1024
 
@@ -17,7 +20,7 @@ export async function summarizeEmailBody(subject: string, bodyText: string): Pro
 
   try {
     const response = await openaiClient.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: AI_MODEL,
       response_format: { type: 'json_object' },
       max_tokens: 500,
       temperature: 0.3,
@@ -60,7 +63,7 @@ export async function describeImage(base64Data: string, mimeType: string): Promi
 
   try {
     const response = await openaiClient.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: VISION_MODEL,
       max_tokens: 300,
       temperature: 0.2,
       messages: [

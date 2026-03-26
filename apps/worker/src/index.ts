@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import IORedis from 'ioredis'
 import { Worker } from 'bullmq'
 import { QUEUE_NAME } from '@drop-note/shared'
@@ -22,7 +23,11 @@ worker.on('failed', (job, err) => {
 
 console.log(`Worker started, listening on queue: ${QUEUE_NAME}`)
 
-process.on('SIGTERM', async () => {
+async function shutdown() {
+  console.log('[worker] Shutting down gracefully...')
   await worker.close()
   await connection.quit()
-})
+  process.exit(0)
+}
+process.on('SIGTERM', shutdown)
+process.on('SIGINT', shutdown)
