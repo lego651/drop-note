@@ -1,5 +1,6 @@
 export * from './auth'
 export * from './email'
+export * from './env'
 export * from './prompts'
 export * from './queue'
 export * from './ratelimit'
