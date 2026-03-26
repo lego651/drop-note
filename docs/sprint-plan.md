@@ -63,7 +63,7 @@ usage_log:     user_id, action_type, month (for save action counting)
 | 1.3 | Scaffold Next.js 14 app (`apps/web`): TypeScript, shadcn/ui, Tailwind, `next-themes` | 2 | App Router. Dark/light/system theme wired up |
 | 1.4 | Supabase project + initial schema migration (all tables including required fields above) | 3 | Write SQL migration files — not GUI clicks |
 | 1.5 | RLS policies: users can only read/write their own items and tags | 3 | Cover items, tags, item_tags. Use `auth.uid()` |
-| 1.6 | Supabase Auth: magic link flow (sign-in page, email template, callback route) | 3 | 30-day session, 90-day remember-device. Test full round-trip |
+| 1.6 | Supabase Auth: magic link flow (sign-in page, email template, callback route) | 3 | 30-day session, 90-day remember-device. Test full round-trip. **Note:** Supabase session timebox/inactivity config requires Pro plan — skipped for free tier dev; default is sessions never expire, which is fine for alpha. |
 | 1.7 | Post-signup Postgres trigger: generate `drop_token` (uuidv4), write to `users` table | 2 | Kept for v2 migration readiness. Function + trigger on `auth.users` insert |
 | 1.8 | Dashboard shell: auth layout, sidebar nav, empty state onboarding panel with shared drop address (`drop@dropnote.com`) + copy button | 3 | "Send yourself a test email" CTA. Address is the same for all users in v1. |
 | 1.9 | Configure Vitest + c8 coverage. Scaffold Playwright with one smoke test | 1 | Coverage gate enabled from Sprint 4 onward |
