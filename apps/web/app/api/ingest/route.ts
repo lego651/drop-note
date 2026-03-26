@@ -19,13 +19,25 @@ function getRedis() {
   })
 }
 
-function getAdminClient() {
-  return createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  )
+let _queue: Queue | null = null
+
+function getQueue(): Queue {
+  if (!_queue) {
+    const connection = new IORedis(process.env.REDIS_URL!, {
+      maxRetriesPerRequest: null,
+      enableOfflineQueue: false,
+      lazyConnect: true,
+    })
+    _queue = new Queue(QUEUE_NAME, { connection })
+  }
+  return _queue
 }
+
+const supabaseAdmin = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+)
 
 function timingSafeCompare(a: string, b: string): boolean {
   try {
@@ -66,9 +78,16 @@ export async function POST(request: Request) {
     const attachmentKeys: string[] = []
     const attachmentData: Record<string, string> = {}
     for (const [k, value] of formData.entries()) {
-      if (/^attachment\d+$/.test(k) && typeof value === 'string') {
-        attachmentKeys.push(k)
-        attachmentData[k] = value
+      if (/^attachment\d+$/.test(k)) {
+        if (value instanceof File) {
+          const buffer = Buffer.from(await value.arrayBuffer())
+          attachmentKeys.push(k)
+          attachmentData[k] = buffer.toString('base64')
+        } else if (typeof value === 'string' && value.length > 0) {
+          // Fallback for test payloads that send pre-encoded base64 strings
+          attachmentKeys.push(k)
+          attachmentData[k] = value
+        }
       }
     }
 
@@ -77,7 +96,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true }, { status: 200 })
     }
 
-    const supabase = getAdminClient()
+    const supabase = supabaseAdmin
 
     // User lookup
     const { data: user } = await supabase
@@ -105,10 +124,11 @@ export async function POST(request: Request) {
     // Rate limit
     const redis = getRedis()
     const rateLimitKey = `ratelimit:email:${user.id}`
-    const count = await redis.incr(rateLimitKey)
-    if (count === 1) {
-      await redis.expire(rateLimitKey, 3600)
-    }
+    const pipeline = redis.pipeline()
+    pipeline.incr(rateLimitKey)
+    pipeline.expire(rateLimitKey, 3600)
+    const results = await pipeline.exec()
+    const count = results[0] as number
 
     if (isOverRateLimit(count, user.tier)) {
       return NextResponse.json({ ok: true }, { status: 200 })
@@ -133,13 +153,7 @@ export async function POST(request: Request) {
     }
 
     // Enqueue BullMQ job
-    const connection = new IORedis(process.env.REDIS_URL!, {
-      enableOfflineQueue: false,
-      maxRetriesPerRequest: 0,
-      lazyConnect: true,
-    })
-
-    const queue = new Queue(QUEUE_NAME, { connection })
+    const queue = getQueue()
 
     const payload: EmailJobPayload = {
       userId: user.id,
@@ -159,9 +173,6 @@ export async function POST(request: Request) {
       attempts: 3,
       backoff: { type: 'exponential', delay: 5000 },
     })
-
-    await queue.close()
-    connection.disconnect()
 
     return NextResponse.json({ ok: true }, { status: 200 })
   } catch (err) {
