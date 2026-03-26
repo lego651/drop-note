@@ -7,3 +7,5 @@ dist
 coverage
 playwright-report
 e2e/fixtures/auth.json
+.DS_Store
+supabase/.temp
