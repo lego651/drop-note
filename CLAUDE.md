@@ -69,7 +69,7 @@ Never commit `.env.local`. Never commit `supabase/.temp/`.
 | `invite_codes` | Invite code system for post-50-user registration |
 | `usage_log` | Monthly save action tracking for free tier cap |
 
-RLS is enabled on `users`, `items`, `tags`, `item_tags`, `site_settings`.
+RLS is enabled on all 8 tables.
 A Postgres trigger `on_auth_user_created` auto-creates a `public.users` row with a `drop_token` UUID on every new sign-up.
 
 Migrations live in `supabase/migrations/`. Apply with `npx supabase db push --linked`.
@@ -86,9 +86,12 @@ pnpm turbo typecheck                  # typecheck all packages
 pnpm test                             # run Vitest unit tests
 pnpm test:coverage                    # run with coverage report
 pnpm e2e                              # run Playwright smoke tests
+pnpm gen:types                        # regenerate Supabase TypeScript types
 npx supabase db push --linked         # apply migrations to remote DB
 npx supabase migration list --linked  # check migration status
 ```
+
+> **IMPORTANT:** Every time the database schema changes (new migration applied), run `pnpm gen:types` to regenerate `packages/shared/src/database.types.ts`. All three Supabase client factories (`client.ts`, `server.ts`, `middleware.ts`) are typed with `Database` — stale types will cause TypeScript errors or silently wrong column names across the entire app.
 
 ---
 

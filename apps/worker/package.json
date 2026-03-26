@@ -1,5 +1,10 @@
 {
   "name": "@drop-note/worker",
   "version": "0.0.1",
-  "private": true
+  "private": true,
+  "scripts": {
+    "lint": "echo 'no lint configured'",
+    "typecheck": "echo 'no typecheck configured'",
+    "build": "echo 'no build configured'"
+  }
 }

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Mail, Copy, CheckCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-const DROP_ADDRESS = 'drop@dropnote.com'
+const DROP_ADDRESS = process.env.NEXT_PUBLIC_DROP_ADDRESS ?? 'drop@dropnote.com'
 
 export function OnboardingPanel() {
   const [copied, setCopied] = useState(false)
@@ -70,12 +70,12 @@ export function OnboardingPanel() {
         </div>
 
         {/* CTA */}
-        <a href={`mailto:${DROP_ADDRESS}?subject=Test`}>
-          <Button variant="default" className="gap-2">
+        <Button variant="default" className="gap-2" asChild>
+          <a href={`mailto:${DROP_ADDRESS}?subject=Test`}>
             <Mail size={14} />
             Send yourself a test email
-          </Button>
-        </a>
+          </a>
+        </Button>
       </div>
     </div>
   )

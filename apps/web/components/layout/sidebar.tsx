@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
+import { useState } from 'react'
 import { Inbox, Settings, LogOut, Sun, Moon, Monitor } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { createClient } from '@/lib/supabase/client'
@@ -13,11 +14,18 @@ interface SidebarProps {
 
 export function Sidebar({ userEmail }: SidebarProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { theme, setTheme } = useTheme()
+  const [signOutError, setSignOutError] = useState<string | null>(null)
 
   async function handleSignOut() {
     const supabase = createClient()
-    await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      setSignOutError('Sign out failed. Please try again.')
+      return
+    }
+    router.refresh()
     router.push('/login')
   }
 
@@ -40,14 +48,14 @@ export function Sidebar({ userEmail }: SidebarProps) {
       <nav className="flex-1 px-2 py-3 space-y-0.5">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors ${pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/settings') ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground'}`}
         >
           <Inbox size={16} />
           All Items
         </Link>
         <Link
           href="/dashboard/settings"
-          className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors ${pathname === '/dashboard/settings' ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground'}`}
         >
           <Settings size={16} />
           Settings
@@ -57,6 +65,9 @@ export function Sidebar({ userEmail }: SidebarProps) {
       {/* Footer */}
       <div className="px-3 py-3 border-t border-border space-y-1">
         <p className="px-2 text-xs text-muted-foreground truncate">{userEmail}</p>
+        {signOutError && (
+          <p className="px-2 text-xs text-destructive">{signOutError}</p>
+        )}
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
