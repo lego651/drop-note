@@ -1,3 +1,5 @@
+import { isValidEmail } from './auth'
+
 export interface ParsedEmail {
   from: string
   subject: string          // defaults to "(no subject)" if empty
@@ -34,8 +36,8 @@ function isAllowedMimeType(mimeType: string): boolean {
 export function parseFromAddress(raw: string): string {
   if (!raw) return ''
   const match = raw.match(/<([^>]+)>/)
-  if (match) return match[1].toLowerCase()
-  return raw.trim().toLowerCase()
+  const email = match ? match[1].toLowerCase() : raw.trim().toLowerCase()
+  return isValidEmail(email) ? email : ''
 }
 
 /**
