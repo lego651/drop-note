@@ -31,8 +31,15 @@ export async function processEmail(job: Job<EmailJobPayload>): Promise<EmailJobR
     // Summarize body
     const bodyResult = await summarizeEmailBody(parsed.subject, parsed.bodyText)
 
-    if (bodyResult.error && !bodyResult.summary) {
-      await setItemFailed(bodyItemId, bodyResult.error)
+    if (bodyResult.error) {
+      if (bodyResult.error === 'Invalid AI response format') {
+        // Non-retryable parse error — mark failed and continue
+        await setItemFailed(bodyItemId, bodyResult.error)
+      } else {
+        // Transient AI service error — rethrow so BullMQ retries the job
+        // The outer catch will mark the item failed and rethrow
+        throw new Error(bodyResult.error)
+      }
     } else {
       await setItemDone(bodyItemId, {
         aiSummary: bodyResult.summary,
