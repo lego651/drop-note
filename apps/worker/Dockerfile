@@ -13,7 +13,7 @@ RUN pnpm install --frozen-lockfile --filter @drop-note/worker...
 RUN pnpm --filter @drop-note/worker build
 
 # Create a standalone deployment with flat, symlink-free node_modules
-RUN pnpm deploy --filter @drop-note/worker --prod /deploy
+RUN pnpm deploy --filter @drop-note/worker --prod --legacy /deploy
 
 FROM node:20-alpine AS runner
 WORKDIR /app
