@@ -29,17 +29,23 @@ export function OnboardingPanel() {
         {/* Visual steps */}
         <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">1</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
+              1
+            </span>
             Email it
           </span>
           <span className="text-border">→</span>
           <span className="flex items-center gap-1.5">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">2</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
+              2
+            </span>
             AI tags it
           </span>
           <span className="text-border">→</span>
           <span className="flex items-center gap-1.5">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">3</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
+              3
+            </span>
             Find it here
           </span>
         </div>
