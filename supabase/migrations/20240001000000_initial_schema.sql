@@ -37,9 +37,9 @@ CREATE TABLE public.tags (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   name text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(user_id, lower(name))
+  created_at timestamptz NOT NULL DEFAULT now()
 );
+CREATE UNIQUE INDEX tags_user_id_name_lower_idx ON public.tags(user_id, lower(name));
 
 -- item_tags table
 CREATE TABLE public.item_tags (
