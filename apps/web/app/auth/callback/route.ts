@@ -24,10 +24,9 @@ export async function GET(request: Request) {
           // Fire-and-forget — do not await
           void sendWelcomeEmail(user.email)
           // Mark as sent (best-effort, fire-and-forget)
-          // TODO: remove cast after pnpm gen:types is re-run
           void supabase
             .from('users')
-            .update({ welcome_email_sent: true } as never)
+            .update({ welcome_email_sent: true })
             .eq('id', user.id)
         }
       }

@@ -13,7 +13,13 @@ CREATE POLICY "invite_codes: claim unclaimed"
 -- Add explicit UNIQUE constraint on tags(user_id, name) for PostgREST upsert compatibility.
 -- Tags are always stored lowercase (normalized before insert), so this is equivalent to
 -- the existing functional index on (user_id, lower(name)).
-ALTER TABLE public.tags ADD CONSTRAINT tags_user_id_name_key UNIQUE (user_id, name);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'tags_user_id_name_key'
+  ) THEN
+    ALTER TABLE public.tags ADD CONSTRAINT tags_user_id_name_key UNIQUE (user_id, name);
+  END IF;
+END $$;
 
 -- Add welcome_email_sent flag to track whether we've sent the welcome email.
 -- Replaces the fragile 30-second window check in auth/callback.

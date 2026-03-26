@@ -273,6 +273,7 @@ export type Database = {
           is_admin: boolean
           stripe_customer_id: string | null
           tier: Database["public"]["Enums"]["user_tier"]
+          welcome_email_sent: boolean
         }
         Insert: {
           created_at?: string
@@ -282,6 +283,7 @@ export type Database = {
           is_admin?: boolean
           stripe_customer_id?: string | null
           tier?: Database["public"]["Enums"]["user_tier"]
+          welcome_email_sent?: boolean
         }
         Update: {
           created_at?: string
@@ -291,6 +293,7 @@ export type Database = {
           is_admin?: boolean
           stripe_customer_id?: string | null
           tier?: Database["public"]["Enums"]["user_tier"]
+          welcome_email_sent?: boolean
         }
         Relationships: []
       }

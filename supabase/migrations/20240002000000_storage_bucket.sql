@@ -4,6 +4,7 @@ VALUES ('attachments', 'attachments', false)
 ON CONFLICT (id) DO NOTHING;
 
 -- RLS: users can only read their own attachments (path starts with their user_id)
+DROP POLICY IF EXISTS "Users can read own attachments" ON storage.objects;
 CREATE POLICY "Users can read own attachments"
 ON storage.objects FOR SELECT
 TO authenticated
