@@ -12,10 +12,12 @@ import {
 import type { Database } from '@drop-note/shared'
 import { timingSafeEqual } from 'crypto'
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-})
+function getRedis() {
+  return new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  })
+}
 
 function getAdminClient() {
   return createClient<Database>(
@@ -101,6 +103,7 @@ export async function POST(request: Request) {
     }
 
     // Rate limit
+    const redis = getRedis()
     const rateLimitKey = `ratelimit:email:${user.id}`
     const count = await redis.incr(rateLimitKey)
     if (count === 1) {
