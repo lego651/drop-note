@@ -3,7 +3,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": ["SUPABASE_SERVICE_ROLE_KEY", "SENDGRID_INGEST_SECRET"]
     },
     "lint": {
       "dependsOn": ["^lint"]
