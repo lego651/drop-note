@@ -61,15 +61,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["block_list_entry_type"]
           value?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "block_list_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       invite_codes: {
         Row: {
