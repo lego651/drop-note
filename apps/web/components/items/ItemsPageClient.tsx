@@ -55,7 +55,7 @@ function ItemsPageClientInner({
   const [copied, setCopied] = useState(false)
   const [optimisticItems, setOptimisticItems] = useState<ItemSummary[]>(items)
 
-  const { newItems, updatedItems } = useRealtimeItems(userId)
+  const { newItems, updatedItems, clearNewItems, clearUpdatedItems } = useRealtimeItems(userId)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -71,7 +71,8 @@ function ItemsPageClientInner({
       const updated = updatedItems.find(u => u.id === item.id)
       return updated ?? item
     }))
-  }, [updatedItems])
+    clearUpdatedItems()
+  }, [updatedItems, clearUpdatedItems])
 
   // Prepend new items (dedup)
   useEffect(() => {
@@ -82,7 +83,8 @@ function ItemsPageClientInner({
       if (truly_new.length === 0) return prev
       return [...truly_new, ...prev]
     })
-  }, [newItems])
+    clearNewItems()
+  }, [newItems, clearNewItems])
 
   // Read view preference from localStorage on mount
   useEffect(() => {

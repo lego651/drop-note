@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import type { ItemSummary } from '@/lib/items'
 
 export function useRealtimeItems(userId: string) {
@@ -44,5 +44,8 @@ export function useRealtimeItems(userId: string) {
     return () => { supabase.removeChannel(channel) }
   }, [userId])
 
-  return { newItems, updatedItems }
+  const clearNewItems = useCallback(() => setNewItems([]), [])
+  const clearUpdatedItems = useCallback(() => setUpdatedItems([]), [])
+
+  return { newItems, updatedItems, clearNewItems, clearUpdatedItems }
 }
