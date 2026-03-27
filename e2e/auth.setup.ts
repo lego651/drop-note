@@ -32,8 +32,9 @@ async function createSession(
   const userId = userData?.user?.id
 
   if (!userId) {
-    // User may already exist — look them up
-    const { data: existing } = await admin.auth.admin.listUsers()
+    // User may already exist — look them up.
+    // listUsers with explicit pagination to bound the scan; test user pool is expected to be small.
+    const { data: existing } = await admin.auth.admin.listUsers({ perPage: 1000, page: 1 })
     const found = existing?.users?.find((u) => u.email === email)
     if (!found) throw new Error(`Could not create or find user: ${email}`)
     if (isAdmin) {

@@ -15,11 +15,18 @@ test.beforeEach(async () => {
   await setUserTier(freeUserId, 'free')
 })
 
+test.afterAll(async () => {
+  await cleanupUser(freeUserId)
+  await setUserTier(freeUserId, 'free')
+})
+
 test('1. cap exceeded banner visible after hitting item limit', async ({ page }) => {
-  // Seed 20 items (free tier cap)
-  for (let i = 0; i < 20; i++) {
-    await seedItem(freeUserId, { subject: `Item ${i}`, status: 'done' })
-  }
+  // Seed 20 items (free tier cap) in parallel
+  await Promise.all(
+    Array.from({ length: 20 }, (_, i) =>
+      seedItem(freeUserId, { subject: `Item ${i}`, status: 'done' })
+    )
+  )
 
   await page.goto('/items')
   await expect(page.getByText(/upgrade/i).first()).toBeVisible()
