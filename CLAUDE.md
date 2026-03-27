@@ -96,6 +96,11 @@ npx supabase migration list --linked  # check migration status
 > **Railway auto-deploys on push to `main`** — but there is a build delay (typically 2–4 minutes). Any emails processed during that window will use the old worker code. If you change anything in `apps/worker/` or `packages/shared/`, note that:
 > - Items processed before the Railway deploy finishes won't reflect the new logic (re-send the email to reprocess)
 > - Check the Railway dashboard to confirm the deploy succeeded before testing worker behaviour
+> - **Watch Paths must be newline-separated** (one pattern per line) in Railway Settings. Comma-separated values are not parsed correctly and will silently break auto-deploy. Correct config:
+>   ```
+>   apps/worker/**
+>   packages/shared/**
+>   ```
 
 > **IMPORTANT:** Every time the database schema changes (new migration applied), run `pnpm gen:types` to regenerate `packages/shared/src/database.types.ts`. All three Supabase client factories (`client.ts`, `server.ts`, `middleware.ts`) are typed with `Database` — stale types will cause TypeScript errors or silently wrong column names across the entire app.
 
