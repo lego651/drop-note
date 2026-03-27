@@ -7,10 +7,16 @@ import {
   parseFromAddress,
   isOverRateLimit,
   QUEUE_NAME,
+  TIER_ITEM_LIMITS,
+  TIER_ATTACHMENT_SIZE_MB,
+  SAVE_ACTIONS_FREE_LIMIT,
+  getCurrentMonth,
   type EmailJobPayload,
 } from '@drop-note/shared'
 import type { Database } from '@drop-note/shared'
 import { timingSafeEqual } from 'crypto'
+import { sendCapExceededEmail } from '../../../lib/emails/cap-exceeded'
+import { sendSaveLimitExceededEmail } from '../../../lib/emails/save-limit-exceeded'
 
 function getRedis() {
   return new Redis({
@@ -49,6 +55,62 @@ function timingSafeCompare(a: string, b: string): boolean {
     return false
   }
 }
+
+/**
+ * Count how many items this email would create.
+ * = 1 (email body) + valid attachments (allowed MIME type + within size limit for tier)
+ * Oversized attachments are excluded — they'll be dropped by the worker anyway.
+ */
+function countIncomingItems(
+  attachmentInfo: string,
+  attachmentData: Record<string, string>,
+  tier: keyof typeof TIER_ATTACHMENT_SIZE_MB,
+): number {
+  const sizeLimitBytes = TIER_ATTACHMENT_SIZE_MB[tier] * 1_000_000
+  let count = 1 // email body always counts
+
+  if (!attachmentInfo) return count
+
+  let parsed: Record<string, { filename?: string; type?: string }> = {}
+  try {
+    parsed = JSON.parse(attachmentInfo)
+  } catch {
+    return count
+  }
+
+  const ALLOWED_MIME = new Set([
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf',
+  ])
+
+  for (const key of Object.keys(parsed)) {
+    const info = parsed[key]
+    const mimeType = info?.type ?? ''
+    const isAllowed = mimeType.startsWith('text/') || ALLOWED_MIME.has(mimeType)
+    if (!isAllowed) continue
+
+    const base64Data = attachmentData[key] ?? ''
+    const sizeBytes = Math.floor(base64Data.length * 0.75)
+    if (sizeBytes > sizeLimitBytes) continue // oversized — exclude from count
+
+    count++
+  }
+
+  return count
+}
+
+// Lua script for atomic check-and-increment (prevents race conditions)
+// Returns -1 if limit would be exceeded, otherwise returns new total
+const ATOMIC_SAVE_INCR_SCRIPT = `
+local key = KEYS[1]
+local incoming = tonumber(ARGV[1])
+local limit = tonumber(ARGV[2])
+local ttl = tonumber(ARGV[3])
+local current = tonumber(redis.call('GET', key) or 0)
+if current + incoming > limit then return -1 end
+local new = redis.call('INCRBY', key, incoming)
+redis.call('EXPIRE', key, ttl)
+return new
+`
 
 export async function POST(request: Request) {
   // Always 200 to SendGrid — never let it retry on error
@@ -101,7 +163,7 @@ export async function POST(request: Request) {
     // User lookup
     const { data: user } = await supabase
       .from('users')
-      .select('id, tier')
+      .select('id, tier, email')
       .eq('email', senderEmail)
       .maybeSingle()
 
@@ -121,7 +183,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true }, { status: 200 })
     }
 
-    // Rate limit
+    // Rate limit (hourly)
     const redis = getRedis()
     const rateLimitKey = `ratelimit:email:${user.id}`
     const pipeline = redis.pipeline()
@@ -132,6 +194,55 @@ export async function POST(request: Request) {
 
     if (isOverRateLimit(count, user.tier)) {
       return NextResponse.json({ ok: true }, { status: 200 })
+    }
+
+    // S306 — Item cap enforcement
+    const incomingCount = countIncomingItems(attachmentInfo, attachmentData, user.tier)
+
+    const { count: currentItemCount } = await supabase
+      .from('items')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+
+    const activeItems = currentItemCount ?? 0
+    const tierLimit = TIER_ITEM_LIMITS[user.tier]
+
+    if (activeItems >= tierLimit || activeItems + incomingCount > tierLimit) {
+      // Fire-and-forget cap exceeded notification
+      sendCapExceededEmail({
+        to: user.email,
+        userId: user.id,
+        currentCount: activeItems,
+        tierLimit,
+        emailSubject: subject,
+      }).catch((err) => console.error('[ingest] Failed to send cap-exceeded email:', err))
+
+      return NextResponse.json({ ok: true }, { status: 200 })
+    }
+
+    // S308 — Monthly save action limit (free tier only)
+    if (user.tier === 'free') {
+      const month = getCurrentMonth()
+      const saveKey = `saves:${user.id}:${month}`
+      const TTL_35_DAYS = 35 * 86400
+
+      const newTotal = await redis.eval(
+        ATOMIC_SAVE_INCR_SCRIPT,
+        [saveKey],
+        [incomingCount, SAVE_ACTIONS_FREE_LIMIT, TTL_35_DAYS],
+      ) as number
+
+      if (newTotal === -1) {
+        // Over monthly limit
+        sendSaveLimitExceededEmail({
+          to: user.email,
+          userId: user.id,
+          month,
+        }).catch((err) => console.error('[ingest] Failed to send save-limit email:', err))
+
+        return NextResponse.json({ ok: true }, { status: 200 })
+      }
     }
 
     // Create pending item
@@ -173,6 +284,14 @@ export async function POST(request: Request) {
       attempts: 3,
       backoff: { type: 'exponential', delay: 5000 },
     })
+
+    // S308 — Fire-and-forget usage_log write (for admin reporting)
+    if (user.tier === 'free') {
+      const month = getCurrentMonth()
+      void supabase
+        .from('usage_log')
+        .insert({ user_id: user.id, action_type: 'save', month })
+    }
 
     return NextResponse.json({ ok: true }, { status: 200 })
   } catch (err) {

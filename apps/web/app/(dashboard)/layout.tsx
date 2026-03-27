@@ -1,6 +1,16 @@
 import { redirect } from 'next/navigation'
+import { createClient as createSupabaseAdmin } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/sidebar'
+import { OverCapBanner } from '@/components/OverCapBanner'
+import { TIER_ITEM_LIMITS } from '@drop-note/shared'
+import type { Database, Tier } from '@drop-note/shared'
+
+const supabaseAdmin = createSupabaseAdmin<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+)
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -12,6 +22,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/login')
   }
 
+  const [{ data: userData }, { count: itemCount }] = await Promise.all([
+    supabaseAdmin.from('users').select('tier').eq('id', user.id).single(),
+    supabaseAdmin
+      .from('items')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('deleted_at', null),
+  ])
+
+  const tier = (userData?.tier ?? 'free') as Tier
+  const isOverCap = (itemCount ?? 0) > TIER_ITEM_LIMITS[tier]
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <a
@@ -21,7 +43,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
         Skip to content
       </a>
       <Sidebar userEmail={user.email ?? ''} />
-      <main id="main" className="flex-1 min-w-0 overflow-y-auto">{children}</main>
+      <main id="main" className="flex-1 min-w-0 overflow-y-auto">
+        {isOverCap && <OverCapBanner itemCount={itemCount ?? 0} tier={tier} />}
+        {children}
+      </main>
     </div>
   )
 }

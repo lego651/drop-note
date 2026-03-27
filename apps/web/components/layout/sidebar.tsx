@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Inbox, Settings, LogOut, Sun, Moon, Monitor } from 'lucide-react'
+import { Inbox, Settings, LogOut, Sun, Moon, Monitor, CreditCard } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -59,6 +59,13 @@ export function Sidebar({ userEmail }: SidebarProps) {
         >
           <Settings size={16} />
           Settings
+        </Link>
+        <Link
+          href="/pricing"
+          className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors ${pathname === '/pricing' ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground'}`}
+        >
+          <CreditCard size={16} />
+          Pricing
         </Link>
       </nav>
 
