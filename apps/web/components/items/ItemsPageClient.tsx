@@ -156,7 +156,7 @@ function ItemsPageClientInner({
     deselectAll()
   }, [deselectAll])
 
-  const handleBulkTagged = useCallback((_tagName: string) => {
+  const handleBulkTagged = useCallback(() => {
     // Tags are applied server-side; no optimistic update needed for tag display
   }, [])
 
