@@ -4,6 +4,8 @@ vi.mock('@/lib/supabase/admin', () => ({ supabaseAdmin: {} }))
 
 import { groupItemsByDate } from '../items'
 
+const base = { ai_summary: null, status: 'done', error_message: null, pinned: false, source_type: null, source_url: null, thumbnail_url: null }
+
 describe('groupItemsByDate', () => {
   it('returns empty array for empty input', () => {
     expect(groupItemsByDate([])).toEqual([])
@@ -11,8 +13,8 @@ describe('groupItemsByDate', () => {
 
   it('groups items on the same day', () => {
     const items = [
-      { id: '1', created_at: '2026-01-15T10:00:00Z', subject: 'a', sender_email: 'x@x.com', ai_summary: null, status: 'done', error_message: null, pinned: false },
-      { id: '2', created_at: '2026-01-15T14:00:00Z', subject: 'b', sender_email: 'x@x.com', ai_summary: null, status: 'done', error_message: null, pinned: false },
+      { ...base, id: '1', created_at: '2026-01-15T10:00:00Z', subject: 'a', sender_email: 'x@x.com' },
+      { ...base, id: '2', created_at: '2026-01-15T14:00:00Z', subject: 'b', sender_email: 'x@x.com' },
     ]
     const groups = groupItemsByDate(items)
     expect(groups).toHaveLength(1)
@@ -21,8 +23,8 @@ describe('groupItemsByDate', () => {
 
   it('groups items on two different days', () => {
     const items = [
-      { id: '1', created_at: '2026-01-15T10:00:00Z', subject: 'a', sender_email: 'x@x.com', ai_summary: null, status: 'done', error_message: null, pinned: false },
-      { id: '2', created_at: '2026-01-16T10:00:00Z', subject: 'b', sender_email: 'x@x.com', ai_summary: null, status: 'done', error_message: null, pinned: false },
+      { ...base, id: '1', created_at: '2026-01-15T10:00:00Z', subject: 'a', sender_email: 'x@x.com' },
+      { ...base, id: '2', created_at: '2026-01-16T10:00:00Z', subject: 'b', sender_email: 'x@x.com' },
     ]
     const groups = groupItemsByDate(items)
     expect(groups).toHaveLength(2)
@@ -36,8 +38,8 @@ describe('groupItemsByDate', () => {
     yesterday.setDate(now.getDate() - 1)
 
     const items = [
-      { id: '1', created_at: now.toISOString(), subject: 'a', sender_email: 'x@x.com', ai_summary: null, status: 'done', error_message: null, pinned: false },
-      { id: '2', created_at: yesterday.toISOString(), subject: 'b', sender_email: 'x@x.com', ai_summary: null, status: 'done', error_message: null, pinned: false },
+      { ...base, id: '1', created_at: now.toISOString(), subject: 'a', sender_email: 'x@x.com' },
+      { ...base, id: '2', created_at: yesterday.toISOString(), subject: 'b', sender_email: 'x@x.com' },
     ]
     const groups = groupItemsByDate(items)
     expect(groups[0].label).toBe('Today')
@@ -46,9 +48,9 @@ describe('groupItemsByDate', () => {
 
   it('sorts most recent date first across multiple days', () => {
     const items = [
-      { id: '1', created_at: '2026-01-10T00:00:00Z', subject: 'oldest', sender_email: 'x@x.com', ai_summary: null, status: 'done', error_message: null, pinned: false },
-      { id: '2', created_at: '2026-01-20T00:00:00Z', subject: 'newest', sender_email: 'x@x.com', ai_summary: null, status: 'done', error_message: null, pinned: false },
-      { id: '3', created_at: '2026-01-15T00:00:00Z', subject: 'middle', sender_email: 'x@x.com', ai_summary: null, status: 'done', error_message: null, pinned: false },
+      { ...base, id: '1', created_at: '2026-01-10T00:00:00Z', subject: 'oldest', sender_email: 'x@x.com' },
+      { ...base, id: '2', created_at: '2026-01-20T00:00:00Z', subject: 'newest', sender_email: 'x@x.com' },
+      { ...base, id: '3', created_at: '2026-01-15T00:00:00Z', subject: 'middle', sender_email: 'x@x.com' },
     ]
     const groups = groupItemsByDate(items)
     expect(groups).toHaveLength(3)
@@ -58,7 +60,7 @@ describe('groupItemsByDate', () => {
 
   it('uses formatted date label for older items', () => {
     const items = [
-      { id: '1', created_at: '2026-01-05T12:00:00Z', subject: 'old', sender_email: 'x@x.com', ai_summary: null, status: 'done', error_message: null, pinned: false },
+      { ...base, id: '1', created_at: '2026-01-05T12:00:00Z', subject: 'old', sender_email: 'x@x.com' },
     ]
     const groups = groupItemsByDate(items)
     expect(groups[0].label).toBe('05 January 2026')

@@ -10,7 +10,14 @@ export async function setItemProcessing(itemId: string): Promise<void> {
 
 export async function setItemDone(
   itemId: string,
-  params: { aiSummary: string; storagePath: string | null; filename: string | null }
+  params: {
+    aiSummary: string
+    storagePath: string | null
+    filename: string | null
+    sourceType?: string | null
+    sourceUrl?: string | null
+    thumbnailUrl?: string | null
+  }
 ): Promise<void> {
   await supabaseAdmin
     .from('items')
@@ -19,6 +26,9 @@ export async function setItemDone(
       ai_summary: params.aiSummary,
       storage_path: params.storagePath,
       filename: params.filename,
+      ...(params.sourceType !== undefined && { source_type: params.sourceType }),
+      ...(params.sourceUrl !== undefined && { source_url: params.sourceUrl }),
+      ...(params.thumbnailUrl !== undefined && { thumbnail_url: params.thumbnailUrl }),
     })
     .eq('id', itemId)
 }

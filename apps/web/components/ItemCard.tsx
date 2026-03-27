@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
-import { Pin, Trash2 } from 'lucide-react'
+import { Pin, Trash2, Play } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -96,6 +97,27 @@ export function ItemCard({
         </button>
       </div>
 
+      {/* Thumbnail — YouTube / video items */}
+      {isDone && item.thumbnail_url && (
+        <div className="relative w-full overflow-hidden rounded-md aspect-video bg-muted">
+          <Image
+            src={item.thumbnail_url}
+            alt={item.subject ?? 'Video thumbnail'}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, 320px"
+            unoptimized
+          />
+          {item.source_type === 'youtube' && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="rounded-full bg-background/80 p-2">
+                <Play size={16} className="fill-foreground text-foreground" />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Summary / skeleton */}
       {isProcessing ? (
         <div className="space-y-1.5">
@@ -121,6 +143,11 @@ export function ItemCard({
       {/* Footer: tags + date */}
       <div className="flex flex-wrap items-center justify-between gap-1 pt-0.5">
         <div className="flex flex-wrap items-center gap-1">
+          {item.source_type === 'youtube' && (
+            <Badge variant="outline" className="text-xs py-0 px-1.5">
+              Video
+            </Badge>
+          )}
           {visibleTags.map((tag) => (
             <Badge key={tag.id} variant="secondary" className="text-xs py-0 px-1.5">
               {tag.name}

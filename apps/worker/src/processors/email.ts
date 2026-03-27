@@ -1,5 +1,14 @@
 import { Job } from 'bullmq'
-import { EmailJobPayload, EmailJobResult, parseSendGridPayload, isAllowedMimeType } from '@drop-note/shared'
+import {
+  EmailJobPayload,
+  EmailJobResult,
+  parseSendGridPayload,
+  isAllowedMimeType,
+  extractSingleUrl,
+  extractYouTubeId,
+  getYouTubeThumbnailUrl,
+  fetchYouTubeTitle,
+} from '@drop-note/shared'
 import { setItemProcessing, setItemDone, setItemFailed, upsertTags, createAttachmentItem } from '../lib/db'
 import { uploadAttachment } from '../lib/storage'
 import { summarizeEmailBody, describeImage } from '../lib/openai'
@@ -28,8 +37,35 @@ export async function processEmail(job: Job<EmailJobPayload>): Promise<EmailJobR
 
     const parsed = parseSendGridPayload(fields)
 
+    // Detect if body is primarily a URL
+    const detectedUrl = extractSingleUrl(parsed.bodyText)
+    const youtubeId = detectedUrl ? extractYouTubeId(detectedUrl) : null
+
+    let sourceType: string | null = null
+    let sourceUrl: string | null = null
+    let thumbnailUrl: string | null = null
+    let summarizeSubject = parsed.subject
+    let summarizeBody = parsed.bodyText
+
+    if (youtubeId) {
+      sourceType = 'youtube'
+      sourceUrl = detectedUrl
+      thumbnailUrl = getYouTubeThumbnailUrl(youtubeId)
+      // Fetch title via oEmbed so the AI has something meaningful to summarize
+      const videoTitle = await fetchYouTubeTitle(detectedUrl!)
+      summarizeSubject = videoTitle ?? parsed.subject
+      summarizeBody = `YouTube video: ${videoTitle ?? detectedUrl}`
+      console.log(`[processor] Detected YouTube video: ${youtubeId} — "${summarizeSubject}"`)
+    } else if (detectedUrl) {
+      sourceType = 'url'
+      sourceUrl = detectedUrl
+      console.log(`[processor] Detected URL: ${detectedUrl}`)
+    } else {
+      sourceType = 'email'
+    }
+
     // Summarize body
-    const bodyResult = await summarizeEmailBody(parsed.subject, parsed.bodyText)
+    const bodyResult = await summarizeEmailBody(summarizeSubject, summarizeBody)
 
     if (bodyResult.error) {
       if (bodyResult.error === 'Invalid AI response format') {
@@ -45,6 +81,9 @@ export async function processEmail(job: Job<EmailJobPayload>): Promise<EmailJobR
         aiSummary: bodyResult.summary,
         storagePath: null,
         filename: null,
+        sourceType,
+        sourceUrl,
+        thumbnailUrl,
       })
       if (bodyResult.tags.length > 0) {
         await upsertTags(userId, bodyItemId, bodyResult.tags)

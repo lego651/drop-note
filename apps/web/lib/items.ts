@@ -11,6 +11,9 @@ export type ItemSummary = {
   error_message: string | null
   pinned: boolean
   created_at: string
+  source_type: string | null
+  source_url: string | null
+  thumbnail_url: string | null
   item_tags?: { tags: { id: string; name: string } | null }[] | null
 }
 

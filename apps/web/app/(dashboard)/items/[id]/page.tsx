@@ -119,6 +119,36 @@ export default async function ItemDetailPage({ params }: { params: { id: string 
         </div>
       </div>
 
+      {/* YouTube embed */}
+      {item.source_type === 'youtube' && item.source_url && (
+        <div className="mb-6 w-full overflow-hidden rounded-lg aspect-video bg-muted">
+          {(() => {
+            const videoIdMatch = item.source_url.match(
+              /(?:[?&]v=|youtu\.be\/|youtube\.com\/(?:shorts|live|embed)\/)([a-zA-Z0-9_-]{11})/
+            )
+            const videoId = videoIdMatch?.[1]
+            return videoId ? (
+              <iframe
+                src={`https://www.youtube.com/embed/${videoId}`}
+                title={item.subject ?? 'YouTube video'}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full border-0"
+              />
+            ) : (
+              <a
+                href={item.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center h-full text-sm text-muted-foreground underline"
+              >
+                Watch on YouTube
+              </a>
+            )
+          })()}
+        </div>
+      )}
+
       {/* Read-only metadata */}
       <div className="mb-6 space-y-1">
         <h1 className="text-xl font-semibold">{item.subject ?? item.filename ?? 'Untitled'}</h1>
