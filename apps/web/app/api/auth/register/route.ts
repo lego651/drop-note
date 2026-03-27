@@ -3,6 +3,7 @@ import { createHash } from 'crypto'
 import { getRedis } from '@/lib/redis'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { AUTH_EMAIL_RATE_LIMIT_PER_HOUR } from '@drop-note/shared'
 
 export async function POST(request: Request) {
   // Rate limit: 5 attempts per IP per hour
@@ -72,6 +73,13 @@ export async function POST(request: Request) {
 
   if (otpError) {
     console.error('[register] signInWithOtp error:', otpError.message)
+    const isRateLimited = /rate.?limit/i.test(otpError.message)
+    if (isRateLimited) {
+      return NextResponse.json(
+        { error: `You can only request ${AUTH_EMAIL_RATE_LIMIT_PER_HOUR} magic links per hour. Please try again later.` },
+        { status: 429 },
+      )
+    }
     return NextResponse.json({ error: 'Failed to send magic link' }, { status: 500 })
   }
 

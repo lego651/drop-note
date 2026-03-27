@@ -141,22 +141,24 @@ Full ticket breakdowns in `docs/s1-tickets.md` and `docs/sprint-plan.md`.
 
 ## Commit message rules
 
-**Every commit must be prefixed with the sprint it belongs to.**
+**Every commit must be prefixed with either a sprint tag or `[bug]`.**
 
-Format: `[s{N}] type: description`
+Format: `[s{N}] type: description` or `[bug] type: description`
 
 ```
 [s1] feat: add magic link login flow
-[s1] fix: replace inline UNIQUE constraint with index on tags
 [s2] feat: /api/ingest route with SendGrid payload parsing
-[s2] fix: handle missing from header in ingest route
-[s3] feat: Stripe webhook handler for subscription updates
+[s6] feat: add batch delete support
+[bug] fix: sidebar blank on mobile
+[bug] fix: raise Supabase auth email rate limit
 ```
 
 **Types:** `feat`, `fix`, `chore`, `refactor`, `test`, `docs`
 
 **Rules:**
-- Sprint prefix is required — no exceptions. This makes it easy to trace any change back to its sprint context and ticket.
+- A prefix is required on every commit — no exceptions.
+- Use `[s{N}]` for planned sprint work — features, tasks, and improvements scoped to a sprint.
+- Use `[bug]` for follow-up fixes and issues noticed after a sprint is done, regardless of which sprint introduced the original code. Do not use a sprint tag for these.
 - Keep the subject line under 72 characters.
 - Use the body for the *why*, not the *what*, when the change is non-obvious.
 - Always include the co-author trailer when Claude Code wrote the commit:

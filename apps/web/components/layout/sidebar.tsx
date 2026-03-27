@@ -128,7 +128,7 @@ export function SidebarNav({
   ]
 
   return (
-    <aside className="hidden md:flex flex-col w-60 h-screen border-r border-border bg-background shrink-0">
+    <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="h-14 flex items-center px-4 border-b border-border">
         <span className="text-sm font-semibold tracking-tight">drop-note</span>
@@ -292,7 +292,7 @@ export function SidebarNav({
           </Button>
         </div>
       </div>
-    </aside>
+    </div>
   )
 }
 
@@ -307,7 +307,9 @@ export function Sidebar(props: SidebarProps) {
         </aside>
       }
     >
-      <SidebarNav {...props} />
+      <aside className="hidden md:flex flex-col w-60 h-screen border-r border-border bg-background shrink-0">
+        <SidebarNav {...props} />
+      </aside>
     </Suspense>
   )
 }

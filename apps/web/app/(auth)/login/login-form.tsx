@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { AUTH_EMAIL_RATE_LIMIT_PER_HOUR } from '@drop-note/shared'
 
 const supabase = createClient()
 
@@ -35,7 +36,12 @@ export default function LoginForm({ redirectTo, deleted, authError }: LoginFormP
     })
 
     if (signInError) {
-      setError(signInError.message)
+      const isRateLimited = /rate.?limit/i.test(signInError.message)
+      setError(
+        isRateLimited
+          ? `You can only request ${AUTH_EMAIL_RATE_LIMIT_PER_HOUR} magic links per hour. Please try again later.`
+          : signInError.message,
+      )
       setLoading(false)
       return
     }
