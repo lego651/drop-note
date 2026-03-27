@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
-import { Pin } from 'lucide-react'
+import { Pin, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import type { ItemSummary } from '@/lib/items'
@@ -22,6 +23,8 @@ export function ItemCard({
   isBulkMode = false,
   isSelected = false,
   onSelectChange,
+  onPinChange,
+  onDelete,
 }: ItemCardProps) {
   const tags = item.item_tags
     ?.map((it) => it.tags)
@@ -37,19 +40,18 @@ export function ItemCard({
   const cardContent = (
     <div
       className={cn(
-        'relative flex flex-col gap-1.5 rounded-lg border border-border bg-card p-3 text-left transition-colors',
+        'group relative flex flex-col gap-1.5 rounded-lg border border-border bg-card p-3 text-left transition-colors',
         isFailed && 'border-destructive',
         isDone && 'hover:bg-accent/50 cursor-pointer',
         isSelected && 'ring-2 ring-ring',
       )}
     >
-      {/* Checkbox — hidden until bulk mode is wired (S407) */}
+      {/* Checkbox — visible in bulk mode */}
       {isBulkMode && (
-        <input
-          type="checkbox"
+        <Checkbox
           checked={isSelected}
-          onChange={(e) => onSelectChange?.(item.id, e.target.checked)}
-          className="absolute top-3 left-3 h-4 w-4 accent-foreground"
+          onCheckedChange={(checked) => onSelectChange?.(item.id, checked === true)}
+          className="absolute top-3 left-3"
           aria-label={`Select item: ${item.subject ?? 'Untitled'}`}
         />
       )}
@@ -66,14 +68,30 @@ export function ItemCard({
         </p>
         <button
           type="button"
-          aria-label={item.pinned ? 'Pinned' : 'Not pinned'}
+          aria-label={item.pinned ? 'Unpin item' : 'Pin item'}
           className="shrink-0 text-muted-foreground"
-          tabIndex={-1}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onPinChange?.(item.id, !item.pinned)
+          }}
         >
           <Pin
             size={14}
             className={cn(item.pinned ? 'fill-foreground text-foreground' : 'opacity-40')}
           />
+        </button>
+        <button
+          type="button"
+          aria-label="Delete item"
+          className="shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onDelete?.(item.id)
+          }}
+        >
+          <Trash2 size={14} />
         </button>
       </div>
 

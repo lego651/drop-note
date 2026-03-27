@@ -4,9 +4,21 @@ import type { ItemSummary } from '@/lib/items'
 
 interface TimelineSpineProps {
   items: ItemSummary[]
+  isBulkMode?: boolean
+  selectedIds?: Set<string>
+  onSelectChange?: (id: string, checked: boolean) => void
+  onPinChange?: (id: string, pinned: boolean) => void
+  onDelete?: (id: string) => void
 }
 
-export function TimelineSpine({ items }: TimelineSpineProps) {
+export function TimelineSpine({
+  items,
+  isBulkMode = false,
+  selectedIds,
+  onSelectChange,
+  onPinChange,
+  onDelete,
+}: TimelineSpineProps) {
   const groups = groupItemsByDate(items)
 
   if (groups.length === 0) return null
@@ -38,7 +50,15 @@ export function TimelineSpine({ items }: TimelineSpineProps) {
               {/* Items for this date */}
               <div className="flex flex-col gap-2">
                 {group.items.map((item) => (
-                  <ItemCard key={item.id} item={item} />
+                  <ItemCard
+                    key={item.id}
+                    item={item}
+                    isBulkMode={isBulkMode}
+                    isSelected={selectedIds?.has(item.id) ?? false}
+                    onSelectChange={onSelectChange}
+                    onPinChange={onPinChange}
+                    onDelete={onDelete}
+                  />
                 ))}
               </div>
             </div>

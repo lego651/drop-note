@@ -10,32 +10,54 @@ import { ItemsListLayout } from '@/components/items/ItemsListLayout'
 import { ItemsGridLayout } from '@/components/items/ItemsGridLayout'
 import { TimelineSpine } from '@/components/items/TimelineSpine'
 import { ViewSwitcher, VIEW_STORAGE_KEY } from '@/components/items/ViewSwitcher'
+import { BulkSelectProvider, useBulkSelect } from '@/components/items/BulkSelectProvider'
+import { BulkActionToolbar } from '@/components/items/BulkActionToolbar'
 import type { ViewMode } from '@/components/items/ViewSwitcher'
 import type { ItemSummary } from '@/lib/items'
+import type { Tier } from '@drop-note/shared'
 
 interface ItemsPageClientProps {
   items: ItemSummary[]
   totalCount: number
   page: number
   initialQuery?: string
+  userTier?: Tier
 }
 
-export function ItemsPageClient({
+export function ItemsPageClient(props: ItemsPageClientProps) {
+  return (
+    <BulkSelectProvider>
+      <ItemsPageClientInner {...props} />
+    </BulkSelectProvider>
+  )
+}
+
+function ItemsPageClientInner({
   items,
   totalCount,
   page,
   initialQuery = '',
+  userTier = 'free',
 }: ItemsPageClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const searchParamsStr = searchParams.toString()
+
+  const { isBulkMode, selectedIds, toggle, selectAll, deselectAll } = useBulkSelect()
 
   const [view, setView] = useState<ViewMode>('list')
   const [searchQuery, setSearchQuery] = useState(initialQuery)
   const [searchResults, setSearchResults] = useState<ItemSummary[] | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [optimisticItems, setOptimisticItems] = useState<ItemSummary[]>(items)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Keep optimistic items in sync when server props change
+  useEffect(() => {
+    setOptimisticItems(items)
+  }, [items])
 
   // Read view preference from localStorage on mount
   useEffect(() => {
@@ -63,7 +85,7 @@ export function ItemsPageClient({
       if (q.length < 2) {
         setSearchResults(null)
         setIsSearching(false)
-        const params = new URLSearchParams(searchParams.toString())
+        const params = new URLSearchParams(searchParamsStr)
         params.delete('q')
         router.replace(`/items?${params.toString()}`)
         return
@@ -71,7 +93,7 @@ export function ItemsPageClient({
 
       setIsSearching(true)
       try {
-        const params = new URLSearchParams(searchParams.toString())
+        const params = new URLSearchParams(searchParamsStr)
         params.set('q', q)
         params.delete('page')
         router.replace(`/items?${params.toString()}`)
@@ -79,13 +101,14 @@ export function ItemsPageClient({
         const res = await fetch(`/api/items/search?q=${encodeURIComponent(q)}`)
         if (res.ok) {
           const data = await res.json()
-          setSearchResults(data.items ?? [])
+          setSearchResults(Array.isArray(data) ? data : [])
         }
       } finally {
         setIsSearching(false)
       }
     },
-    [router, searchParams],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [router, searchParamsStr],
   )
 
   const handleSearchChange = useCallback(
@@ -109,8 +132,36 @@ export function ItemsPageClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const handlePinChange = useCallback(async (id: string, pinned: boolean) => {
+    await fetch(`/api/items/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pinned }),
+    })
+    setOptimisticItems(prev => prev.map(item =>
+      item.id === id ? { ...item, pinned } : item,
+    ))
+  }, [])
+
+  const handleDelete = useCallback(async (id: string) => {
+    const confirmed = window.confirm('Delete this item?')
+    if (!confirmed) return
+    await fetch(`/api/items/${id}`, { method: 'DELETE' })
+    setOptimisticItems(prev => prev.filter(item => item.id !== id))
+  }, [])
+
+  const handleBulkDeleted = useCallback((deletedIds: string[]) => {
+    const deletedSet = new Set(deletedIds)
+    setOptimisticItems(prev => prev.filter(item => !deletedSet.has(item.id)))
+    deselectAll()
+  }, [deselectAll])
+
+  const handleBulkTagged = useCallback((_tagName: string) => {
+    // Tags are applied server-side; no optimistic update needed for tag display
+  }, [])
+
   const isSearchMode = searchQuery.length >= 2
-  const displayItems = isSearchMode && searchResults !== null ? searchResults : items
+  const displayItems = isSearchMode && searchResults !== null ? searchResults : optimisticItems
   const showPagination = !isSearchMode && totalCount > 25
 
   async function handleCopyEmail() {
@@ -119,10 +170,20 @@ export function ItemsPageClient({
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const allPageIds = displayItems.map(item => item.id)
+
+  const bulkProps = {
+    isBulkMode,
+    selectedIds,
+    onSelectChange: toggle,
+    onPinChange: handlePinChange,
+    onDelete: handleDelete,
+  }
+
   function renderLayout() {
-    if (view === 'card') return <ItemsGridLayout items={displayItems} />
-    if (view === 'timeline') return <TimelineSpine items={displayItems} />
-    return <ItemsListLayout items={displayItems} />
+    if (view === 'card') return <ItemsGridLayout items={displayItems} {...bulkProps} />
+    if (view === 'timeline') return <TimelineSpine items={displayItems} {...bulkProps} />
+    return <ItemsListLayout items={displayItems} {...bulkProps} />
   }
 
   const isEmpty = displayItems.length === 0 && !isSearching
@@ -152,6 +213,19 @@ export function ItemsPageClient({
           aria-label="Search items"
         />
       </div>
+
+      {/* Bulk action toolbar */}
+      {isBulkMode && (
+        <BulkActionToolbar
+          selectedIds={selectedIds}
+          allPageIds={allPageIds}
+          userTier={userTier}
+          onDeleted={handleBulkDeleted}
+          onTagged={handleBulkTagged}
+          onSelectAll={selectAll}
+          onDeselectAll={deselectAll}
+        />
+      )}
 
       {/* Search result count */}
       {isSearchMode && !isSearching && searchResults !== null && (

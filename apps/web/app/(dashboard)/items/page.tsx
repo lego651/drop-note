@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ItemsPageClient } from '@/components/items/ItemsPageClient'
+import type { Tier } from '@drop-note/shared'
 
 export const metadata = { title: 'Items — drop-note' }
 
@@ -25,6 +26,13 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   }
 
   const params = await Promise.resolve(searchParams ?? {})
+
+  const { data: userData } = await supabase
+    .from('users')
+    .select('tier')
+    .eq('id', user.id)
+    .single()
+  const userTier = (userData?.tier ?? 'free') as Tier
 
   const tagId = params.tag
   const year = params.year
@@ -51,6 +59,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
         totalCount={0}
         page={page}
         initialQuery={q ?? ''}
+        userTier={userTier}
       />
     )
   }
@@ -91,6 +100,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       totalCount={count ?? 0}
       page={page}
       initialQuery={q ?? ''}
+      userTier={userTier}
     />
   )
 }

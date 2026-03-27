@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2, Tag, X, CheckSquare } from 'lucide-react'
+import { Trash2, Tag, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
   AlertDialog,
@@ -115,17 +116,14 @@ export function BulkActionToolbar({
     <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
       {/* Select all on page checkbox */}
       <label className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer select-none">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={allPageSelected}
-          onChange={(e) => {
-            if (e.target.checked) onSelectAll(allPageIds)
+          onCheckedChange={(checked) => {
+            if (checked) onSelectAll(allPageIds)
             else onDeselectAll()
           }}
-          className="h-4 w-4 accent-foreground"
           aria-label="Select all on this page"
         />
-        <CheckSquare size={14} className="hidden" aria-hidden />
         <span className="hidden sm:inline">Select all</span>
       </label>
 
