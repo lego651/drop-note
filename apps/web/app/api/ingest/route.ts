@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { Redis } from '@upstash/redis'
 import { Queue } from 'bullmq'
 import IORedis from 'ioredis'
@@ -11,12 +10,13 @@ import {
   TIER_ATTACHMENT_SIZE_MB,
   SAVE_ACTIONS_FREE_LIMIT,
   getCurrentMonth,
+  isAllowedMimeType,
   type EmailJobPayload,
 } from '@drop-note/shared'
-import type { Database } from '@drop-note/shared'
 import { timingSafeEqual } from 'crypto'
 import { sendCapExceededEmail } from '../../../lib/emails/cap-exceeded'
 import { sendSaveLimitExceededEmail } from '../../../lib/emails/save-limit-exceeded'
+import { supabaseAdmin } from '../../../lib/supabase/admin'
 
 function getRedis() {
   return new Redis({
@@ -38,12 +38,6 @@ function getQueue(): Queue {
   }
   return _queue
 }
-
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-)
 
 function timingSafeCompare(a: string, b: string): boolean {
   try {
@@ -78,15 +72,10 @@ function countIncomingItems(
     return count
   }
 
-  const ALLOWED_MIME = new Set([
-    'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf',
-  ])
-
   for (const key of Object.keys(parsed)) {
     const info = parsed[key]
     const mimeType = info?.type ?? ''
-    const isAllowed = mimeType.startsWith('text/') || ALLOWED_MIME.has(mimeType)
-    if (!isAllowed) continue
+    if (!isAllowedMimeType(mimeType)) continue
 
     const base64Data = attachmentData[key] ?? ''
     const sizeBytes = Math.floor(base64Data.length * 0.75)
@@ -213,6 +202,7 @@ export async function POST(request: Request) {
       sendCapExceededEmail({
         to: user.email,
         userId: user.id,
+        tier: user.tier,
         currentCount: activeItems,
         tierLimit,
         emailSubject: subject,
@@ -227,20 +217,28 @@ export async function POST(request: Request) {
       const saveKey = `saves:${user.id}:${month}`
       const TTL_35_DAYS = 35 * 86400
 
-      const newTotal = await redis.eval(
-        ATOMIC_SAVE_INCR_SCRIPT,
-        [saveKey],
-        [incomingCount, SAVE_ACTIONS_FREE_LIMIT, TTL_35_DAYS],
-      ) as number
+      let saveCheckPassed = true
+      try {
+        const newTotal = await redis.eval(
+          ATOMIC_SAVE_INCR_SCRIPT,
+          [saveKey],
+          [incomingCount, SAVE_ACTIONS_FREE_LIMIT, TTL_35_DAYS],
+        ) as number
 
-      if (newTotal === -1) {
-        // Over monthly limit
-        sendSaveLimitExceededEmail({
-          to: user.email,
-          userId: user.id,
-          month,
-        }).catch((err) => console.error('[ingest] Failed to send save-limit email:', err))
+        if (newTotal === -1) {
+          saveCheckPassed = false
+          sendSaveLimitExceededEmail({
+            to: user.email,
+            userId: user.id,
+            month,
+          }).catch((err) => console.error('[ingest] Failed to send save-limit email:', err))
+        }
+      } catch (err) {
+        // Fail open: better to allow one extra email than silently discard it
+        console.error('[ingest] Redis save-limit check failed — allowing email through:', err)
+      }
 
+      if (!saveCheckPassed) {
         return NextResponse.json({ ok: true }, { status: 200 })
       }
     }
@@ -288,9 +286,12 @@ export async function POST(request: Request) {
     // S308 — Fire-and-forget usage_log write (for admin reporting)
     if (user.tier === 'free') {
       const month = getCurrentMonth()
-      void supabase
+      supabase
         .from('usage_log')
         .insert({ user_id: user.id, action_type: 'save', month })
+        .then(({ error }) => {
+          if (error) console.error('[ingest] usage_log write failed:', error.message)
+        })
     }
 
     return NextResponse.json({ ok: true }, { status: 200 })

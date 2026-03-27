@@ -1,16 +1,5 @@
-import { Resend } from 'resend'
-import { Redis } from '@upstash/redis'
-
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY!)
-}
-
-function getRedis() {
-  return new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  })
-}
+import { SAVE_ACTIONS_FREE_LIMIT } from '@drop-note/shared'
+import { getResend, getRedis } from './shared'
 
 interface SaveLimitParams {
   to: string
@@ -40,7 +29,7 @@ export async function sendSaveLimitExceededEmail({
     subject: "You've reached your monthly drop-note limit",
     html: `
       <p>Hi,</p>
-      <p>You've used all 30 save actions for this month on the free plan.</p>
+      <p>You've used all ${SAVE_ACTIONS_FREE_LIMIT} save actions for this month on the free plan.</p>
       <p>Your limit resets at the start of next month.</p>
       <p><a href="${appUrl}/pricing">Upgrade to Pro</a> for unlimited saves, or wait until next month.</p>
       <p>— drop-note</p>

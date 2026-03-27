@@ -1,14 +1,7 @@
 import { NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@supabase/supabase-js'
-import type { Database } from '@drop-note/shared'
 import { createClient } from '../../../../lib/supabase/server'
 import { stripe } from '../../../../lib/stripe'
-
-const supabaseAdmin = createServerClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-)
+import { supabaseAdmin } from '../../../../lib/supabase/admin'
 
 export async function POST(request: Request) {
   // Auth: require session
@@ -32,10 +25,18 @@ export async function POST(request: Request) {
 
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? request.headers.get('origin') ?? 'http://localhost:3000'
 
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: userData.stripe_customer_id,
-    return_url: `${origin}/settings`,
-  })
+  try {
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: userData.stripe_customer_id,
+      return_url: `${origin}/settings`,
+    })
 
-  return NextResponse.json({ url: portalSession.url })
+    return NextResponse.json({ url: portalSession.url })
+  } catch (err) {
+    console.error('[portal] Stripe error:', err instanceof Error ? err.message : err)
+    return NextResponse.json(
+      { error: 'Failed to open billing portal. Please try again.' },
+      { status: 502 }
+    )
+  }
 }

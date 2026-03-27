@@ -1,13 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import type { Database } from '@drop-note/shared'
 import { createClient as createServerClient } from '../../../../../../lib/supabase/server'
-
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-)
+import { supabaseAdmin } from '../../../../../../lib/supabase/admin'
 
 const VALID_TIERS = ['free', 'pro', 'power'] as const
 type ValidTier = typeof VALID_TIERS[number]
@@ -51,15 +44,21 @@ export async function PATCH(
   const { userId } = params
 
   // Update tier — direct DB override, no Stripe side effects
-  const { error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('users')
     .update({ tier })
     .eq('id', userId)
+    .select('id, tier')
+    .maybeSingle()
 
   if (error) {
     console.error('[admin] Failed to update tier:', error.message)
     return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }
 
-  return NextResponse.json({ ok: true, userId, tier })
+  if (!data) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  }
+
+  return NextResponse.json({ ok: true, userId: data.id, tier: data.tier })
 }

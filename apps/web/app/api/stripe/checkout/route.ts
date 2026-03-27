@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
+import { requireEnv } from '@drop-note/shared'
 import { createClient } from '../../../../lib/supabase/server'
 import { stripe } from '../../../../lib/stripe'
 import { getOrCreateStripeCustomer } from '../../../../lib/stripe-customer'
 
 const VALID_PRICE_IDS = new Set([
-  process.env.STRIPE_PRO_PRICE_ID,
-  process.env.STRIPE_POWER_PRICE_ID,
+  requireEnv('STRIPE_PRO_PRICE_ID'),
+  requireEnv('STRIPE_POWER_PRICE_ID'),
 ])
 
 export async function POST(request: Request) {
@@ -33,19 +34,27 @@ export async function POST(request: Request) {
 
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? request.headers.get('origin') ?? 'http://localhost:3000'
 
-  const stripeCustomerId = await getOrCreateStripeCustomer(user.id)
+  try {
+    const stripeCustomerId = await getOrCreateStripeCustomer(user.id)
 
-  const session = await stripe.checkout.sessions.create({
-    customer: stripeCustomerId,
-    mode: 'subscription',
-    line_items: [{ price: priceId, quantity: 1 }],
-    client_reference_id: user.id,
-    success_url: `${origin}/pricing?checkout=success`,
-    cancel_url: `${origin}/pricing`,
-    subscription_data: {
-      metadata: { supabase_user_id: user.id },
-    },
-  })
+    const session = await stripe.checkout.sessions.create({
+      customer: stripeCustomerId,
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
+      client_reference_id: user.id,
+      success_url: `${origin}/pricing?checkout=success`,
+      cancel_url: `${origin}/pricing`,
+      subscription_data: {
+        metadata: { supabase_user_id: user.id },
+      },
+    })
 
-  return NextResponse.json({ url: session.url })
+    return NextResponse.json({ url: session.url })
+  } catch (err) {
+    console.error('[checkout] Stripe error:', err instanceof Error ? err.message : err)
+    return NextResponse.json(
+      { error: 'Failed to create checkout session. Please try again.' },
+      { status: 502 }
+    )
+  }
 }

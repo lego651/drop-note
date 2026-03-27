@@ -2,7 +2,11 @@
 
 import { useState } from 'react'
 
-export function ManageSubscriptionButton() {
+interface ManageSubscriptionButtonProps {
+  label?: string
+}
+
+export function ManageSubscriptionButton({ label = 'Manage subscription' }: ManageSubscriptionButtonProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,7 +43,7 @@ export function ManageSubscriptionButton() {
         disabled={loading}
         className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {loading ? 'Loading…' : 'Manage subscription'}
+        {loading ? 'Loading…' : label}
       </button>
       {error && (
         <p className="text-xs text-destructive">{error}</p>

@@ -24,10 +24,13 @@ export async function GET(request: Request) {
           // Fire-and-forget — do not await
           void sendWelcomeEmail(user.email)
           // Mark as sent (best-effort, fire-and-forget)
-          void supabase
+          supabase
             .from('users')
             .update({ welcome_email_sent: true })
             .eq('id', user.id)
+            .then(({ error }) => {
+              if (error) console.error('[auth] welcome_email_sent update failed:', error.message)
+            })
         }
       }
 

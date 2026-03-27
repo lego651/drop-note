@@ -43,19 +43,19 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          type: string
+          type: Database["public"]["Enums"]["block_list_entry_type"]
           value: string
         }
         Insert: {
           created_at?: string
           id?: string
-          type: string
+          type: Database["public"]["Enums"]["block_list_entry_type"]
           value: string
         }
         Update: {
           created_at?: string
           id?: string
-          type?: string
+          type?: Database["public"]["Enums"]["block_list_entry_type"]
           value?: string
         }
         Relationships: []
@@ -305,6 +305,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      block_list_entry_type: "email" | "ip"
       item_status: "pending" | "processing" | "done" | "failed"
       item_type: "email_body" | "attachment"
       user_tier: "free" | "pro" | "power"
@@ -438,6 +439,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      block_list_entry_type: ["email", "ip"],
       item_status: ["pending", "processing", "done", "failed"],
       item_type: ["email_body", "attachment"],
       user_tier: ["free", "pro", "power"],

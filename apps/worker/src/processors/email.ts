@@ -1,5 +1,5 @@
 import { Job } from 'bullmq'
-import { EmailJobPayload, EmailJobResult, parseSendGridPayload } from '@drop-note/shared'
+import { EmailJobPayload, EmailJobResult, parseSendGridPayload, isAllowedMimeType } from '@drop-note/shared'
 import { setItemProcessing, setItemDone, setItemFailed, upsertTags, createAttachmentItem } from '../lib/db'
 import { uploadAttachment } from '../lib/storage'
 import { summarizeEmailBody, describeImage } from '../lib/openai'
@@ -78,7 +78,9 @@ export async function processEmail(job: Job<EmailJobPayload>): Promise<EmailJobR
         let aiSummary = ''
         let aiTags: string[] = []
 
-        if (attachment.mimeType.startsWith('image/')) {
+        if (!isAllowedMimeType(attachment.mimeType)) {
+          // skip unsupported mime types
+        } else if (attachment.mimeType.startsWith('image/')) {
           const desc = await describeImage(attachment.data, attachment.mimeType)
           aiSummary = desc.description
         } else if (attachment.mimeType === 'application/pdf') {

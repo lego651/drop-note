@@ -122,7 +122,15 @@ export default async function PricingPage({
                   <p className="text-sm text-muted-foreground">Your current plan</p>
                 ) : userTier && (userTier === 'pro' || userTier === 'power') ? (
                   // Paid user switching plans — use portal
-                  <ManageSubscriptionButton />
+                  (() => {
+                    const tierRank: Record<string, number> = { free: 0, pro: 1, power: 2 }
+                    const isUpgrade = tierRank[userTier] < tierRank[tier.name.toLowerCase()]
+                    return (
+                      <ManageSubscriptionButton
+                        label={isUpgrade ? `Upgrade to ${tier.name}` : 'Manage subscription'}
+                      />
+                    )
+                  })()
                 ) : (
                   // Free user upgrading
                   userTier !== null ? (

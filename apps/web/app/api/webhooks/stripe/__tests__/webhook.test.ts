@@ -1,8 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // vi.hoisted runs before vi.mock factories, making these variables available in mocks.
-const { mockFrom } = vi.hoisted(() => ({
+// mockUpdate and mockEq are module-level so individual tests can assert on them.
+const { mockFrom, mockUpdate, mockEq } = vi.hoisted(() => ({
   mockFrom: vi.fn(),
+  mockUpdate: vi.fn(),
+  mockEq: vi.fn(),
 }))
 
 // Mock the stripe lib — prevents requireEnv('STRIPE_SECRET_KEY') from throwing at module load.
@@ -17,10 +21,11 @@ vi.mock('../../../../../lib/stripe', () => ({
   },
 }))
 
-// Supabase mock: module-level supabaseAdmin in route.ts is created once on import.
-// We expose mockFrom via vi.hoisted so the factory can reference it safely.
-vi.mock('@supabase/supabase-js', () => ({
-  createClient: vi.fn(() => ({ from: mockFrom })),
+// Mock the shared admin client directly — avoids requireEnv() throwing at module load
+// since env vars aren't set until beforeEach. The route now imports supabaseAdmin from
+// this module rather than calling createClient itself.
+vi.mock('../../../../../lib/supabase/admin', () => ({
+  supabaseAdmin: { from: mockFrom },
 }))
 
 // Mock @drop-note/shared — keep real tier/env helpers, override priceIdToTier.
@@ -47,18 +52,23 @@ function makeRequest(body: string, sig: string = 'valid-sig') {
   })
 }
 
-/** Sets up the Supabase .from().update().eq() chain to succeed. */
+/** Sets up the full .from().update().eq().select().maybeSingle() chain to succeed.
+ *  Reuses module-level mockUpdate / mockEq so tests can assert on them. */
 function mockDbSuccess() {
-  const eq = vi.fn().mockResolvedValue({ error: null })
-  const update = vi.fn().mockReturnValue({ eq })
-  mockFrom.mockReturnValue({ update })
+  const mockMaybeSingle = vi.fn().mockResolvedValue({ data: { id: 'user-123' }, error: null })
+  const mockSelect = vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle })
+  mockEq.mockReturnValue({ select: mockSelect })
+  mockUpdate.mockReturnValue({ eq: mockEq })
+  mockFrom.mockReturnValue({ update: mockUpdate })
 }
 
-/** Sets up the Supabase .from().update().eq() chain to return a DB error. */
+/** Sets up the chain to return a DB error (causes updateUserTier to throw → 500). */
 function mockDbError(message: string) {
-  const eq = vi.fn().mockResolvedValue({ error: { message } })
-  const update = vi.fn().mockReturnValue({ eq })
-  mockFrom.mockReturnValue({ update })
+  const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: { message } })
+  const mockSelect = vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle })
+  mockEq.mockReturnValue({ select: mockSelect })
+  mockUpdate.mockReturnValue({ eq: mockEq })
+  mockFrom.mockReturnValue({ update: mockUpdate })
 }
 
 describe('POST /api/webhooks/stripe', () => {
@@ -109,6 +119,9 @@ describe('POST /api/webhooks/stripe', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.received).toBe(true)
+    expect(mockFrom).toHaveBeenCalledWith('users')
+    expect(mockUpdate).toHaveBeenCalledWith({ tier: 'pro' })
+    expect(mockEq).toHaveBeenCalledWith('id', 'user-123')
   })
 
   it('returns 500 for checkout.session.completed with unknown price ID', async () => {
@@ -144,6 +157,9 @@ describe('POST /api/webhooks/stripe', () => {
 
     const res = await POST(makeRequest('{}'))
     expect(res.status).toBe(200)
+    expect(mockFrom).toHaveBeenCalledWith('users')
+    expect(mockUpdate).toHaveBeenCalledWith({ tier: 'power' })
+    expect(mockEq).toHaveBeenCalledWith('id', 'user-123')
   })
 
   it('returns 200 (skip) for customer.subscription.updated with unknown price ID', async () => {
@@ -162,6 +178,7 @@ describe('POST /api/webhooks/stripe', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.received).toBe(true)
+    expect(mockFrom).not.toHaveBeenCalled()
   })
 
   it('handles customer.subscription.deleted and sets tier to free', async () => {
@@ -177,6 +194,9 @@ describe('POST /api/webhooks/stripe', () => {
 
     const res = await POST(makeRequest('{}'))
     expect(res.status).toBe(200)
+    expect(mockFrom).toHaveBeenCalledWith('users')
+    expect(mockUpdate).toHaveBeenCalledWith({ tier: 'free' })
+    expect(mockEq).toHaveBeenCalledWith('id', 'user-123')
   })
 
   it('returns 500 when DB update throws (infrastructure failure)', async () => {

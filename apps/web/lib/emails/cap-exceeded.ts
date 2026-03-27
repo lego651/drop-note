@@ -1,20 +1,10 @@
-import { Resend } from 'resend'
-import { Redis } from '@upstash/redis'
-
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY!)
-}
-
-function getRedis() {
-  return new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  })
-}
+import { escapeHtml } from '@drop-note/shared'
+import { getResend, getRedis } from './shared'
 
 interface CapExceededParams {
   to: string
   userId: string
+  tier: string
   currentCount: number
   tierLimit: number
   emailSubject: string
@@ -23,6 +13,7 @@ interface CapExceededParams {
 export async function sendCapExceededEmail({
   to,
   userId,
+  tier,
   currentCount,
   tierLimit,
   emailSubject,
@@ -44,8 +35,8 @@ export async function sendCapExceededEmail({
     subject: 'Your drop-note inbox is full',
     html: `
       <p>Hi,</p>
-      <p>Your free plan stores up to <strong>${tierLimit} items</strong>. You currently have <strong>${currentCount} items</strong>.</p>
-      <p>The email you tried to send (<em>${emailSubject || '(no subject)'}</em>) was not saved.</p>
+      <p>Your <strong>${tier}</strong> plan stores up to <strong>${tierLimit} items</strong>. You currently have <strong>${currentCount} items</strong>.</p>
+      <p>The email you tried to send (<em>${escapeHtml(emailSubject || '(no subject)')}</em>) was not saved.</p>
       <p><a href="${appUrl}/pricing">Upgrade your plan</a> to save more items, or delete some from your dashboard to make room.</p>
       <p>— drop-note</p>
     `.trim(),

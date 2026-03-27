@@ -1,12 +1,15 @@
 /**
- * Maps a Stripe price ID to a tier name using env vars.
- * Returns null if the price ID is not recognized.
- *
- * Used in the webhook handler to determine which tier to assign after a checkout.
+ * Maps a Stripe price ID to a tier name.
+ * Accepts optional explicit price IDs for testability (avoids process.env mocking).
+ * Falls back to env vars when not provided.
  */
-export function priceIdToTier(priceId: string): 'pro' | 'power' | null {
+export function priceIdToTier(
+  priceId: string,
+  proPriceId: string = process.env.STRIPE_PRO_PRICE_ID ?? '',
+  powerPriceId: string = process.env.STRIPE_POWER_PRICE_ID ?? '',
+): 'pro' | 'power' | null {
   if (!priceId) return null
-  if (priceId === process.env.STRIPE_PRO_PRICE_ID) return 'pro'
-  if (priceId === process.env.STRIPE_POWER_PRICE_ID) return 'power'
+  if (priceId === proPriceId) return 'pro'
+  if (priceId === powerPriceId) return 'power'
   return null
 }

@@ -46,3 +46,20 @@ export function isOverSaveLimit(currentMonthCount: number, incomingCount: number
 export function getCurrentMonth(now: Date = new Date()): string {
   return now.toISOString().slice(0, 7)
 }
+
+/** MIME types accepted for attachment processing (ingest counting + worker processing) */
+export const ALLOWED_ATTACHMENT_MIMES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+])
+
+/**
+ * Returns true if the MIME type is allowed for attachment processing.
+ * Allows all text/* types plus the explicit ALLOWED_ATTACHMENT_MIMES set.
+ */
+export function isAllowedMimeType(mimeType: string): boolean {
+  return mimeType.startsWith('text/') || ALLOWED_ATTACHMENT_MIMES.has(mimeType)
+}

@@ -1,23 +1,21 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import type { Database } from '@drop-note/shared'
 import { priceIdToTier } from '@drop-note/shared'
 import { stripe } from '../../../../lib/stripe'
-
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-)
+import { supabaseAdmin } from '../../../../lib/supabase/admin'
 
 async function updateUserTier(userId: string, tier: 'free' | 'pro' | 'power') {
-  const { error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('users')
     .update({ tier })
     .eq('id', userId)
+    .select('id')
+    .maybeSingle()
 
   if (error) {
     throw new Error(`[webhook] Failed to update tier for user ${userId}: ${error.message}`)
+  }
+  if (!data) {
+    throw new Error(`[webhook] User ${userId} not found — tier update matched 0 rows. Orphaned payment.`)
   }
 }
 

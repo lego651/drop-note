@@ -1,12 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
-import type { Database } from '@drop-note/shared'
 import { stripe } from './stripe'
-
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-)
+import { supabaseAdmin } from './supabase/admin'
 
 /**
  * Returns the Stripe customer ID for a user, creating one if it doesn't exist.
