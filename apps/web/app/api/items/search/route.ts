@@ -7,8 +7,15 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const q = searchParams.get('q') ?? ''
+    const trimmed = q.trim()
 
-    if (q.trim().length < 2) {
+    if (trimmed.length === 0) {
+      return NextResponse.json({ error: 'q is required' }, { status: 400 })
+    }
+    if (trimmed.length > 200) {
+      return NextResponse.json({ error: 'q must be 200 characters or fewer' }, { status: 400 })
+    }
+    if (trimmed.length < 2) {
       return NextResponse.json([])
     }
 
@@ -29,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { data: items, error } = await supabase.rpc('search_items', {
-      query: q.trim(),
+      query: trimmed,
     })
 
     if (error) {

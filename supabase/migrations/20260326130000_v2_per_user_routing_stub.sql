@@ -1,0 +1,21 @@
+-- V2 migration stub: per-user inbound address routing
+-- Status: STUB ONLY — do not apply to production
+--
+-- Purpose: Switch from shared inbox (drop@dropnote.com → user lookup by FROM email)
+--          to per-user address (drop+[token]@dropnote.com → user lookup by drop_token)
+--
+-- Prerequisites before activating:
+--   1. SendGrid catch-all wildcard routing: *@dropnote.com → /api/ingest
+--   2. Update /api/ingest to extract token from TO header (see docs/v2-per-user-routing.md)
+--   3. Confirm users.drop_token UNIQUE constraint exists (it does — Sprint 1)
+--
+-- No SQL changes needed. All schema is already in place.
+-- This stub file exists to mark the migration point and document the code change needed.
+
+-- Code change required in apps/web/app/api/ingest/route.ts:
+-- 1. Extract token from SendGrid TO header:
+--    const token = toAddress.match(/drop\+([^@]+)@/)?.[1]
+-- 2. If token found: lookup by drop_token
+--    .from('users').select('id, tier').eq('drop_token', token)
+-- 3. If no token: fallback to FROM email lookup (backwards compat during transition)
+--    .from('users').select('id, tier').eq('email', senderEmail)

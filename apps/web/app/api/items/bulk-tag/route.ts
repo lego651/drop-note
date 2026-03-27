@@ -20,6 +20,14 @@ export async function POST(request: NextRequest) {
     if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ tagged: 0 })
     }
+    if (ids.length > 100) {
+      return NextResponse.json({ error: 'Cannot tag more than 100 items at once' }, { status: 400 })
+    }
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    const invalidId = ids.find((id) => typeof id !== 'string' || !UUID_RE.test(id))
+    if (invalidId !== undefined) {
+      return NextResponse.json({ error: 'All ids must be valid UUIDs' }, { status: 400 })
+    }
     if (!tag || typeof tag !== 'string' || !tag.trim()) {
       return NextResponse.json({ error: 'tag is required' }, { status: 400 })
     }

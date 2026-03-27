@@ -9,8 +9,8 @@ export async function GET(request: NextRequest) {
     const cronSecret = process.env.CRON_SECRET
 
     if (!cronSecret) {
-      console.error('[purge-trash] CRON_SECRET env var is not configured — cron will never run')
-      return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
+      console.warn('[purge-trash] CRON_SECRET env var is not configured — skipping purge')
+      return NextResponse.json({ skipped: true }, { status: 200 })
     }
 
     if (authHeader !== `Bearer ${cronSecret}`) {

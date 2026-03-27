@@ -1,8 +1,36 @@
 import { NextResponse } from 'next/server'
+import { createHash } from 'crypto'
+import { Redis } from '@upstash/redis'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
+function getRedis() {
+  return new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  })
+}
+
 export async function POST(request: Request) {
+  // Rate limit: 5 attempts per IP per hour
+  try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      ?? request.headers.get('x-real-ip')
+      ?? 'unknown'
+    const hour = Math.floor(Date.now() / 3_600_000)
+    const hashedIp = createHash('sha256').update(ip).digest('hex').slice(0, 16)
+    const rateLimitKey = `register:${hashedIp}:${hour}`
+    const redis = getRedis()
+    const attempts = await redis.incr(rateLimitKey)
+    if (attempts === 1) await redis.expire(rateLimitKey, 3600)
+    if (attempts > 5) {
+      return NextResponse.json({ error: 'Too many registration attempts. Try again later.' }, { status: 429 })
+    }
+  } catch (err) {
+    console.error('[register] Redis rate-limit check failed, continuing:', err instanceof Error ? err.message : err)
+    // fail open — don't block registration if Redis is unavailable
+  }
+
   let body: { email?: string; code?: string }
   try {
     body = await request.json()

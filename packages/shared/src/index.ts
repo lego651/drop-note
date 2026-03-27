@@ -1,3 +1,5 @@
+export type { AIProvider } from './ai-provider'
+export { OpenAIProvider, AnthropicProvider, GeminiProvider, createAIProvider } from './ai-provider'
 export * from './auth'
 export * from './email'
 export * from './env'

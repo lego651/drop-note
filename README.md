@@ -1,20 +1,73 @@
 # drop-note
 
-Save anything by email. AI organizes it.
+**Email anything. Find it later.**
 
-Forward or email any content to your drop address — articles, links, files, images. An AI pipeline summarizes and tags each item automatically. Browse, search, and manage everything from a clean dashboard.
-
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![CI](https://github.com/YOUR_ORG/drop-note/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_ORG/drop-note/actions/workflows/ci.yml)
 
 ---
 
-## How it works
+drop-note is an email-to-dashboard content saver. Email anything to `drop@dropnote.com` from your registered address and an AI pipeline automatically summarizes and tags it. Browse, search, pin, and manage everything from a clean web dashboard — no browser extension, no app to install.
 
-1. Register on the dashboard
-2. Email anything to `drop@dropnote.com` from your registered address
-3. AI summarizes and tags it within seconds
-4. Browse, search, and manage from your dashboard
+Free tier available. Pro ($9.99/mo) and Power ($49.99/mo) plans for higher volume. Fully self-hostable under AGPL-3.0.
+
+---
+
+<!-- TODO: add dashboard screenshot -->
+
+---
+
+## Use the SaaS version
+
+[dropnote.com](https://dropnote.com) — free tier, no credit card required.
+
+---
+
+## Self-hosted quickstart
+
+You'll need Docker Desktop and a Supabase project (free tier works).
+
+1. Clone the repo and copy the env template:
+   ```bash
+   git clone https://github.com/YOUR_ORG/drop-note.git
+   cd drop-note
+   cp .env.example .env
+   ```
+
+2. Fill in `.env` with your Supabase URL, anon key, service role key, and any other required values (see `.env.example` for the full list).
+
+3. Apply the database schema:
+   ```bash
+   npx supabase db push --linked
+   ```
+
+4. Start the stack:
+   ```bash
+   docker compose up
+   ```
+
+5. Open `http://localhost:3000`, register with your email, and send a test email to the ingest address configured in your `.env`.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full local development guide.
+
+---
+
+## Architecture
+
+```mermaid
+graph LR
+    A[Email] --> B[SendGrid Inbound Parse]
+    B --> C[/api/ingest]
+    C --> D[BullMQ Queue]
+    D --> E[Worker]
+    E --> F[OpenAI / Anthropic / Gemini]
+    F --> G[Supabase DB]
+    H[Dashboard\nNext.js] --> G
+    G --> I[Supabase Realtime]
+    I --> H
+```
+
+An inbound email hits SendGrid's Inbound Parse webhook, which POSTs the payload to `/api/ingest`. The route handler validates the sender, writes a pending item to Supabase, and enqueues a job in BullMQ (Redis). The worker picks up the job, calls the configured AI provider to summarize and tag the content, and writes the result back to Supabase. The dashboard receives the update in real time via Supabase Realtime.
 
 ---
 
@@ -22,75 +75,29 @@ Forward or email any content to your drop address — articles, links, files, im
 
 | Layer | Choice |
 |---|---|
-| Frontend | Next.js 14 + TypeScript + shadcn/ui + Tailwind |
+| Frontend | Next.js 14 (App Router) + TypeScript + shadcn/ui + Tailwind |
 | Database | Supabase (Postgres + RLS) |
-| Auth | Supabase Auth (magic link) |
+| Auth | Supabase Auth (magic link — no passwords) |
+| File Storage | Supabase Storage |
 | Email Inbound | SendGrid Inbound Parse |
-| Queue | BullMQ + Redis |
-| AI | OpenAI GPT-4o-mini (SaaS); configurable via `.env` (self-hosted) |
+| Queue | BullMQ + Redis (Upstash) |
+| AI | OpenAI GPT-4o-mini (SaaS); configurable for self-hosted |
 | Email Sending | Resend |
 | Payments | Stripe |
+| Error Monitoring | Sentry |
 | Deployment | Vercel (web) + Railway (worker) |
-| Self-hosted | Docker Compose |
+| Monorepo | pnpm workspaces + Turborepo |
 
 ---
 
-## Self-hosted quickstart
+## Contributing
 
-**Requirements:** Node 20+, pnpm, Docker, a Supabase project, an inbound email webhook provider (SendGrid recommended).
-
-```bash
-git clone https://github.com/YOUR_ORG/drop-note.git
-cd drop-note
-cp .env.example .env.local
-# Fill in .env.local with your credentials
-pnpm install
-pnpm --filter @drop-note/web dev
-```
-
-For the full self-hosted setup including the BullMQ worker and Docker Compose, see [CONTRIBUTING.md](./CONTRIBUTING.md).
-
----
-
-## Monorepo structure
-
-```
-drop-note/
-├── apps/
-│   ├── web/        # Next.js 14 dashboard (Vercel)
-│   └── worker/     # BullMQ AI processing worker (Railway / Docker)
-├── packages/
-│   └── shared/     # Shared TypeScript types, helpers, prompts
-├── supabase/
-│   └── migrations/ # SQL migration files
-├── e2e/            # Playwright end-to-end tests
-└── docs/           # Architecture, sprint plans, design guide
-```
-
----
-
-## Tiers
-
-| Tier | Items | Actions/month | Attachment size | Price |
-|---|---|---|---|---|
-| Free | 20 | 30 | 10MB | $0 |
-| Pro | 100 | Unlimited | 25MB | $9.99/mo |
-| Power | 500 | Unlimited | 50MB | $49.99/mo |
-
----
-
-## Development
-
-```bash
-pnpm install          # install all workspace deps
-pnpm turbo lint       # lint all packages
-pnpm turbo typecheck  # typecheck all packages
-pnpm test             # run unit tests (Vitest)
-pnpm e2e              # run Playwright smoke tests
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for prerequisites, local dev setup, code conventions, and the PR process.
 
 ---
 
 ## License
 
-[AGPL-3.0](./LICENSE) — free to self-host. SaaS available at [dropnote.com](https://dropnote.com).
+drop-note is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+
+If you run a modified version of drop-note as a network service, you must make your modified source code available to users of that service under the same license.
