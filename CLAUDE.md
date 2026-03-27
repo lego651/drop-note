@@ -109,7 +109,7 @@ npx supabase migration list --linked  # check migration status
   - Middleware: `lib/supabase/middleware.ts` → `updateSession()`
 - **Shared code** goes in `packages/shared/src/` — imported as `@drop-note/shared`
 - **SQL migrations** — write migration files, never use the Supabase GUI to change schema
-- **No module-level env var access** — never call `requireEnv()` or read `process.env` at the top level of a module. Next.js imports all route modules at build time; env var reads must happen inside request handlers or lazy initializers. Use a lazy singleton (e.g. the Proxy pattern in `lib/supabase/admin.ts`) for clients that need secrets.
+- **No module-level env var access** — never call `requireEnv()` or read `process.env` at the top level of a module. Next.js imports all route modules at build time; env var reads must happen inside request handlers or lazy initializers. Use a lazy singleton (the Proxy pattern in `lib/supabase/admin.ts` and `lib/stripe.ts`) for any client that needs a secret key. This applies to Stripe, Redis, Resend, OpenAI — every service client.
 - **No `as any` outside tests** — use `unknown` + narrowing or `Record<string | symbol, unknown>` instead. Test files (`*.test.ts`) are exempt.
 - **ESLint config** — `apps/web/.eslintrc.json` extends `next/core-web-vitals`. Do not remove it. Inline `eslint-disable` comments for `@next/next/*` and `react-hooks/*` rules only work when the config loads those plugins.
 
