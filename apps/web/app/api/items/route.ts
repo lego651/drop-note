@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
-import { deleteItem } from '@/lib/items'
+import { deleteItems } from '@/lib/items'
 
 // DELETE /api/items
 // Body: { ids: string[] }
@@ -40,12 +40,8 @@ export async function DELETE(request: NextRequest) {
 
     const tier = (userData?.tier ?? 'free') as 'free' | 'pro' | 'power'
 
-    // Delete each item; IDs not owned by user are silently skipped (WHERE user_id handles it)
-    let deleted = 0
-    for (const id of ids) {
-      const result = await deleteItem(id, user.id, tier)
-      if (result.affected) deleted++
-    }
+    // Delete items in bulk; IDs not owned by user are silently skipped (WHERE user_id handles it)
+    const { deleted } = await deleteItems(ids, user.id, tier)
 
     return NextResponse.json({ deleted })
   } catch (err) {

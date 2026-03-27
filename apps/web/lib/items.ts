@@ -94,3 +94,59 @@ export async function deleteItem(
     }
   }
 }
+
+export async function deleteItems(
+  ids: string[],
+  userId: string,
+  tier: 'free' | 'pro' | 'power',
+  client?: Pick<SupabaseClient, 'from'>,
+): Promise<{ deleted: number }> {
+  const db = client ?? (supabaseAdmin as unknown as Pick<SupabaseClient, 'from'>)
+
+  if (tier === 'free') {
+    // Free tier: single hard-delete query
+    const { data, error } = await db
+      .from('items')
+      .delete()
+      .in('id', ids)
+      .eq('user_id', userId)
+      .select('id')
+    if (error) return { deleted: 0 }
+    return { deleted: data?.length ?? 0 }
+  } else {
+    // Paid tier: split into already-trashed (hard-delete) vs not-yet-trashed (soft-delete)
+    const { data: existing, error: fetchErr } = await db
+      .from('items')
+      .select('id, deleted_at')
+      .in('id', ids)
+      .eq('user_id', userId)
+    if (fetchErr || !existing) return { deleted: 0 }
+
+    const trashed = existing.filter((r) => r.deleted_at !== null).map((r) => r.id)
+    const notTrashed = existing.filter((r) => r.deleted_at === null).map((r) => r.id)
+
+    let deleted = 0
+
+    if (trashed.length > 0) {
+      const { data } = await db
+        .from('items')
+        .delete()
+        .in('id', trashed)
+        .eq('user_id', userId)
+        .select('id')
+      deleted += data?.length ?? 0
+    }
+
+    if (notTrashed.length > 0) {
+      const { data } = await db
+        .from('items')
+        .update({ deleted_at: new Date().toISOString() })
+        .in('id', notTrashed)
+        .eq('user_id', userId)
+        .select('id')
+      deleted += data?.length ?? 0
+    }
+
+    return { deleted }
+  }
+}
