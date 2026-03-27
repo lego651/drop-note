@@ -2,10 +2,61 @@
 
 > Run through this checklist manually before announcing the beta.
 
+---
+
+## Pre-domain testing (current state — no domain yet)
+
+The full email pipeline (real email → SendGrid → `/api/ingest`) requires MX records on `dropnote.com`, which isn't acquired yet. Until then, use curl to simulate a SendGrid Inbound Parse POST directly.
+
+**How to simulate an inbound email:**
+
+```bash
+curl -X POST "https://drop-note-pi.vercel.app/api/ingest?key=YOUR_SENDGRID_WEBHOOK_SECRET" \
+  -F "from=jasonusca@gmail.com" \
+  -F "to=legogao651@gmail.com" \
+  -F "subject=Test email subject" \
+  -F "text=This is the email body content that will be summarized by AI." \
+  -F "envelope={\"from\":\"jasonusca@gmail.com\",\"to\":[\"legogao651@gmail.com\"]}"
+```
+
+- Replace `YOUR_SENDGRID_WEBHOOK_SECRET` with the value of `SENDGRID_WEBHOOK_SECRET` in your Vercel env vars
+- Replace `jasonusca@gmail.com` with any registered user's email — unregistered senders are silently dropped
+- A successful call returns `{"ok":true}` and the item appears in the dashboard within ~30s
+
+**To add attachments (image or PDF):**
+```bash
+curl -X POST "https://drop-note-pi.vercel.app/api/ingest?key=YOUR_SENDGRID_WEBHOOK_SECRET" \
+  -F "from=jasonusca@gmail.com" \
+  -F "to=legogao651@gmail.com" \
+  -F "subject=Email with attachment" \
+  -F "text=See attached." \
+  -F "attachment1=@/path/to/file.pdf" \
+  -F "attachment-info={\"attachment1\":{\"filename\":\"file.pdf\",\"type\":\"application/pdf\",\"name\":\"file.pdf\"}}" \
+  -F "envelope={\"from\":\"jasonusca@gmail.com\",\"to\":[\"legogao651@gmail.com\"]}"
+```
+
+---
+
 ## Infrastructure
 - [ ] `dropnote.com` domain acquired
 - [ ] MX records configured on domain pointing to SendGrid
-- [ ] SendGrid Inbound Parse webhook URL set to `https://dropnote.com/api/ingest`
+
+  **How to do this once you have the domain:**
+  1. In SendGrid → Settings → **Sender Authentication** → authenticate `dropnote.com` (generates SPF/DKIM DNS records)
+  2. Add those DNS records in your domain registrar
+  3. In SendGrid → Settings → **Inbound Parse** → click **Add Host & URL**:
+     - Hostname: `dropnote.com`
+     - URL: `https://dropnote.com/api/ingest?key=YOUR_SENDGRID_WEBHOOK_SECRET`
+     - Check "Send Raw" OFF (structured parse is what the code expects)
+     - Check "Spam Check" ON
+  4. At your domain registrar, add MX record:
+     - Host: `@` (or `dropnote.com`)
+     - Value: `mx.sendgrid.net`
+     - Priority: `10`
+  5. Wait for DNS propagation (5 min – 48 hrs). Test with SendGrid's "Send Test" button.
+  6. Send a real email to `drop@dropnote.com` and confirm it appears in the dashboard.
+
+- [ ] SendGrid Inbound Parse webhook URL set to `https://dropnote.com/api/ingest?key=YOUR_SENDGRID_WEBHOOK_SECRET`
 - [ ] SendGrid domain authentication (SPF/DKIM) verified
 - [ ] Vercel project linked to production domain
 - [ ] All Vercel env vars set to production values (not test values, not `.env.example` examples)
