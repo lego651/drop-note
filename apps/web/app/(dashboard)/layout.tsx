@@ -15,13 +15,26 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/login')
   }
 
-  const [{ data: userData }, { count: itemCount }] = await Promise.all([
+  const [
+    { data: userData },
+    { count: itemCount },
+    { data: tagsData },
+    { data: monthData },
+    { count: trashCount },
+  ] = await Promise.all([
     supabase.from('users').select('tier').eq('id', user.id).single(),
     supabase
       .from('items')
       .select('*', { count: 'exact', head: true })
       .is('deleted_at', null),
-      // RLS: items policy enforces user_id = auth.uid(), no need for .eq()
+    // RLS: items policy enforces user_id = auth.uid(), no need for .eq()
+    supabase.rpc('get_tags_with_counts', { p_user_id: user.id }),
+    supabase.rpc('get_month_counts', { p_user_id: user.id }),
+    supabase
+      .from('items')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .not('deleted_at', 'is', null),
   ])
 
   const tier = (userData?.tier ?? 'free') as Tier
@@ -35,7 +48,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
       >
         Skip to content
       </a>
-      <Sidebar userEmail={user.email ?? ''} />
+      <Sidebar
+        userEmail={user.email ?? ''}
+        tags={tagsData ?? []}
+        monthCounts={monthData ?? []}
+        trashCount={trashCount ?? 0}
+      />
       <main id="main" className="flex-1 min-w-0 overflow-y-auto">
         {isOverCap && <OverCapBanner itemCount={itemCount ?? 0} tier={tier} />}
         {children}
