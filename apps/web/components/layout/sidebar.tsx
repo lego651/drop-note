@@ -71,7 +71,7 @@ function SidebarLink({
 }
 
 // Inner component that uses useSearchParams (requires Suspense boundary)
-function SidebarNav({
+export function SidebarNav({
   userEmail,
   tags = [],
   monthCounts = [],
@@ -128,7 +128,7 @@ function SidebarNav({
   ]
 
   return (
-    <aside className="flex flex-col w-60 h-screen border-r border-border bg-background shrink-0">
+    <aside className="hidden md:flex flex-col w-60 h-screen border-r border-border bg-background shrink-0">
       {/* Logo */}
       <div className="h-14 flex items-center px-4 border-b border-border">
         <span className="text-sm font-semibold tracking-tight">drop-note</span>
@@ -142,7 +142,7 @@ function SidebarNav({
             <Inbox size={16} />
             All Items
           </SidebarLink>
-          <SidebarLink href="/dashboard/settings" isActive={pathname === '/dashboard/settings'}>
+          <SidebarLink href="/settings" isActive={pathname === '/settings'}>
             <Settings size={16} />
             Settings
           </SidebarLink>
@@ -300,7 +300,7 @@ export function Sidebar(props: SidebarProps) {
   return (
     <Suspense
       fallback={
-        <aside className="flex flex-col w-60 h-screen border-r border-border bg-background shrink-0">
+        <aside className="hidden md:flex flex-col w-60 h-screen border-r border-border bg-background shrink-0">
           <div className="h-14 flex items-center px-4 border-b border-border">
             <span className="text-sm font-semibold tracking-tight">drop-note</span>
           </div>

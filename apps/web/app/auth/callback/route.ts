@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
+import { supabaseAdmin } from '../../../lib/supabase/admin'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? ''
@@ -13,6 +14,16 @@ export async function GET(request: Request) {
     if (!error) {
       // Check if this is a first sign-in and send welcome email
       const { data: { user } } = await supabase.auth.getUser()
+
+      // Consume invite code cookie if present (S503)
+      const inviteCode = request.cookies.get('invite_code')?.value
+      if (inviteCode && user) {
+        await supabaseAdmin
+          .from('invite_codes')
+          .update({ used_by: user.id, used_at: new Date().toISOString() })
+          .eq('code', inviteCode)
+          .is('used_by', null)
+      }
       if (user?.email) {
         const { data: profile } = await supabase
           .from('users')

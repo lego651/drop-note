@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/sidebar'
+import { MobileSidebar } from '@/components/layout/MobileSidebar'
 import { OverCapBanner } from '@/components/OverCapBanner'
 import { TIER_ITEM_LIMITS } from '@drop-note/shared'
 import type { Tier } from '@drop-note/shared'
@@ -54,10 +55,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
         monthCounts={monthData ?? []}
         trashCount={trashCount ?? 0}
       />
-      <main id="main" className="flex-1 min-w-0 overflow-y-auto">
-        {isOverCap && <OverCapBanner itemCount={itemCount ?? 0} tier={tier} />}
-        {children}
-      </main>
+      <div className="flex flex-col flex-1 min-w-0">
+        {/* Mobile top bar */}
+        <header className="md:hidden flex items-center gap-2 border-b border-border px-3 py-2 shrink-0">
+          <MobileSidebar
+            userEmail={user.email ?? ''}
+            tags={tagsData ?? []}
+            monthCounts={monthData ?? []}
+            trashCount={trashCount ?? 0}
+          />
+          <span className="text-sm font-semibold">drop-note</span>
+        </header>
+        <main id="main" className="flex-1 min-w-0 overflow-y-auto">
+          {isOverCap && <OverCapBanner itemCount={itemCount ?? 0} tier={tier} />}
+          {children}
+        </main>
+      </div>
     </div>
   )
 }

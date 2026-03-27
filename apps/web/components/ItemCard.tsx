@@ -44,6 +44,7 @@ export function ItemCard({
         isFailed && 'border-destructive',
         isDone && 'hover:bg-accent/50 cursor-pointer',
         isSelected && 'ring-2 ring-ring',
+        isProcessing && 'motion-safe:animate-pulse',
       )}
     >
       {/* Checkbox — visible in bulk mode */}

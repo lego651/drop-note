@@ -1,8 +1,15 @@
 import 'dotenv/config'
+import * as Sentry from '@sentry/node'
 import IORedis from 'ioredis'
 import { Worker } from 'bullmq'
 import { QUEUE_NAME } from '@drop-note/shared'
 import { processEmail } from './processors/email'
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  tracesSampleRate: 0.1,
+  environment: process.env.NODE_ENV,
+})
 
 const connection = new IORedis(process.env.REDIS_URL!, {
   maxRetriesPerRequest: null,
@@ -19,6 +26,11 @@ worker.on('completed', (job) => {
 
 worker.on('failed', (job, err) => {
   console.error(`[worker] Job ${job?.id} failed:`, err.message)
+  Sentry.withScope((scope) => {
+    scope.setTag('jobId', job?.id ?? 'unknown')
+    scope.setTag('jobName', job?.name ?? 'unknown')
+    Sentry.captureException(err)
+  })
 })
 
 console.log(`Worker started, listening on queue: ${QUEUE_NAME}`)

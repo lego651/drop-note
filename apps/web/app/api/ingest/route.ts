@@ -157,6 +157,26 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     if (!user) {
+      // Track unknown sender attempts; auto-block after 10 within 24h
+      try {
+        const abuseRedis = getRedis()
+        const abuseKey = `abuse:unknown_sender:${senderEmail}`
+        const attempts = await abuseRedis.incr(abuseKey)
+        if (attempts === 1) {
+          await abuseRedis.expire(abuseKey, 86400) // 24hr TTL on first increment
+        }
+        if (attempts >= 10) {
+          await supabase
+            .from('block_list')
+            .upsert(
+              { type: 'email', value: senderEmail, created_by: null },
+              { onConflict: 'type,value', ignoreDuplicates: true }
+            )
+        }
+      } catch (err) {
+        console.error('[ingest] Auto-block redis error:', err)
+        // Continue — Redis failure must not prevent normal ingest flow
+      }
       return NextResponse.json({ ok: true }, { status: 200 })
     }
 

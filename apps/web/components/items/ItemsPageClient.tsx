@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRealtimeItems } from '@/hooks/useRealtimeItems'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Search, Copy, Check } from 'lucide-react'
@@ -22,6 +23,7 @@ interface ItemsPageClientProps {
   page: number
   initialQuery?: string
   userTier?: Tier
+  userId: string
 }
 
 export function ItemsPageClient(props: ItemsPageClientProps) {
@@ -38,6 +40,7 @@ function ItemsPageClientInner({
   page,
   initialQuery = '',
   userTier = 'free',
+  userId,
 }: ItemsPageClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -52,12 +55,34 @@ function ItemsPageClientInner({
   const [copied, setCopied] = useState(false)
   const [optimisticItems, setOptimisticItems] = useState<ItemSummary[]>(items)
 
+  const { newItems, updatedItems } = useRealtimeItems(userId)
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Keep optimistic items in sync when server props change
   useEffect(() => {
     setOptimisticItems(items)
   }, [items])
+
+  // Apply realtime updates to optimistic items
+  useEffect(() => {
+    if (updatedItems.length === 0) return
+    setOptimisticItems(prev => prev.map(item => {
+      const updated = updatedItems.find(u => u.id === item.id)
+      return updated ?? item
+    }))
+  }, [updatedItems])
+
+  // Prepend new items (dedup)
+  useEffect(() => {
+    if (newItems.length === 0) return
+    setOptimisticItems(prev => {
+      const existingIds = new Set(prev.map(i => i.id))
+      const truly_new = newItems.filter(n => !existingIds.has(n.id))
+      if (truly_new.length === 0) return prev
+      return [...truly_new, ...prev]
+    })
+  }, [newItems])
 
   // Read view preference from localStorage on mount
   useEffect(() => {

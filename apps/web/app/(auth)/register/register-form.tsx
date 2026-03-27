@@ -1,17 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 
-const supabase = createClient()
-
-interface LoginFormProps {
-  redirectTo?: string
+interface RegisterFormProps {
+  needsCode: boolean
 }
 
-export default function LoginForm({ redirectTo }: LoginFormProps) {
+export function RegisterForm({ needsCode }: RegisterFormProps) {
   const [email, setEmail] = useState('')
+  const [code, setCode] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -21,19 +19,16 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
     setLoading(true)
     setError('')
 
-    const emailRedirectTo = redirectTo
-      ? `${location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
-      : `${location.origin}/auth/callback`
-
-    const { error: signInError } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo,
-      },
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code: needsCode ? code : undefined }),
     })
 
-    if (signInError) {
-      setError(signInError.message)
+    const data = await res.json()
+
+    if (!res.ok) {
+      setError(data.error ?? 'Something went wrong')
       setLoading(false)
       return
     }
@@ -61,7 +56,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
       <div className="w-full max-w-sm space-y-6 px-6">
         <div className="space-y-1 text-center">
           <h1 className="text-2xl font-semibold">drop-note</h1>
-          <p className="text-sm text-muted-foreground">Sign in with your email</p>
+          <p className="text-sm text-muted-foreground">Create your account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -73,6 +68,16 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
             required
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
+          {needsCode && (
+            <input
+              type="text"
+              placeholder="Invite code (e.g. ABCD-EFGH-IJKL)"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              required
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring font-mono"
+            />
+          )}
           {error && <p className="text-xs text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Sending…' : 'Send magic link'}
@@ -80,9 +85,9 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
         </form>
 
         <p className="text-center text-xs text-muted-foreground">
-          New here?{' '}
-          <a href="/register" className="underline">
-            Create an account
+          Already have an account?{' '}
+          <a href="/login" className="underline">
+            Sign in
           </a>
         </p>
       </div>

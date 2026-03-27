@@ -60,6 +60,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
         page={page}
         initialQuery={q ?? ''}
         userTier={userTier}
+        userId={user.id}
       />
     )
   }
@@ -101,6 +102,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       page={page}
       initialQuery={q ?? ''}
       userTier={userTier}
+      userId={user.id}
     />
   )
 }
