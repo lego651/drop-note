@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
@@ -7,8 +8,11 @@ import { Pin, Trash2, Play } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
+import { VideoModal } from '@/components/VideoModal'
 import { cn } from '@/lib/utils'
 import type { ItemSummary } from '@/lib/items'
+
+const YOUTUBE_ID_RE = /(?:[?&]v=|youtu\.be\/|youtube\.com\/(?:shorts|live|embed)\/)([a-zA-Z0-9_-]{11})/
 
 interface ItemCardProps {
   item: ItemSummary
@@ -27,6 +31,8 @@ export function ItemCard({
   onPinChange,
   onDelete,
 }: ItemCardProps) {
+  const [videoOpen, setVideoOpen] = useState(false)
+
   const tags = item.item_tags
     ?.map((it) => it.tags)
     .filter((t): t is { id: string; name: string } => t !== null) ?? []
@@ -37,6 +43,10 @@ export function ItemCard({
   const isFailed = item.status === 'failed'
   const isProcessing = item.status === 'processing' || item.status === 'pending'
   const isDone = item.status === 'done'
+
+  const youtubeId = item.source_type === 'youtube' && item.source_url
+    ? (item.source_url.match(YOUTUBE_ID_RE)?.[1] ?? null)
+    : null
 
   const cardContent = (
     <div
@@ -99,7 +109,16 @@ export function ItemCard({
 
       {/* Thumbnail — YouTube / video items */}
       {isDone && item.thumbnail_url && (
-        <div className="relative w-full overflow-hidden rounded-md aspect-video bg-muted">
+        <button
+          type="button"
+          aria-label="Watch video"
+          className="relative w-full overflow-hidden rounded-md aspect-video bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            if (youtubeId) setVideoOpen(true)
+          }}
+        >
           <Image
             src={item.thumbnail_url}
             alt={item.subject ?? 'Video thumbnail'}
@@ -108,14 +127,14 @@ export function ItemCard({
             sizes="(max-width: 640px) 100vw, 320px"
             unoptimized
           />
-          {item.source_type === 'youtube' && (
+          {youtubeId && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="rounded-full bg-background/80 p-2">
+              <div className="rounded-full bg-background/80 p-2 group-hover:scale-110 transition-transform">
                 <Play size={16} className="fill-foreground text-foreground" />
               </div>
             </div>
           )}
-        </div>
+        </button>
       )}
 
       {/* Summary / skeleton */}
@@ -169,13 +188,23 @@ export function ItemCard({
     </div>
   )
 
-  if (isDone) {
-    return (
-      <Link href={`/items/${item.id}`} className="block" tabIndex={isBulkMode ? -1 : 0}>
-        {cardContent}
-      </Link>
-    )
-  }
+  return (
+    <>
+      {isDone ? (
+        <Link href={`/items/${item.id}`} className="block" tabIndex={isBulkMode ? -1 : 0}>
+          {cardContent}
+        </Link>
+      ) : (
+        cardContent
+      )}
 
-  return cardContent
+      {videoOpen && youtubeId && (
+        <VideoModal
+          videoId={youtubeId}
+          title={item.subject ?? 'Video'}
+          onClose={() => setVideoOpen(false)}
+        />
+      )}
+    </>
+  )
 }
