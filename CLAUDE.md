@@ -91,6 +91,8 @@ npx supabase db push --linked         # apply migrations to remote DB
 npx supabase migration list --linked  # check migration status
 ```
 
+> **Before pushing to Vercel:** run `pnpm turbo lint && pnpm turbo typecheck && pnpm --filter @drop-note/web build` locally. Vercel runs all three and a build failure blocks the deployment.
+
 > **IMPORTANT:** Every time the database schema changes (new migration applied), run `pnpm gen:types` to regenerate `packages/shared/src/database.types.ts`. All three Supabase client factories (`client.ts`, `server.ts`, `middleware.ts`) are typed with `Database` — stale types will cause TypeScript errors or silently wrong column names across the entire app.
 
 ---
@@ -107,6 +109,9 @@ npx supabase migration list --linked  # check migration status
   - Middleware: `lib/supabase/middleware.ts` → `updateSession()`
 - **Shared code** goes in `packages/shared/src/` — imported as `@drop-note/shared`
 - **SQL migrations** — write migration files, never use the Supabase GUI to change schema
+- **No module-level env var access** — never call `requireEnv()` or read `process.env` at the top level of a module. Next.js imports all route modules at build time; env var reads must happen inside request handlers or lazy initializers. Use a lazy singleton (e.g. the Proxy pattern in `lib/supabase/admin.ts`) for clients that need secrets.
+- **No `as any` outside tests** — use `unknown` + narrowing or `Record<string | symbol, unknown>` instead. Test files (`*.test.ts`) are exempt.
+- **ESLint config** — `apps/web/.eslintrc.json` extends `next/core-web-vitals`. Do not remove it. Inline `eslint-disable` comments for `@next/next/*` and `react-hooks/*` rules only work when the config loads those plugins.
 
 ---
 
