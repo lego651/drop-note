@@ -17,6 +17,7 @@ const YOUTUBE_ID_RE = /(?:[?&]v=|youtu\.be\/|youtube\.com\/(?:shorts|live|embed)
 interface ItemCardProps {
   item: ItemSummary
   isBulkMode?: boolean
+  isListView?: boolean
   isSelected?: boolean
   onSelectChange?: (id: string, checked: boolean) => void
   onPinChange?: (id: string, pinned: boolean) => void
@@ -26,6 +27,7 @@ interface ItemCardProps {
 export function ItemCard({
   item,
   isBulkMode = false,
+  isListView = false,
   isSelected = false,
   onSelectChange,
   onPinChange,
@@ -51,7 +53,8 @@ export function ItemCard({
   const cardContent = (
     <div
       className={cn(
-        'group relative flex flex-col gap-1.5 rounded-lg border border-border bg-card p-3 text-left transition-colors',
+        'group relative flex gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors',
+        isListView ? 'flex-row items-start' : 'flex-col',
         isFailed && 'border-destructive',
         isDone && 'hover:bg-accent/50 cursor-pointer',
         isSelected && 'ring-2 ring-ring',
@@ -68,6 +71,8 @@ export function ItemCard({
         />
       )}
 
+      {/* Text content — fills remaining space in list view */}
+      <div className="flex flex-col gap-1.5 min-w-0 flex-1">
       {/* Header row: subject + pin */}
       <div className="flex items-start justify-between gap-2">
         <p
@@ -112,7 +117,12 @@ export function ItemCard({
         <button
           type="button"
           aria-label="Watch video"
-          className="relative w-full overflow-hidden rounded-md aspect-video bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={cn(
+            'relative shrink-0 overflow-hidden rounded-md bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            isListView
+              ? 'w-28 h-20 sm:w-36 sm:h-24'
+              : 'w-full aspect-video',
+          )}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -124,13 +134,13 @@ export function ItemCard({
             alt={item.subject ?? 'Video thumbnail'}
             fill
             className="object-cover"
-            sizes="(max-width: 640px) 100vw, 320px"
+            sizes="(max-width: 640px) 112px, 144px"
             unoptimized
           />
           {youtubeId && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="rounded-full bg-background/80 p-2 group-hover:scale-110 transition-transform">
-                <Play size={16} className="fill-foreground text-foreground" />
+              <div className="rounded-full bg-background/80 p-1.5 group-hover:scale-110 transition-transform">
+                <Play size={12} className="fill-foreground text-foreground" />
               </div>
             </div>
           )}
@@ -185,6 +195,7 @@ export function ItemCard({
           {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
         </time>
       </div>
+      </div>{/* end text content */}
     </div>
   )
 
