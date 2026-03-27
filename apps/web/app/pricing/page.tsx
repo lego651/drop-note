@@ -63,7 +63,7 @@ export default async function PricingPage({
     <div className="mx-auto max-w-5xl px-4 py-12">
       {checkoutSuccess && (
         <div className="mb-8 rounded-md border border-border bg-muted px-4 py-3 text-sm text-foreground">
-          You're all set! Your plan has been upgraded. It may take a few seconds to reflect.
+          You&apos;re all set! Your plan has been upgraded. It may take a few seconds to reflect.
         </div>
       )}
 

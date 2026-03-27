@@ -22,8 +22,6 @@ export function ItemCard({
   isBulkMode = false,
   isSelected = false,
   onSelectChange,
-  onPinChange: _onPinChange,
-  onDelete: _onDelete,
 }: ItemCardProps) {
   const tags = item.item_tags
     ?.map((it) => it.tags)

@@ -18,7 +18,7 @@ function getClient(): SupabaseClient<Database> {
 export const supabaseAdmin = new Proxy({} as SupabaseClient<Database>, {
   get(_, prop: string | symbol) {
     const client = getClient()
-    const value = (client as any)[prop]
+    const value = (client as unknown as Record<string | symbol, unknown>)[prop]
     if (typeof value === 'function') {
       return value.bind(client)
     }
