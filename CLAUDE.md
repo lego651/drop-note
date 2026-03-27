@@ -93,6 +93,10 @@ npx supabase migration list --linked  # check migration status
 
 > **Before pushing to Vercel:** run `pnpm turbo lint && pnpm turbo typecheck && pnpm --filter @drop-note/web build` locally. Vercel runs all three and a build failure blocks the deployment.
 
+> **Railway auto-deploys on push to `main`** — but there is a build delay (typically 2–4 minutes). Any emails processed during that window will use the old worker code. If you change anything in `apps/worker/` or `packages/shared/`, note that:
+> - Items processed before the Railway deploy finishes won't reflect the new logic (re-send the email to reprocess)
+> - Check the Railway dashboard to confirm the deploy succeeded before testing worker behaviour
+
 > **IMPORTANT:** Every time the database schema changes (new migration applied), run `pnpm gen:types` to regenerate `packages/shared/src/database.types.ts`. All three Supabase client factories (`client.ts`, `server.ts`, `middleware.ts`) are typed with `Database` — stale types will cause TypeScript errors or silently wrong column names across the entire app.
 
 ---
