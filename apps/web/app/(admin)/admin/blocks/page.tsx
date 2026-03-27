@@ -6,7 +6,7 @@ export const metadata = { title: 'Block List — Admin' }
 export default async function AdminBlocksPage() {
   const { data: blocks } = await supabaseAdmin
     .from('block_list')
-    .select('id, type, value, created_at')
+    .select('id, type, value, created_at, created_by')
     .order('created_at', { ascending: false })
 
   return (

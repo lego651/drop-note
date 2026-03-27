@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   let body: { email?: string; code?: string }
@@ -39,17 +40,17 @@ export async function POST(request: Request) {
     }
   }
 
-  // Send magic link via Supabase admin
-  const { error: otpError } = await supabaseAdmin.auth.admin.generateLink({
-    type: 'magiclink',
+  // Send magic link via Supabase server client
+  const supabase = await createClient()
+  const { error: otpError } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      redirectTo: `${new URL(request.url).origin}/auth/callback`,
+      emailRedirectTo: `${new URL(request.url).origin}/auth/callback`,
     },
   })
 
   if (otpError) {
-    console.error('[register] generateLink error:', otpError.message)
+    console.error('[register] signInWithOtp error:', otpError.message)
     return NextResponse.json({ error: 'Failed to send magic link' }, { status: 500 })
   }
 

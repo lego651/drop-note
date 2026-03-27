@@ -50,16 +50,32 @@ export async function POST() {
   }
 
   // Delete items (cascades to item_tags via FK)
-  await supabaseAdmin.from('items').delete().eq('user_id', user.id)
+  const { error: itemsError } = await supabaseAdmin.from('items').delete().eq('user_id', user.id)
+  if (itemsError) {
+    console.error('[account/delete] Failed to delete items:', itemsError.message)
+    return NextResponse.json({ error: 'Failed to delete account data' }, { status: 500 })
+  }
 
   // Delete tags
-  await supabaseAdmin.from('tags').delete().eq('user_id', user.id)
+  const { error: tagsError } = await supabaseAdmin.from('tags').delete().eq('user_id', user.id)
+  if (tagsError) {
+    console.error('[account/delete] Failed to delete tags:', tagsError.message)
+    return NextResponse.json({ error: 'Failed to delete account data' }, { status: 500 })
+  }
 
   // Delete usage_log entries
-  await supabaseAdmin.from('usage_log').delete().eq('user_id', user.id)
+  const { error: usageError } = await supabaseAdmin.from('usage_log').delete().eq('user_id', user.id)
+  if (usageError) {
+    console.error('[account/delete] Failed to delete usage log:', usageError.message)
+    return NextResponse.json({ error: 'Failed to delete account data' }, { status: 500 })
+  }
 
   // Delete public.users row
-  await supabaseAdmin.from('users').delete().eq('id', user.id)
+  const { error: userRowError } = await supabaseAdmin.from('users').delete().eq('id', user.id)
+  if (userRowError) {
+    console.error('[account/delete] Failed to delete user row:', userRowError.message)
+    return NextResponse.json({ error: 'Failed to delete account data' }, { status: 500 })
+  }
 
   // Delete auth.users entry
   const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(

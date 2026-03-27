@@ -27,7 +27,8 @@ export function UserTierSelect({ userId, currentTier }: UserTierSelectProps) {
     if (res.ok) {
       setTier(newTier)
     } else {
-      setError('Failed')
+      const data = await res.json().catch(() => ({}))
+      setError(data.error ?? `Failed (${res.status})`)
     }
   }
 

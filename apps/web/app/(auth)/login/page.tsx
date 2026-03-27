@@ -10,5 +10,11 @@ export default async function LoginPage({
 }: {
   searchParams?: Record<string, string | string[] | undefined>
 }) {
-  return <LoginForm redirectTo={searchParams?.next as string | undefined} />
+  return (
+    <LoginForm
+      redirectTo={searchParams?.next as string | undefined}
+      deleted={searchParams?.deleted === '1'}
+      authError={searchParams?.error === 'auth'}
+    />
+  )
 }

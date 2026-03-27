@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/auth/require-admin'
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -12,21 +12,6 @@ function isValidIP(ip: string): boolean {
   // IPv6 (basic check)
   const ipv6 = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/
   return ipv4.test(ip) || ipv6.test(ip)
-}
-
-async function requireAdmin() {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data: profile } = await supabaseAdmin
-    .from('users')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.is_admin) return null
-  return user
 }
 
 export async function POST(request: Request) {
@@ -70,8 +55,8 @@ export async function POST(request: Request) {
 
   const { data: block, error } = await supabaseAdmin
     .from('block_list')
-    .insert({ type, value })
-    .select('id, type, value, created_at')
+    .insert({ type, value, created_by: admin.id })
+    .select('id, type, value, created_at, created_by')
     .single()
 
   if (error || !block) {

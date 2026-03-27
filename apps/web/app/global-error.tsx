@@ -16,13 +16,26 @@ export default function GlobalError({
 
   return (
     <html lang="en">
+      <head>
+        <style>{`
+          body { background: #ffffff; color: #111827; font-family: sans-serif; }
+          .ge-sub { color: #6b7280; }
+          .ge-btn { background: #111827; color: #ffffff; }
+          @media (prefers-color-scheme: dark) {
+            body { background: #111827; color: #f9fafb; }
+            .ge-sub { color: #9ca3af; }
+            .ge-btn { background: #f9fafb; color: #111827; }
+          }
+        `}</style>
+      </head>
       <body>
-        <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', padding: '1rem', textAlign: 'center', flexDirection: 'column', gap: '1rem', fontFamily: 'sans-serif' }}>
+        <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', padding: '1rem', textAlign: 'center', flexDirection: 'column', gap: '1rem' }}>
           <h1 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Critical error</h1>
-          <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>Something went wrong at the application level.</p>
+          <p className="ge-sub" style={{ fontSize: '0.875rem' }}>Something went wrong at the application level.</p>
           <button
             onClick={reset}
-            style={{ padding: '0.5rem 1rem', borderRadius: '0.375rem', background: '#111827', color: '#fff', fontSize: '0.875rem', cursor: 'pointer', border: 'none' }}
+            className="ge-btn"
+            style={{ padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', cursor: 'pointer', border: 'none' }}
           >
             Reload
           </button>

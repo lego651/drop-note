@@ -1,21 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
-
-async function requireAdmin() {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data: profile } = await supabaseAdmin
-    .from('users')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.is_admin) return null
-  return user
-}
+import { requireAdmin } from '@/lib/auth/require-admin'
 
 export async function PATCH(request: Request) {
   const admin = await requireAdmin()
@@ -30,6 +15,18 @@ export async function PATCH(request: Request) {
 
   if (!body.key || !body.value) {
     return NextResponse.json({ error: 'key and value are required' }, { status: 400 })
+  }
+
+  const ALLOWED_SETTINGS: Record<string, (v: string) => boolean> = {
+    registration_mode: (v) => v === 'open' || v === 'invite',
+    open_slots: (v) => /^\d+$/.test(v) && parseInt(v, 10) >= 0,
+  }
+
+  if (!ALLOWED_SETTINGS[body.key]) {
+    return NextResponse.json({ error: 'Unknown setting key' }, { status: 400 })
+  }
+  if (!ALLOWED_SETTINGS[body.key](body.value)) {
+    return NextResponse.json({ error: 'Invalid value for setting' }, { status: 400 })
   }
 
   const { error } = await supabaseAdmin

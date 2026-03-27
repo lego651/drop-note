@@ -42,23 +42,34 @@ export type Database = {
       block_list: {
         Row: {
           created_at: string
+          created_by: string | null
           id: string
           type: Database["public"]["Enums"]["block_list_entry_type"]
           value: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           id?: string
           type: Database["public"]["Enums"]["block_list_entry_type"]
           value: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           id?: string
           type?: Database["public"]["Enums"]["block_list_entry_type"]
           value?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "block_list_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invite_codes: {
         Row: {
@@ -143,7 +154,7 @@ export type Database = {
           id: string
           notes: string | null
           pinned: boolean
-          search_vector: string | null
+          search_vector: unknown
           sender_email: string
           status: Database["public"]["Enums"]["item_status"]
           storage_path: string | null
@@ -161,6 +172,7 @@ export type Database = {
           id?: string
           notes?: string | null
           pinned?: boolean
+          search_vector?: unknown
           sender_email: string
           status?: Database["public"]["Enums"]["item_status"]
           storage_path?: string | null
@@ -178,6 +190,7 @@ export type Database = {
           id?: string
           notes?: string | null
           pinned?: boolean
+          search_vector?: unknown
           sender_email?: string
           status?: Database["public"]["Enums"]["item_status"]
           storage_path?: string | null
@@ -310,22 +323,31 @@ export type Database = {
     }
     Functions: {
       get_month_counts: {
-        Args: Record<PropertyKey, never>
-        Returns: { month: string; item_count: number }[]
+        Args: never
+        Returns: {
+          item_count: number
+          month: string
+        }[]
       }
       get_tags_with_counts: {
-        Args: Record<PropertyKey, never>
-        Returns: { id: string; name: string; item_count: number }[]
+        Args: never
+        Returns: {
+          id: string
+          item_count: number
+          name: string
+        }[]
       }
       search_items: {
         Args: { query: string }
         Returns: {
-          id: string
-          subject: string | null
-          ai_summary: string | null
-          status: string
-          pinned: boolean
+          ai_summary: string
           created_at: string
+          error_message: string
+          id: string
+          pinned: boolean
+          sender_email: string
+          status: string
+          subject: string
         }[]
       }
     }

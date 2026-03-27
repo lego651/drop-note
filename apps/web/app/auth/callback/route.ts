@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       }
 
       const isValidNext = next.startsWith('/') && !next.startsWith('//')
-      return NextResponse.redirect(`${origin}${isValidNext ? next : '/dashboard'}`)
+      return NextResponse.redirect(`${origin}${isValidNext ? next : '/items'}`)
     }
   }
 

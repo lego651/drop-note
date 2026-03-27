@@ -39,6 +39,9 @@ export function InviteCodesClient({ initialCodes, initialMode }: InviteCodesClie
     const res = await fetch(`/api/admin/invite-codes/${id}`, { method: 'DELETE' })
     if (res.ok) {
       setCodes((prev) => prev.filter((c) => c.id !== id))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error ?? 'Failed to revoke invite code')
     }
   }
 
@@ -107,7 +110,7 @@ export function InviteCodesClient({ initialCodes, initialMode }: InviteCodesClie
                       {c.used_at && ` on ${format(new Date(c.used_at), 'MMM d, yyyy')}`}
                     </span>
                   ) : (
-                    <span className="text-green-600 dark:text-green-400">Unused</span>
+                    <span className="text-success">Unused</span>
                   )}
                 </td>
                 <td className="px-4 py-2 text-muted-foreground">

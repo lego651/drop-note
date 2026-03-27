@@ -9,6 +9,7 @@ interface BlockEntry {
   type: string
   value: string
   created_at: string | null
+  created_by: string | null
 }
 
 interface BlockListClientProps {
@@ -49,6 +50,9 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
     const res = await fetch(`/api/admin/blocks/${id}`, { method: 'DELETE' })
     if (res.ok) {
       setBlocks((prev) => prev.filter((b) => b.id !== id))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error ?? 'Failed to remove block entry')
     }
   }
 
@@ -92,6 +96,7 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
               <th className="text-left px-4 py-2 font-medium text-muted-foreground">Type</th>
               <th className="text-left px-4 py-2 font-medium text-muted-foreground">Value</th>
               <th className="text-left px-4 py-2 font-medium text-muted-foreground">Added</th>
+              <th className="text-left px-4 py-2 font-medium text-muted-foreground">Source</th>
               <th className="text-left px-4 py-2 font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
@@ -102,6 +107,9 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
                 <td className="px-4 py-2 font-mono text-xs">{b.value}</td>
                 <td className="px-4 py-2 text-muted-foreground">
                   {b.created_at ? format(new Date(b.created_at), 'MMM d, yyyy') : '\u2014'}
+                </td>
+                <td className="px-4 py-2 text-muted-foreground">
+                  {b.created_by ? 'Admin' : 'Auto-blocked'}
                 </td>
                 <td className="px-4 py-2">
                   <button
@@ -115,7 +123,7 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
             ))}
             {blocks.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
                   No blocked entries.
                 </td>
               </tr>

@@ -149,6 +149,18 @@ export async function POST(request: Request) {
 
     const supabase = supabaseAdmin
 
+    // Block list check — must run BEFORE user lookup
+    const { data: blocked } = await supabase
+      .from('block_list')
+      .select('id')
+      .eq('type', 'email')
+      .eq('value', senderEmail)
+      .maybeSingle()
+
+    if (blocked) {
+      return NextResponse.json({ ok: true }, { status: 200 })
+    }
+
     // User lookup
     const { data: user } = await supabase
       .from('users')
@@ -177,18 +189,6 @@ export async function POST(request: Request) {
         console.error('[ingest] Auto-block redis error:', err)
         // Continue — Redis failure must not prevent normal ingest flow
       }
-      return NextResponse.json({ ok: true }, { status: 200 })
-    }
-
-    // Block list check
-    const { data: blocked } = await supabase
-      .from('block_list')
-      .select('id')
-      .eq('type', 'email')
-      .eq('value', senderEmail)
-      .maybeSingle()
-
-    if (blocked) {
       return NextResponse.json({ ok: true }, { status: 200 })
     }
 

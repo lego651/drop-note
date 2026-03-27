@@ -1,26 +1,11 @@
 import { NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/auth/require-admin'
 
 function generateInviteCode(): string {
   const raw = randomUUID().replace(/-/g, '').toUpperCase().slice(0, 12)
   return `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}`
-}
-
-async function requireAdmin() {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data: profile } = await supabaseAdmin
-    .from('users')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.is_admin) return null
-  return user
 }
 
 export async function POST() {

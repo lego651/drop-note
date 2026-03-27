@@ -1,20 +1,24 @@
 import { NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@/lib/supabase/server'
+import IORedis from 'ioredis'
+import { Queue } from 'bullmq'
+import { QUEUE_NAME } from '@drop-note/shared'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/auth/require-admin'
 
-async function requireAdmin() {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+let _statsQueue: Queue | null = null
+let _statsConnection: IORedis | null = null
 
-  const { data: profile } = await supabaseAdmin
-    .from('users')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.is_admin) return null
-  return user
+function getStatsQueue(): Queue {
+  if (!_statsQueue) {
+    _statsConnection = new IORedis(process.env.REDIS_URL!, {
+      maxRetriesPerRequest: 1,
+      enableOfflineQueue: false,
+      lazyConnect: true,
+      connectTimeout: 3000,
+    })
+    _statsQueue = new Queue(QUEUE_NAME, { connection: _statsConnection })
+  }
+  return _statsQueue
 }
 
 export async function GET() {
@@ -56,26 +60,8 @@ export async function GET() {
   let queueError: string | null = null
 
   try {
-    const IORedis = (await import('ioredis')).default
-    const { Queue } = await import('bullmq')
-    const { QUEUE_NAME } = await import('@drop-note/shared')
-
-    const connection = new IORedis(process.env.REDIS_URL!, {
-      maxRetriesPerRequest: 1,
-      enableOfflineQueue: false,
-      lazyConnect: true,
-      connectTimeout: 3000,
-    })
-
-    try {
-      await connection.connect()
-      const q = new Queue(QUEUE_NAME, { connection })
-      const counts = await q.getJobCounts()
-      queue = counts
-      await q.close()
-    } finally {
-      await connection.quit().catch(() => {})
-    }
+    const counts = await getStatsQueue().getJobCounts()
+    queue = counts
   } catch (err) {
     queueError = err instanceof Error ? err.message : 'Queue unavailable'
   }

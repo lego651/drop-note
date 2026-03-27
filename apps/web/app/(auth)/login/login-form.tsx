@@ -8,9 +8,11 @@ const supabase = createClient()
 
 interface LoginFormProps {
   redirectTo?: string
+  deleted?: boolean
+  authError?: boolean
 }
 
-export default function LoginForm({ redirectTo }: LoginFormProps) {
+export default function LoginForm({ redirectTo, deleted, authError }: LoginFormProps) {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -63,6 +65,17 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
           <h1 className="text-2xl font-semibold">drop-note</h1>
           <p className="text-sm text-muted-foreground">Sign in with your email</p>
         </div>
+
+        {deleted && (
+          <p className="rounded-md bg-muted px-4 py-3 text-sm text-muted-foreground text-center">
+            Your account has been deleted.
+          </p>
+        )}
+        {authError && (
+          <p className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
+            Authentication failed. Please try again.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
