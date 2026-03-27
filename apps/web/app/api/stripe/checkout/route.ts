@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server'
-import { requireEnv } from '@drop-note/shared'
 import { createClient } from '../../../../lib/supabase/server'
 import { stripe } from '../../../../lib/stripe'
 import { getOrCreateStripeCustomer } from '../../../../lib/stripe-customer'
 
-const VALID_PRICE_IDS = new Set([
-  requireEnv('STRIPE_PRO_PRICE_ID'),
-  requireEnv('STRIPE_POWER_PRICE_ID'),
-])
-
 export async function POST(request: Request) {
+  const VALID_PRICE_IDS = new Set([
+    process.env.STRIPE_PRO_PRICE_ID,
+    process.env.STRIPE_POWER_PRICE_ID,
+  ])
   // Auth: require session
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

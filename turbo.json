@@ -4,7 +4,20 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
-      "env": ["SUPABASE_SERVICE_ROLE_KEY", "SENDGRID_INGEST_SECRET"]
+      "env": [
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "SENDGRID_INGEST_SECRET",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_PRO_PRICE_ID",
+        "STRIPE_POWER_PRICE_ID",
+        "STRIPE_WEBHOOK_SECRET",
+        "UPSTASH_REDIS_REST_URL",
+        "UPSTASH_REDIS_REST_TOKEN",
+        "REDIS_URL",
+        "RESEND_API_KEY",
+        "RESEND_FROM_ADDRESS",
+        "OPENAI_API_KEY"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
