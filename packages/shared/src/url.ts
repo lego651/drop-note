@@ -21,8 +21,11 @@ export function extractSingleUrl(text: string): string | null {
   const cleaned = url.replace(/[.,!?;:'")\]]+$/, '')
 
   // Only treat as "primarily a URL" if non-URL text is short (≤ 60 chars)
-  const remainder = trimmed.replace(cleaned, '').trim()
-  if (remainder.length > 60) return null
+  const idx = trimmed.indexOf(cleaned)
+  const before = trimmed.slice(0, idx).trim()
+  const after = trimmed.slice(idx + cleaned.length).trim()
+  const remainderLength = before.length + after.length
+  if (remainderLength > 60) return null
 
   return cleaned
 }
