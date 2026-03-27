@@ -1,9 +1,22 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { ItemDetailEditor } from '@/components/ItemDetailEditor'
 import { AttachmentsSection } from '@/components/AttachmentsSection'
 import { format } from 'date-fns'
+
+export async function generateMetadata(
+  { params }: { params: { id: string } }
+): Promise<Metadata> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('items')
+    .select('subject')
+    .eq('id', params.id)
+    .single()
+  return { title: `${data?.subject ?? 'Item'} — drop-note` }
+}
 
 export default async function ItemDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()

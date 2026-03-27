@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ItemsPageClient } from '@/components/items/ItemsPageClient'
 
+export const metadata = { title: 'Items — drop-note' }
+
 interface ItemsPageProps {
   searchParams?: {
     page?: string
@@ -70,11 +72,15 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   }
 
   if (year && month) {
-    const start = new Date(parseInt(year), parseInt(month) - 1, 1)
-    const end = new Date(parseInt(year), parseInt(month), 1)
-    query = query
-      .gte('created_at', start.toISOString())
-      .lt('created_at', end.toISOString())
+    const y = parseInt(year, 10)
+    const m = parseInt(month, 10)
+    if (!isNaN(y) && !isNaN(m) && m >= 1 && m <= 12) {
+      const start = new Date(y, m - 1, 1)
+      const end = new Date(y, m, 1)
+      query = query
+        .gte('created_at', start.toISOString())
+        .lt('created_at', end.toISOString())
+    }
   }
 
   const { data: items, count } = await query.range(offset, offset + 24)

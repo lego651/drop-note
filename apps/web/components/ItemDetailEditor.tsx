@@ -118,8 +118,9 @@ export function ItemDetailEditor({
     <div className="space-y-6">
       {/* AI Summary */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">AI Summary</label>
+        <label htmlFor="item-ai-summary" className="text-sm font-medium">AI Summary</label>
         <textarea
+          id="item-ai-summary"
           className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring"
           value={summary}
           onChange={e => setSummary(e.target.value)}
@@ -130,8 +131,9 @@ export function ItemDetailEditor({
 
       {/* Notes */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">Notes</label>
+        <label htmlFor="item-notes" className="text-sm font-medium">Notes</label>
         <textarea
+          id="item-notes"
           className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring"
           value={notes}
           onChange={e => setNotes(e.target.value)}
@@ -142,7 +144,7 @@ export function ItemDetailEditor({
 
       {/* Tags */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">Tags</label>
+        <label htmlFor="item-tag-input" className="text-sm font-medium">Tags</label>
         <div className="flex flex-wrap gap-2 mb-2">
           {tags.map(tag => (
             <span
@@ -164,6 +166,7 @@ export function ItemDetailEditor({
         <div className="relative">
           <input
             ref={tagInputRef}
+            id="item-tag-input"
             type="text"
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             placeholder="Add tag..."

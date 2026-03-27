@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useState, Suspense } from 'react'
+import { cn } from '@/lib/utils'
 import {
   Inbox,
   Settings,
@@ -42,6 +43,31 @@ export interface SidebarProps {
   tags?: TagWithCount[]
   monthCounts?: MonthCount[]
   trashCount?: number
+}
+
+function SidebarLink({
+  href,
+  isActive,
+  children,
+}: {
+  href: string
+  isActive: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors',
+        'hover:bg-accent hover:text-accent-foreground',
+        isActive
+          ? 'bg-accent text-accent-foreground font-medium'
+          : 'text-muted-foreground',
+      )}
+    >
+      {children}
+    </Link>
+  )
 }
 
 // Inner component that uses useSearchParams (requires Suspense boundary)
@@ -112,47 +138,19 @@ function SidebarNav({
       <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-4">
         {/* Primary links */}
         <div className="space-y-0.5">
-          <Link
-            href="/items"
-            className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors ${
-              isItemsRoot
-                ? 'bg-accent text-accent-foreground font-medium'
-                : 'text-muted-foreground'
-            }`}
-          >
+          <SidebarLink href="/items" isActive={isItemsRoot}>
             <Inbox size={16} />
             All Items
-          </Link>
-          <Link
-            href="/dashboard/settings"
-            className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors ${
-              pathname === '/dashboard/settings'
-                ? 'bg-accent text-accent-foreground font-medium'
-                : 'text-muted-foreground'
-            }`}
-          >
+          </SidebarLink>
+          <SidebarLink href="/dashboard/settings" isActive={pathname === '/dashboard/settings'}>
             <Settings size={16} />
             Settings
-          </Link>
-          <Link
-            href="/pricing"
-            className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors ${
-              pathname === '/pricing'
-                ? 'bg-accent text-accent-foreground font-medium'
-                : 'text-muted-foreground'
-            }`}
-          >
+          </SidebarLink>
+          <SidebarLink href="/pricing" isActive={pathname === '/pricing'}>
             <CreditCard size={16} />
             Pricing
-          </Link>
-          <Link
-            href="/trash"
-            className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors ${
-              pathname === '/trash'
-                ? 'bg-accent text-accent-foreground font-medium'
-                : 'text-muted-foreground'
-            }`}
-          >
+          </SidebarLink>
+          <SidebarLink href="/trash" isActive={pathname === '/trash'}>
             <Trash2 size={16} />
             <span className="flex-1">Trash</span>
             {trashCount > 0 && (
@@ -160,7 +158,7 @@ function SidebarNav({
                 {trashCount}
               </Badge>
             )}
-          </Link>
+          </SidebarLink>
         </div>
 
         {/* Tags section */}
@@ -174,11 +172,13 @@ function SidebarNav({
           <div className="space-y-0.5">
             <Link
               href="/items"
-              className={`flex items-center gap-2 rounded-md px-3 py-1 text-sm hover:bg-accent hover:text-accent-foreground transition-colors ${
+              className={cn(
+                'flex items-center gap-2 rounded-md px-3 py-1 text-sm transition-colors',
+                'hover:bg-accent hover:text-accent-foreground',
                 pathname === '/items' && !activeTag
                   ? 'bg-accent text-accent-foreground font-medium'
-                  : 'text-muted-foreground'
-              }`}
+                  : 'text-muted-foreground',
+              )}
             >
               All
             </Link>
@@ -191,11 +191,13 @@ function SidebarNav({
                 <Link
                   key={tag.id}
                   href={`/items?tag=${tag.id}`}
-                  className={`flex items-center justify-between gap-2 rounded-md px-3 py-1 text-sm hover:bg-accent hover:text-accent-foreground transition-colors ${
+                  className={cn(
+                    'flex items-center justify-between gap-2 rounded-md px-3 py-1 text-sm transition-colors',
+                    'hover:bg-accent hover:text-accent-foreground',
                     activeTag === tag.id
                       ? 'bg-accent text-accent-foreground font-medium'
-                      : 'text-muted-foreground'
-                  }`}
+                      : 'text-muted-foreground',
+                  )}
                 >
                   <span className="truncate">{tag.name}</span>
                   <span className="shrink-0 text-xs opacity-60">
@@ -239,11 +241,13 @@ function SidebarNav({
                             <Link
                               key={mc.month}
                               href={`/items?year=${y}&month=${m}`}
-                              className={`flex items-center justify-between gap-2 rounded-md px-3 py-1 text-sm hover:bg-accent hover:text-accent-foreground transition-colors ${
+                              className={cn(
+                                'flex items-center justify-between gap-2 rounded-md px-3 py-1 text-sm transition-colors',
+                                'hover:bg-accent hover:text-accent-foreground',
                                 isActive
                                   ? 'bg-accent text-accent-foreground font-medium'
-                                  : 'text-muted-foreground'
-                              }`}
+                                  : 'text-muted-foreground',
+                              )}
                             >
                               <span>{monthLabel}</span>
                               <span className="shrink-0 text-xs opacity-60">
