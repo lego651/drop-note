@@ -646,6 +646,7 @@ CRON_SECRET=your-random-secret-here
 **Type:** chore
 **Points:** 1
 **Depends on:** S608 (public README ready)
+**Status:** ⏸ Deferred — moved to post-launch follow-up
 
 **Goal:** Submit Vercel OSS application. This is not a launch blocker, but it improves the contributor experience by removing Vercel SSO from preview URLs.
 
@@ -656,6 +657,8 @@ CRON_SECRET=your-random-secret-here
 
 **Acceptance:**
 - Application submitted and confirmation documented in S612 launch checklist
+
+> **Deferred:** `VERCEL_AUTOMATION_BYPASS_SECRET` already unblocks E2E for CI. Revisit after launch.
 
 ---
 
@@ -1010,6 +1013,12 @@ Required sections:
 - Create `apps/web/app/(public)/terms/page.tsx` and `apps/web/app/(public)/privacy/page.tsx` with the text
 - Add routes to the footer navigation
 - Update the S612 checklist to confirm these pages contain substantive content
+
+**Status:** Pages drafted at `apps/web/app/privacy/page.tsx` and `apps/web/app/terms/page.tsx`.
+
+**Remaining before launch (founder action required):**
+- [ ] Fill in data controller identity — replace "the operator of this service" in Privacy Policy Section 1 with your real name/company name and confirm `legal@dropnote.com` is the correct contact
+- [ ] Read through both pages end-to-end and approve before beta opens
 
 **Acceptance:**
 - `/terms` and `/privacy` routes return 200 with substantive legal content (not "Coming soon")

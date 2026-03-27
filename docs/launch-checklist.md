@@ -36,6 +36,8 @@
 ## Legal
 - [ ] Terms of Service at `dropnote.com/terms` — contains substantive content (not placeholder)
 - [ ] Privacy Policy at `dropnote.com/privacy` — contains GDPR Article 13 disclosures and 30-day erasure SLA (not placeholder text)
+- [ ] Privacy Policy Section 1 updated with real data controller name/company (replace "the operator of this service")
+- [ ] Founder has read and approved both legal pages (see S615)
 - [ ] GDPR cookie consent banner live (if using cookies beyond strictly necessary)
 
 ## OSS & CI

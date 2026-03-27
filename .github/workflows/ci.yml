@@ -75,11 +75,14 @@ jobs:
       - name: E2E tests
         run: pnpm e2e
         env:
-          BASE_URL: ${{ secrets.VERCEL_PREVIEW_URL }}
-          SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          # Next.js dev server (spawned by Playwright webServer when BASE_URL is unset)
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+          # auth.setup.ts — creates test users via Supabase admin API
+          SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           E2E_FREE_USER_EMAIL: ${{ secrets.E2E_FREE_USER_EMAIL }}
           E2E_PRO_USER_EMAIL: ${{ secrets.E2E_PRO_USER_EMAIL }}
           E2E_ADMIN_USER_EMAIL: ${{ secrets.E2E_ADMIN_USER_EMAIL }}
