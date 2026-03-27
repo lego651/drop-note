@@ -1,20 +1,40 @@
 # Dependencies
 **/node_modules
+node_modules
 
 # Environment files — never send to Docker build daemon
 **/.env
 **/.env.local
 **/.env.*.local
+.env
+.env.local
+.env*.local
 
 # Build outputs
 **/.next
 **/dist
 **/.turbo
+**/build
 
 # Test artifacts
 **/coverage
+coverage/
 **/playwright-report
 **/test-results
 
 # Dev tooling
 **/.git
+.git
+.gitignore
+
+# Repo directories not needed in image
+e2e/
+docs/
+supabase/
+.github/
+.claude/
+
+# Config files not needed in image
+*.md
+playwright.config.ts
+vitest.config.ts

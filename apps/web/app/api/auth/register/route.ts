@@ -1,15 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createHash } from 'crypto'
-import { Redis } from '@upstash/redis'
+import { getRedis } from '@/lib/redis'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-
-function getRedis() {
-  return new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  })
-}
 
 export async function POST(request: Request) {
   // Rate limit: 5 attempts per IP per hour

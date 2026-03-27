@@ -13,6 +13,10 @@ test.beforeEach(async () => {
   await cleanupUser(freeUserId)
 })
 
+test.afterAll(async () => {
+  await cleanupUser(freeUserId)
+})
+
 test('1. onboarding empty state shows drop address and copy button', async ({ page }) => {
   await page.goto('/items')
   await expect(page.getByText(/drop@dropnote\.com/i)).toBeVisible()

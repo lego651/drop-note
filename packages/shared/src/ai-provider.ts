@@ -12,9 +12,11 @@ export interface AIProvider {
 
 export class OpenAIProvider implements AIProvider {
   private apiKey: string
+  private model: string
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, model?: string) {
     this.apiKey = apiKey
+    this.model = model ?? 'gpt-4o-mini'
   }
 
   async processText(text: string, existingTags: string[]): Promise<{ summary: string; tags: string[] }> {
@@ -25,7 +27,7 @@ export class OpenAIProvider implements AIProvider {
         Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: this.model,
         messages: [
           {
             role: 'system',
@@ -35,7 +37,17 @@ export class OpenAIProvider implements AIProvider {
         ],
         response_format: { type: 'json_object' },
       }),
+      signal: AbortSignal.timeout(30_000),
     })
+    if (!response.ok) {
+      const body = await response.text()
+      const isRetryable = [429, 500, 502, 503].includes(response.status)
+      const hint = response.status === 429 ? ' (rate limit)' : response.status === 401 ? ' (unauthorized / invalid key)' : ''
+      const err = new Error(`OpenAI HTTP ${response.status}${hint}: ${body.slice(0, 200)}`)
+      ;(err as NodeJS.ErrnoException & { status: number; retryable: boolean }).status = response.status
+      ;(err as NodeJS.ErrnoException & { status: number; retryable: boolean }).retryable = isRetryable
+      throw err
+    }
     const data = await response.json() as { choices: Array<{ message: { content: string } }> }
     const parsed = JSON.parse(data.choices[0].message.content) as { summary: string; tags: string[] }
     return { summary: parsed.summary ?? '', tags: parsed.tags ?? [] }
@@ -49,7 +61,7 @@ export class OpenAIProvider implements AIProvider {
         Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: this.model,
         messages: [
           {
             role: 'user',
@@ -60,7 +72,17 @@ export class OpenAIProvider implements AIProvider {
           },
         ],
       }),
+      signal: AbortSignal.timeout(30_000),
     })
+    if (!response.ok) {
+      const body = await response.text()
+      const isRetryable = [429, 500, 502, 503].includes(response.status)
+      const hint = response.status === 429 ? ' (rate limit)' : response.status === 401 ? ' (unauthorized / invalid key)' : ''
+      const err = new Error(`OpenAI HTTP ${response.status}${hint}: ${body.slice(0, 200)}`)
+      ;(err as NodeJS.ErrnoException & { status: number; retryable: boolean }).status = response.status
+      ;(err as NodeJS.ErrnoException & { status: number; retryable: boolean }).retryable = isRetryable
+      throw err
+    }
     const data = await response.json() as { choices: Array<{ message: { content: string } }> }
     return data.choices[0]?.message?.content ?? ''
   }
@@ -68,9 +90,11 @@ export class OpenAIProvider implements AIProvider {
 
 export class AnthropicProvider implements AIProvider {
   private apiKey: string
+  private model: string
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, model?: string) {
     this.apiKey = apiKey
+    this.model = model ?? 'claude-haiku-4-5-20251001'
   }
 
   async processText(text: string, existingTags: string[]): Promise<{ summary: string; tags: string[] }> {
@@ -82,7 +106,7 @@ export class AnthropicProvider implements AIProvider {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: this.model,
         max_tokens: 1024,
         messages: [
           {
@@ -91,9 +115,20 @@ export class AnthropicProvider implements AIProvider {
           },
         ],
       }),
+      signal: AbortSignal.timeout(30_000),
     })
+    if (!response.ok) {
+      const body = await response.text()
+      const isRetryable = [429, 500, 502, 503].includes(response.status)
+      const hint = response.status === 429 ? ' (rate limit)' : response.status === 401 ? ' (unauthorized / invalid key)' : ''
+      const err = new Error(`Anthropic HTTP ${response.status}${hint}: ${body.slice(0, 200)}`)
+      ;(err as NodeJS.ErrnoException & { status: number; retryable: boolean }).status = response.status
+      ;(err as NodeJS.ErrnoException & { status: number; retryable: boolean }).retryable = isRetryable
+      throw err
+    }
     const data = await response.json() as { content: Array<{ text: string }> }
-    const parsed = JSON.parse(data.content[0].text) as { summary: string; tags: string[] }
+    const raw = data.content[0].text.replace(/^```(?:json)?\n?|\n?```$/g, '').trim()
+    const parsed = JSON.parse(raw) as { summary: string; tags: string[] }
     return { summary: parsed.summary ?? '', tags: parsed.tags ?? [] }
   }
 
@@ -106,7 +141,7 @@ export class AnthropicProvider implements AIProvider {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: this.model,
         max_tokens: 512,
         messages: [
           {
@@ -121,7 +156,17 @@ export class AnthropicProvider implements AIProvider {
           },
         ],
       }),
+      signal: AbortSignal.timeout(30_000),
     })
+    if (!response.ok) {
+      const body = await response.text()
+      const isRetryable = [429, 500, 502, 503].includes(response.status)
+      const hint = response.status === 429 ? ' (rate limit)' : response.status === 401 ? ' (unauthorized / invalid key)' : ''
+      const err = new Error(`Anthropic HTTP ${response.status}${hint}: ${body.slice(0, 200)}`)
+      ;(err as NodeJS.ErrnoException & { status: number; retryable: boolean }).status = response.status
+      ;(err as NodeJS.ErrnoException & { status: number; retryable: boolean }).retryable = isRetryable
+      throw err
+    }
     const data = await response.json() as { content: Array<{ text: string }> }
     return data.content[0]?.text ?? ''
   }
@@ -129,17 +174,24 @@ export class AnthropicProvider implements AIProvider {
 
 export class GeminiProvider implements AIProvider {
   private apiKey: string
+  private model: string
+  private visionModel: string
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, model?: string, visionModel?: string) {
     this.apiKey = apiKey
+    this.model = model ?? 'gemini-1.5-flash'
+    this.visionModel = visionModel ?? 'gemini-1.5-flash'
   }
 
   async processText(text: string, existingTags: string[]): Promise<{ summary: string; tags: string[] }> {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey,
+        },
         body: JSON.stringify({
           contents: [
             {
@@ -152,8 +204,18 @@ export class GeminiProvider implements AIProvider {
           ],
           generationConfig: { responseMimeType: 'application/json' },
         }),
+        signal: AbortSignal.timeout(30_000),
       },
     )
+    if (!response.ok) {
+      const body = await response.text()
+      const isRetryable = [429, 500, 502, 503].includes(response.status)
+      const hint = response.status === 429 ? ' (rate limit)' : response.status === 401 ? ' (unauthorized / invalid key)' : ''
+      const err = new Error(`Gemini HTTP ${response.status}${hint}: ${body.slice(0, 200)}`)
+      ;(err as NodeJS.ErrnoException & { status: number; retryable: boolean }).status = response.status
+      ;(err as NodeJS.ErrnoException & { status: number; retryable: boolean }).retryable = isRetryable
+      throw err
+    }
     const data = await response.json() as { candidates: Array<{ content: { parts: Array<{ text: string }> } }> }
     const parsed = JSON.parse(data.candidates[0].content.parts[0].text) as { summary: string; tags: string[] }
     return { summary: parsed.summary ?? '', tags: parsed.tags ?? [] }
@@ -161,10 +223,13 @@ export class GeminiProvider implements AIProvider {
 
   async describeImage(base64: string, mimeType: string): Promise<string> {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${this.visionModel}:generateContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey,
+        },
         body: JSON.stringify({
           contents: [
             {
@@ -175,8 +240,18 @@ export class GeminiProvider implements AIProvider {
             },
           ],
         }),
+        signal: AbortSignal.timeout(30_000),
       },
     )
+    if (!response.ok) {
+      const body = await response.text()
+      const isRetryable = [429, 500, 502, 503].includes(response.status)
+      const hint = response.status === 429 ? ' (rate limit)' : response.status === 401 ? ' (unauthorized / invalid key)' : ''
+      const err = new Error(`Gemini HTTP ${response.status}${hint}: ${body.slice(0, 200)}`)
+      ;(err as NodeJS.ErrnoException & { status: number; retryable: boolean }).status = response.status
+      ;(err as NodeJS.ErrnoException & { status: number; retryable: boolean }).retryable = isRetryable
+      throw err
+    }
     const data = await response.json() as { candidates: Array<{ content: { parts: Array<{ text: string }> } }> }
     return data.candidates[0]?.content?.parts[0]?.text ?? ''
   }
@@ -185,12 +260,21 @@ export class GeminiProvider implements AIProvider {
 export function createAIProvider(): AIProvider {
   const provider = process.env.AI_PROVIDER ?? 'openai'
   switch (provider) {
-    case 'openai':
-      return new OpenAIProvider(process.env.OPENAI_API_KEY!)
-    case 'anthropic':
-      return new AnthropicProvider(process.env.ANTHROPIC_API_KEY!)
-    case 'gemini':
-      return new GeminiProvider(process.env.GEMINI_API_KEY!)
+    case 'openai': {
+      const key = process.env.OPENAI_API_KEY
+      if (!key) throw new Error('AI_PROVIDER is "openai" but OPENAI_API_KEY is not set')
+      return new OpenAIProvider(key, process.env.AI_MODEL)
+    }
+    case 'anthropic': {
+      const key = process.env.ANTHROPIC_API_KEY
+      if (!key) throw new Error('AI_PROVIDER is "anthropic" but ANTHROPIC_API_KEY is not set')
+      return new AnthropicProvider(key, process.env.AI_MODEL)
+    }
+    case 'gemini': {
+      const key = process.env.GEMINI_API_KEY
+      if (!key) throw new Error('AI_PROVIDER is "gemini" but GEMINI_API_KEY is not set')
+      return new GeminiProvider(key, process.env.AI_MODEL, process.env.AI_VISION_MODEL)
+    }
     default:
       throw new Error(
         `Unknown AI_PROVIDER: "${provider}". Valid values: openai, anthropic, gemini`,

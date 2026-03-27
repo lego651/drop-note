@@ -54,7 +54,8 @@ export async function cleanupUser(userId: string): Promise<void> {
 }
 
 export async function getUserId(email: string): Promise<string> {
-  const { data } = await supabaseAdmin.auth.admin.listUsers()
+  // listUsers with explicit pagination to bound the scan; test user pool is expected to be small.
+  const { data } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000, page: 1 })
   const user = data?.users?.find((u) => u.email === email)
   if (!user) throw new Error(`User not found: ${email}`)
   return user.id

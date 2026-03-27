@@ -30,3 +30,15 @@
 - No routes found exposing stack traces in production — all catch blocks log only `err.message` server-side and return generic strings to clients
 - All admin routes properly check `is_admin` server-side
 - Rate limit checks in `/api/auth/register` and `/api/items/search` fail open (Redis unavailable does not block the request)
+
+### Fail-open rate limiting — deliberate trade-off
+
+Both `/api/auth/register` and `/api/items/search` fail open when Redis is unavailable: if the rate limit check throws (Redis down, misconfigured env var, network partition), the request proceeds normally rather than returning 503.
+
+**Why fail-open:** Failing closed on registration would block all new users during any Redis outage — an operational decision that should require deliberate action, not happen automatically. Failing closed on search would degrade the product for all users during infrastructure hiccups unrelated to abuse. The registration abuse scenario (brute-force invite codes) is also partially mitigated by invite code entropy.
+
+**Risk accepted:** A Redis outage window allows unlimited registration attempts and unlimited search queries. The window is bounded by the Redis outage duration.
+
+**Monitoring:** Redis errors on both routes are logged to console (and captured by Sentry in production). An alert on elevated error rates from these routes will surface any extended Redis outage quickly.
+
+**Option C chosen** (from review R022): keep fail-open, add structured logging. If abuse via invite-code brute-force becomes a real concern, revisit with Option B (in-memory fallback).

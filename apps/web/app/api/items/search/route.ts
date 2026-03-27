@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Redis } from '@upstash/redis'
+import { getRedis } from '@/lib/redis'
 import { createClient } from '@/lib/supabase/server'
 
 // GET /api/items/search?q=<keyword>
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     // Rate limit: 20 requests/min per user
     const key = `search:${user.id}`
     try {
-      const redis = Redis.fromEnv()
+      const redis = getRedis()
       const count = await redis.incr(key)
       if (count === 1) await redis.expire(key, 60)
       if (count > 20) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })

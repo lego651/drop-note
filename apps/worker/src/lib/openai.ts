@@ -15,11 +15,15 @@ interface SummarizeResult {
   error: string | null
 }
 
-export async function summarizeEmailBody(subject: string, bodyText: string): Promise<SummarizeResult> {
+export async function summarizeEmailBody(
+  subject: string,
+  bodyText: string,
+  existingTags: string[] = [],
+): Promise<SummarizeResult> {
   const input = `Subject: ${subject}\n\n${bodyText}`.slice(0, MAX_INPUT_CHARS)
 
   try {
-    const result = await getAIProvider().processText(input, [])
+    const result = await getAIProvider().processText(input, existingTags)
 
     const tags = result.tags
       .filter((t): t is string => typeof t === 'string')
