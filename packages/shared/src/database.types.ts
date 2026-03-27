@@ -139,8 +139,11 @@ export type Database = {
           deleted_at: string | null
           error_message: string | null
           filename: string | null
+          group_id: string | null
           id: string
+          notes: string | null
           pinned: boolean
+          search_vector: string | null
           sender_email: string
           status: Database["public"]["Enums"]["item_status"]
           storage_path: string | null
@@ -154,7 +157,9 @@ export type Database = {
           deleted_at?: string | null
           error_message?: string | null
           filename?: string | null
+          group_id?: string | null
           id?: string
+          notes?: string | null
           pinned?: boolean
           sender_email: string
           status?: Database["public"]["Enums"]["item_status"]
@@ -169,7 +174,9 @@ export type Database = {
           deleted_at?: string | null
           error_message?: string | null
           filename?: string | null
+          group_id?: string | null
           id?: string
+          notes?: string | null
           pinned?: boolean
           sender_email?: string
           status?: Database["public"]["Enums"]["item_status"]
@@ -302,7 +309,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_month_counts: {
+        Args: { p_user_id: string }
+        Returns: { month: string; item_count: number }[]
+      }
+      get_tags_with_counts: {
+        Args: { p_user_id: string }
+        Returns: { id: string; name: string; item_count: number }[]
+      }
+      search_items: {
+        Args: { query: string; p_user_id: string }
+        Returns: {
+          id: string
+          subject: string | null
+          ai_summary: string | null
+          status: string
+          pinned: boolean
+          created_at: string
+        }[]
+      }
     }
     Enums: {
       block_list_entry_type: "email" | "ip"
