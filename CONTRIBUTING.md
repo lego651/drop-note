@@ -21,7 +21,7 @@ This is the recommended path for most contributors.
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/your-org/drop-note.git
+git clone https://github.com/TODO-ORG/drop-note.git
 cd drop-note
 
 # 2. Install all workspace dependencies
@@ -50,7 +50,7 @@ Use this if you prefer a fully self-contained environment.
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/your-org/drop-note.git
+git clone https://github.com/TODO-ORG/drop-note.git
 cd drop-note
 
 # 2. Copy and fill in the env file

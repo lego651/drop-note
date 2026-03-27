@@ -3,7 +3,7 @@
 **Email anything. Find it later.**
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![CI](https://github.com/YOUR_ORG/drop-note/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_ORG/drop-note/actions/workflows/ci.yml)
+[![CI](https://github.com/TODO-ORG/drop-note/actions/workflows/ci.yml/badge.svg)](https://github.com/TODO-ORG/drop-note/actions/workflows/ci.yml)
 
 ---
 
@@ -29,7 +29,7 @@ You'll need Docker Desktop and a Supabase project (free tier works).
 
 1. Clone the repo and copy the env template:
    ```bash
-   git clone https://github.com/YOUR_ORG/drop-note.git
+   git clone https://github.com/TODO-ORG/drop-note.git
    cd drop-note
    cp .env.example .env
    ```
