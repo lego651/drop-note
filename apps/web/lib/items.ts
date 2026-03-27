@@ -25,7 +25,7 @@ export function groupItemsByDate(items: ItemSummary[]): ItemGroup[] {
 
   for (const item of items) {
     const date = new Date(item.created_at)
-    const dateKey = format(date, 'yyyy-MM-dd')
+    const dateKey = date.toISOString().slice(0, 10)
 
     if (!groups.has(dateKey)) {
       let label: string
@@ -46,17 +46,20 @@ export async function deleteItem(
   userId: string,
   tier: 'free' | 'pro' | 'power',
   client?: Pick<SupabaseClient, 'from'>,
-): Promise<{ ok: boolean }> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = (client ?? supabaseAdmin) as any
+): Promise<{ ok: boolean; affected: boolean }> {
+  const db = client ?? (supabaseAdmin as unknown as Pick<SupabaseClient, 'from'>)
 
   if (tier === 'free') {
     // Free tier: always hard-delete
-    await db
+    const { data, error } = await db
       .from('items')
       .delete()
       .eq('id', id)
       .eq('user_id', userId)
+      .select('id')
+      .maybeSingle()
+    if (error) return { ok: false, affected: false }
+    return { ok: true, affected: data !== null }
   } else {
     // Paid tier: check if item is already in trash — if so, hard-delete permanently
     const { data: existing } = await db
@@ -68,19 +71,26 @@ export async function deleteItem(
 
     if (existing?.deleted_at) {
       // Already in trash — permanent delete
-      await db
+      const { data, error } = await db
         .from('items')
         .delete()
         .eq('id', id)
         .eq('user_id', userId)
+        .select('id')
+        .maybeSingle()
+      if (error) return { ok: false, affected: false }
+      return { ok: true, affected: data !== null }
     } else {
       // Soft-delete (move to trash)
-      await db
+      const { data, error } = await db
         .from('items')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', id)
         .eq('user_id', userId)
+        .select('id')
+        .maybeSingle()
+      if (error) return { ok: false, affected: false }
+      return { ok: true, affected: data !== null }
     }
   }
-  return { ok: true }
 }

@@ -28,8 +28,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
       .select('*', { count: 'exact', head: true })
       .is('deleted_at', null),
     // RLS: items policy enforces user_id = auth.uid(), no need for .eq()
-    supabase.rpc('get_tags_with_counts', { p_user_id: user.id }),
-    supabase.rpc('get_month_counts', { p_user_id: user.id }),
+    supabase.rpc('get_tags_with_counts'),
+    supabase.rpc('get_month_counts'),
     supabase
       .from('items')
       .select('*', { count: 'exact', head: true })

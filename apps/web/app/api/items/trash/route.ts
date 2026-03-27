@@ -6,35 +6,40 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 // Hard-deletes all trashed items (deleted_at IS NOT NULL) for the current user.
 // Requires auth (401) and a paid tier (403).
 export async function DELETE() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Paid tier required
-  const { data: userData } = await supabaseAdmin
-    .from('users')
-    .select('tier')
-    .eq('id', user.id)
-    .single()
+    // Paid tier required
+    const { data: userData } = await supabaseAdmin
+      .from('users')
+      .select('tier')
+      .eq('id', user.id)
+      .single()
 
-  const tier = userData?.tier ?? 'free'
-  if (tier === 'free') {
-    return NextResponse.json(
-      { error: 'Upgrade to a paid plan to manage trash' },
-      { status: 403 }
-    )
+    const tier = userData?.tier ?? 'free'
+    if (tier === 'free') {
+      return NextResponse.json(
+        { error: 'Upgrade to a paid plan to manage trash' },
+        { status: 403 }
+      )
+    }
+
+    const { data: deleted, error } = await supabase
+      .from('items')
+      .delete()
+      .eq('user_id', user.id)
+      .not('deleted_at', 'is', null)
+      .select('id')
+
+    if (error) {
+      return NextResponse.json({ error: 'Failed to empty trash' }, { status: 500 })
+    }
+
+    return NextResponse.json({ deleted: deleted?.length ?? 0 })
+  } catch (err) {
+    console.error('[DELETE /api/items/trash]', err instanceof Error ? err.message : err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-
-  const { data: deleted, error } = await supabaseAdmin
-    .from('items')
-    .delete()
-    .eq('user_id', user.id)
-    .not('deleted_at', 'is', null)
-    .select('id')
-
-  if (error) {
-    return NextResponse.json({ error: 'Failed to empty trash' }, { status: 500 })
-  }
-
-  return NextResponse.json({ deleted: deleted?.length ?? 0 })
 }

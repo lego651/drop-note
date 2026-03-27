@@ -310,15 +310,15 @@ export type Database = {
     }
     Functions: {
       get_month_counts: {
-        Args: { p_user_id: string }
+        Args: Record<PropertyKey, never>
         Returns: { month: string; item_count: number }[]
       }
       get_tags_with_counts: {
-        Args: { p_user_id: string }
+        Args: Record<PropertyKey, never>
         Returns: { id: string; name: string; item_count: number }[]
       }
       search_items: {
-        Args: { query: string; p_user_id: string }
+        Args: { query: string }
         Returns: {
           id: string
           subject: string | null
