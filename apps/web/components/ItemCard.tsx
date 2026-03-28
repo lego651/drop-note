@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { VideoModal } from '@/components/VideoModal'
 import { ItemThumbnail } from '@/components/ItemThumbnail'
+import { TagRow } from '@/components/TagRow'
 import { cn } from '@/lib/utils'
 import type { ItemSummary } from '@/lib/items'
 import { extractYouTubeId } from '@drop-note/shared'
@@ -36,9 +37,6 @@ export function ItemCard({
   const tags = item.item_tags
     ?.map((it) => it.tags)
     .filter((t): t is { id: string; name: string } => t !== null) ?? []
-
-  const visibleTags = tags.slice(0, 3)
-  const extraTagCount = tags.length - visibleTags.length
 
   function compactAge(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime()
@@ -112,7 +110,7 @@ export function ItemCard({
         <button
           type="button"
           aria-label="Delete item"
-          className="shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+          className="shrink-0 text-muted-foreground opacity-40 hover:opacity-100 transition-opacity"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -158,18 +156,7 @@ export function ItemCard({
 
       {/* Footer: tags + date */}
       <div className="flex items-center justify-between gap-2 pt-0.5 min-w-0">
-        <div className="flex items-center gap-1 overflow-hidden">
-          {visibleTags.map((tag) => (
-            <Badge key={tag.id} variant="secondary" className="text-xs py-0 px-1.5 shrink-0">
-              {tag.name}
-            </Badge>
-          ))}
-          {extraTagCount > 0 && (
-            <Badge variant="secondary" className="text-xs py-0 px-1.5 shrink-0">
-              +{extraTagCount}
-            </Badge>
-          )}
-        </div>
+        <TagRow tags={tags} />
         <time
           dateTime={item.created_at}
           className="shrink-0 text-xs text-muted-foreground"
