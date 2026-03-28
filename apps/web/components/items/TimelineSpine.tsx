@@ -54,6 +54,7 @@ export function TimelineSpine({
                     key={item.id}
                     item={item}
                     isBulkMode={isBulkMode}
+                    isListView
                     isSelected={selectedIds?.has(item.id) ?? false}
                     onSelectChange={onSelectChange}
                     onPinChange={onPinChange}
