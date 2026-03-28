@@ -2,10 +2,14 @@ import { supabaseAdmin } from './supabase'
 import { normalizeTags } from '@drop-note/shared'
 
 export async function setItemProcessing(itemId: string): Promise<void> {
-  await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('items')
     .update({ status: 'processing' })
     .eq('id', itemId)
+    .select('id')
+    .single()
+
+  if (error || !data) throw new Error(error?.message ?? `Item ${itemId} not found`)
 }
 
 export async function setItemDone(
@@ -19,7 +23,7 @@ export async function setItemDone(
     thumbnailUrl?: string | null
   }
 ): Promise<void> {
-  await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('items')
     .update({
       status: 'done',
@@ -31,13 +35,19 @@ export async function setItemDone(
       ...(params.thumbnailUrl !== undefined && { thumbnail_url: params.thumbnailUrl }),
     })
     .eq('id', itemId)
+    .select('id')
+    .single()
+
+  if (error || !data) throw new Error(error?.message ?? `Item ${itemId} not found`)
 }
 
 export async function setItemFailed(itemId: string, errorMessage: string): Promise<void> {
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('items')
     .update({ status: 'failed', error_message: errorMessage })
     .eq('id', itemId)
+
+  if (error) throw new Error(error.message)
 }
 
 export async function createAttachmentItem(params: {

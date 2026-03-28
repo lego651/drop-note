@@ -47,12 +47,12 @@ export async function processEmail(job: Job<EmailJobPayload>): Promise<EmailJobR
     let summarizeSubject = parsed.subject
     let summarizeBody = parsed.bodyText
 
-    if (youtubeId) {
+    if (detectedUrl && youtubeId) {
       sourceType = 'youtube'
       sourceUrl = detectedUrl
       thumbnailUrl = getYouTubeThumbnailUrl(youtubeId)
       // Fetch title via oEmbed so the AI has something meaningful to summarize
-      const videoTitle = await fetchYouTubeTitle(detectedUrl!)
+      const videoTitle = await fetchYouTubeTitle(detectedUrl)
       summarizeSubject = videoTitle ?? parsed.subject
       summarizeBody = `YouTube video: ${videoTitle ?? detectedUrl}`
       console.log(`[processor] Detected YouTube video: ${youtubeId} — "${summarizeSubject}"`)
