@@ -5,15 +5,19 @@ import { createClient } from '@/lib/supabase/server'
 import { ItemDetailEditor } from '@/components/ItemDetailEditor'
 import { AttachmentsSection } from '@/components/AttachmentsSection'
 import { format } from 'date-fns'
+import { extractYouTubeId } from '@drop-note/shared'
 
 export async function generateMetadata(
   { params }: { params: { id: string } }
 ): Promise<Metadata> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { title: 'Item — drop-note' }
   const { data } = await supabase
     .from('items')
     .select('subject')
     .eq('id', params.id)
+    .eq('user_id', user.id)
     .single()
   return { title: `${data?.subject ?? 'Item'} — drop-note` }
 }
@@ -33,35 +37,34 @@ export default async function ItemDetailPage({ params }: { params: { id: string 
 
   if (!item) notFound()
 
-  // Fetch all user tags for type-ahead
-  const { data: userTags } = await supabase
-    .from('tags')
-    .select('id, name')
-    .eq('user_id', user.id)
-    .order('name')
-
-  // Prev/next navigation
-  const { data: prev } = await supabase
-    .from('items')
-    .select('id')
-    .eq('user_id', user.id)
-    .is('deleted_at', null)
-    .eq('type', 'email_body')
-    .lt('created_at', item.created_at)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
-
-  const { data: next } = await supabase
-    .from('items')
-    .select('id')
-    .eq('user_id', user.id)
-    .is('deleted_at', null)
-    .eq('type', 'email_body')
-    .gt('created_at', item.created_at)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .single()
+  // Fetch all user tags for type-ahead, and prev/next navigation in parallel
+  const [{ data: userTags }, { data: prev }, { data: next }] = await Promise.all([
+    supabase
+      .from('tags')
+      .select('id, name')
+      .eq('user_id', user.id)
+      .order('name'),
+    supabase
+      .from('items')
+      .select('id')
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .eq('type', 'email_body')
+      .lt('created_at', item.created_at)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single(),
+    supabase
+      .from('items')
+      .select('id')
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .eq('type', 'email_body')
+      .gt('created_at', item.created_at)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single(),
+  ])
 
   // Fetch attachments (if group_id exists)
   let attachments: {
@@ -98,6 +101,10 @@ export default async function ItemDetailPage({ params }: { params: { id: string 
     ?.map((it) => it.tags)
     .filter((t): t is { id: string; name: string } => t !== null) ?? []
 
+  const videoId = item.source_type === 'youtube' && item.source_url
+    ? extractYouTubeId(item.source_url)
+    : null
+
   return (
     <div className="max-w-3xl mx-auto p-6">
       {/* Header */}
@@ -122,30 +129,24 @@ export default async function ItemDetailPage({ params }: { params: { id: string 
       {/* YouTube embed */}
       {item.source_type === 'youtube' && item.source_url && (
         <div className="mb-6 w-full overflow-hidden rounded-lg aspect-video bg-muted">
-          {(() => {
-            const videoIdMatch = item.source_url.match(
-              /(?:[?&]v=|youtu\.be\/|youtube\.com\/(?:shorts|live|embed)\/)([a-zA-Z0-9_-]{11})/
-            )
-            const videoId = videoIdMatch?.[1]
-            return videoId ? (
-              <iframe
-                src={`https://www.youtube.com/embed/${videoId}`}
-                title={item.subject ?? 'YouTube video'}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full border-0"
-              />
-            ) : (
-              <a
-                href={item.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center h-full text-sm text-muted-foreground underline"
-              >
-                Watch on YouTube
-              </a>
-            )
-          })()}
+          {videoId ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${videoId}`}
+              title={item.subject ?? 'YouTube video'}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full border-0"
+            />
+          ) : (
+            <a
+              href={item.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center h-full text-sm text-muted-foreground underline"
+            >
+              Watch on YouTube
+            </a>
+          )}
         </div>
       )}
 
