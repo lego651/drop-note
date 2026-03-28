@@ -44,12 +44,14 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
 
   // Handle tag filter — get matching item IDs first
   let tagFilterIds: string[] | null = null
+  let activeTagName: string | undefined
   if (tagId) {
-    const { data: taggedItemIds } = await supabase
-      .from('item_tags')
-      .select('item_id')
-      .eq('tag_id', tagId)
+    const [{ data: taggedItemIds }, { data: tagRow }] = await Promise.all([
+      supabase.from('item_tags').select('item_id').eq('tag_id', tagId),
+      supabase.from('tags').select('name').eq('id', tagId).single(),
+    ])
     tagFilterIds = taggedItemIds?.map((r) => r.item_id) ?? []
+    activeTagName = tagRow?.name ?? undefined
   }
 
   // If tag filter returned no items, short-circuit
@@ -60,6 +62,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
         totalCount={0}
         page={page}
         initialQuery={q ?? ''}
+        activeTagName={activeTagName}
         userTier={userTier}
         userId={user.id}
       />
@@ -106,6 +109,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       totalCount={count ?? 0}
       page={page}
       initialQuery={q ?? ''}
+      activeTagName={activeTagName}
       userTier={userTier}
       userId={user.id}
     />

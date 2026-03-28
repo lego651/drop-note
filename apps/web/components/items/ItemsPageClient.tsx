@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRealtimeItems } from '@/hooks/useRealtimeItems'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Search, Copy, Check } from 'lucide-react'
+import { Search, Copy, Check, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ItemsListLayout } from '@/components/items/ItemsListLayout'
@@ -22,6 +22,7 @@ interface ItemsPageClientProps {
   totalCount: number
   page: number
   initialQuery?: string
+  activeTagName?: string
   userTier?: Tier
   userId: string
 }
@@ -39,6 +40,7 @@ function ItemsPageClientInner({
   totalCount,
   page,
   initialQuery = '',
+  activeTagName,
   userTier = 'free',
   userId,
 }: ItemsPageClientProps) {
@@ -225,20 +227,32 @@ function ItemsPageClientInner({
         </div>
       </div>
 
-      {/* Search bar */}
-      <div className="relative max-w-sm">
-        <Search
-          size={15}
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-        />
-        <Input
-          type="search"
-          placeholder="Search items…"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          className="pl-8 h-8 text-sm"
-          aria-label="Search items"
-        />
+      {/* Search bar + active tag pill */}
+      <div className="flex items-center gap-2">
+        <div className="relative max-w-sm">
+          <Search
+            size={15}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+          />
+          <Input
+            type="search"
+            placeholder="Search items…"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="pl-8 h-8 text-sm"
+            aria-label="Search items"
+          />
+        </div>
+        {activeTagName && (
+          <Link
+            href="/items"
+            className="flex items-center gap-1 rounded-full border border-border bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground hover:bg-accent/70 transition-colors shrink-0"
+            aria-label={`Clear tag filter: ${activeTagName}`}
+          >
+            {activeTagName}
+            <X size={11} className="opacity-60" />
+          </Link>
+        )}
       </div>
 
       {/* Bulk action toolbar */}
