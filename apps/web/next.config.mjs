@@ -3,6 +3,12 @@ import { withSentryConfig } from '@sentry/nextjs'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'img.youtube.com' },
+      { protocol: 'https', hostname: 'i.ytimg.com' },
+    ],
+  },
   async headers() {
     const securityHeaders = [
       { key: 'X-Frame-Options', value: 'DENY' },

@@ -2,17 +2,16 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
-import { Pin, Trash2, Play } from 'lucide-react'
+import { Pin, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { VideoModal } from '@/components/VideoModal'
+import { ItemThumbnail } from '@/components/ItemThumbnail'
 import { cn } from '@/lib/utils'
 import type { ItemSummary } from '@/lib/items'
-
-const YOUTUBE_ID_RE = /(?:[?&]v=|youtu\.be\/|youtube\.com\/(?:shorts|live|embed)\/)([a-zA-Z0-9_-]{11})/
+import { extractYouTubeId } from '@drop-note/shared'
 
 interface ItemCardProps {
   item: ItemSummary
@@ -47,7 +46,7 @@ export function ItemCard({
   const isDone = item.status === 'done'
 
   const youtubeId = item.source_type === 'youtube' && item.source_url
-    ? (item.source_url.match(YOUTUBE_ID_RE)?.[1] ?? null)
+    ? extractYouTubeId(item.source_url)
     : null
 
   const cardContent = (
@@ -114,37 +113,13 @@ export function ItemCard({
 
       {/* Thumbnail — YouTube / video items */}
       {isDone && item.thumbnail_url && (
-        <button
-          type="button"
-          aria-label="Watch video"
-          className={cn(
-            'relative shrink-0 overflow-hidden rounded-md bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            isListView
-              ? 'w-28 h-20 sm:w-36 sm:h-24'
-              : 'w-full aspect-video',
-          )}
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            if (youtubeId) setVideoOpen(true)
-          }}
-        >
-          <Image
-            src={item.thumbnail_url}
-            alt={item.subject ?? 'Video thumbnail'}
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 112px, 144px"
-            unoptimized
-          />
-          {youtubeId && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="rounded-full bg-background/80 p-1.5 group-hover:scale-110 transition-transform">
-                <Play size={12} className="fill-foreground text-foreground" />
-              </div>
-            </div>
-          )}
-        </button>
+        <ItemThumbnail
+          thumbnailUrl={item.thumbnail_url}
+          subject={item.subject}
+          youtubeId={youtubeId}
+          isListView={isListView}
+          onVideoOpen={() => setVideoOpen(true)}
+        />
       )}
 
       {/* Summary / skeleton */}
@@ -209,13 +184,12 @@ export function ItemCard({
         cardContent
       )}
 
-      {videoOpen && youtubeId && (
-        <VideoModal
-          videoId={youtubeId}
-          title={item.subject ?? 'Video'}
-          onClose={() => setVideoOpen(false)}
-        />
-      )}
+      <VideoModal
+        open={videoOpen}
+        videoId={youtubeId ?? ''}
+        title={item.subject ?? 'Video'}
+        onClose={() => setVideoOpen(false)}
+      />
     </>
   )
 }

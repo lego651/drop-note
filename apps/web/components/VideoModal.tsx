@@ -1,63 +1,40 @@
 'use client'
 
-import { useEffect } from 'react'
-import { X } from 'lucide-react'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { Dialog, DialogPortal, DialogOverlay, DialogTitle } from '@/components/ui/dialog'
 
 interface VideoModalProps {
+  open: boolean
   videoId: string
   title: string
   onClose: () => void
 }
 
-export function VideoModal({ videoId, title, onClose }: VideoModalProps) {
-  // Close on Escape key
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [onClose])
-
-  // Prevent body scroll while open
-  useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
-  }, [])
-
+export function VideoModal({ open, videoId, title, onClose }: VideoModalProps) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
-      onClick={onClose}
-    >
-      <div
-        className="relative w-full max-w-3xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Close button */}
-        <button
-          type="button"
-          aria-label="Close video"
-          onClick={onClose}
-          className="absolute -top-10 right-0 text-white/80 hover:text-white"
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogPortal>
+        <DialogOverlay className="bg-black/70" />
+        <DialogPrimitive.Content
+          className="fixed left-[50%] top-[50%] z-50 w-full max-w-3xl translate-x-[-50%] translate-y-[-50%] p-4 focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]"
         >
-          <X size={24} />
-        </button>
+          <DialogTitle className="sr-only">{title}</DialogTitle>
 
-        {/* Video */}
-        <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black">
-          <iframe
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
-            title={title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="absolute inset-0 w-full h-full border-0"
-          />
-        </div>
+          {/* Video */}
+          <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black">
+            <iframe
+              src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+              title={title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full border-0"
+            />
+          </div>
 
-        {/* Title */}
-        <p className="mt-2 text-sm text-white/70 truncate">{title}</p>
-      </div>
-    </div>
+          {/* Title */}
+          <p className="mt-2 text-sm text-white/70 truncate" aria-hidden="true">{title}</p>
+        </DialogPrimitive.Content>
+      </DialogPortal>
+    </Dialog>
   )
 }
