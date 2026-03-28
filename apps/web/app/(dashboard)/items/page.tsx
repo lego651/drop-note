@@ -25,7 +25,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     redirect('/login')
   }
 
-  const params = await Promise.resolve(searchParams ?? {})
+  const params = searchParams ?? {}
 
   const { data: userData } = await supabase
     .from('users')

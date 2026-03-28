@@ -5,8 +5,6 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { AUTH_EMAIL_RATE_LIMIT_PER_HOUR } from '@drop-note/shared'
 
-const supabase = createClient()
-
 interface LoginFormProps {
   redirectTo?: string
   deleted?: boolean
@@ -14,6 +12,7 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({ redirectTo, deleted, authError }: LoginFormProps) {
+  const supabase = createClient()
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
