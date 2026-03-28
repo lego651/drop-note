@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { formatDistanceToNow } from 'date-fns'
 import { Pin, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -38,8 +37,21 @@ export function ItemCard({
     ?.map((it) => it.tags)
     .filter((t): t is { id: string; name: string } => t !== null) ?? []
 
-  const visibleTags = tags.slice(0, 4)
+  const visibleTags = tags.slice(0, 3)
   const extraTagCount = tags.length - visibleTags.length
+
+  function compactAge(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime()
+    const m = Math.floor(diff / 60000)
+    if (m < 60) return `${Math.max(m, 1)}m`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `${h}h`
+    const d = Math.floor(h / 24)
+    if (d < 30) return `${d}d`
+    const mo = Math.floor(d / 30)
+    if (mo < 12) return `${mo}mo`
+    return `${Math.floor(mo / 12)}y`
+  }
 
   const isFailed = item.status === 'failed'
   const isProcessing = item.status === 'processing' || item.status === 'pending'
@@ -145,16 +157,16 @@ export function ItemCard({
       )}
 
       {/* Footer: tags + date */}
-      <div className="flex flex-wrap items-center justify-between gap-1 pt-0.5">
-        <div className="flex flex-wrap items-center gap-1">
+      <div className="flex items-center justify-between gap-2 pt-0.5 min-w-0">
+        <div className="flex items-center gap-1 overflow-hidden">
           {visibleTags.map((tag) => (
-            <Badge key={tag.id} variant="secondary" className="text-xs py-0 px-1.5">
+            <Badge key={tag.id} variant="secondary" className="text-xs py-0 px-1.5 shrink-0">
               {tag.name}
             </Badge>
           ))}
           {extraTagCount > 0 && (
-            <Badge variant="secondary" className="text-xs py-0 px-1.5">
-              +{extraTagCount} more
+            <Badge variant="secondary" className="text-xs py-0 px-1.5 shrink-0">
+              +{extraTagCount}
             </Badge>
           )}
         </div>
@@ -162,7 +174,7 @@ export function ItemCard({
           dateTime={item.created_at}
           className="shrink-0 text-xs text-muted-foreground"
         >
-          {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+          {compactAge(item.created_at)}
         </time>
       </div>
       </div>{/* end text content */}
