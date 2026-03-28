@@ -1,5 +1,6 @@
 import { supabaseAdmin } from './supabase'
 import { normalizeTags } from '@drop-note/shared'
+import type { SourceType } from '@drop-note/shared'
 
 export async function setItemProcessing(itemId: string): Promise<void> {
   const { data, error } = await supabaseAdmin
@@ -18,7 +19,7 @@ export async function setItemDone(
     aiSummary: string
     storagePath: string | null
     filename: string | null
-    sourceType?: string | null
+    sourceType?: SourceType | null
     sourceUrl?: string | null
     thumbnailUrl?: string | null
   }

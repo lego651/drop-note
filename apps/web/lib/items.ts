@@ -1,6 +1,7 @@
 import { isToday, isYesterday, format } from 'date-fns'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SourceType } from '@drop-note/shared'
 
 export type ItemSummary = {
   id: string
@@ -11,7 +12,7 @@ export type ItemSummary = {
   error_message: string | null
   pinned: boolean
   created_at: string
-  source_type: string | null
+  source_type: SourceType | null
   source_url: string | null
   thumbnail_url: string | null
   item_tags?: { tags: { id: string; name: string } | null }[] | null

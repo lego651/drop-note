@@ -1,4 +1,5 @@
 export * from './url'
+export type { SourceType } from './types'
 export type { AIProvider } from './ai-provider'
 export { OpenAIProvider, AnthropicProvider, GeminiProvider, createAIProvider } from './ai-provider'
 export * from './auth'

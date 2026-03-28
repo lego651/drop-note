@@ -9,6 +9,7 @@ import {
   getYouTubeThumbnailUrl,
   fetchYouTubeTitle,
 } from '@drop-note/shared'
+import type { SourceType } from '@drop-note/shared'
 import { setItemProcessing, setItemDone, setItemFailed, upsertTags, createAttachmentItem } from '../lib/db'
 import { uploadAttachment } from '../lib/storage'
 import { summarizeEmailBody, describeImage } from '../lib/openai'
@@ -41,7 +42,7 @@ export async function processEmail(job: Job<EmailJobPayload>): Promise<EmailJobR
     const detectedUrl = extractSingleUrl(parsed.bodyText)
     const youtubeId = detectedUrl ? extractYouTubeId(detectedUrl) : null
 
-    let sourceType: string | null = null
+    let sourceType: SourceType | null = null
     let sourceUrl: string | null = null
     let thumbnailUrl: string | null = null
     let summarizeSubject = parsed.subject
