@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Pin, Trash2 } from 'lucide-react'
+import { ExternalLink, Pin, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -93,6 +93,18 @@ export function ItemCard({
           {item.subject ?? '(No subject)'}
         </p>
         <div className="flex items-center gap-1 shrink-0">
+          {youtubeId && item.source_url && (
+            <a
+              href={item.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open on YouTube"
+              className="text-muted-foreground opacity-40 hover:opacity-100 transition-opacity"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ExternalLink size={14} />
+            </a>
+          )}
           <button
             type="button"
             aria-label={item.pinned ? 'Unpin item' : 'Pin item'}
