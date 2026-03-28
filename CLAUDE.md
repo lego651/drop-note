@@ -31,7 +31,7 @@ drop-note/
 |---|---|
 | Frontend | Next.js 14 (App Router) + TypeScript + shadcn/ui + Tailwind |
 | Database | Supabase (Postgres + RLS) |
-| Auth | Supabase Auth (magic link only — no passwords) |
+| Auth | Supabase Auth (Google OAuth only) |
 | File Storage | Supabase Storage |
 | Email Inbound | SendGrid Inbound Parse → `/api/ingest` |
 | Queue | BullMQ + Redis (Upstash/Railway) |
@@ -108,7 +108,7 @@ npx supabase migration list --linked  # check migration status
 
 ## Code conventions
 
-- **No passwords** — Supabase magic link only
+- **No passwords** — Google OAuth only (no magic links)
 - **No raw Tailwind color classes** — always use semantic tokens (`bg-background`, `text-muted-foreground`, etc.). All color decisions go through CSS variables in `globals.css`.
 - **No `dark:` variants in components** — only in `globals.css`
 - **Server Components by default** — only add `'use client'` when strictly needed (event handlers, browser APIs, hooks)
@@ -146,11 +146,11 @@ Full ticket breakdowns in `docs/s1-tickets.md` and `docs/sprint-plan.md`.
 Format: `[s{N}] type: description` or `[bug] type: description`
 
 ```
-[s1] feat: add magic link login flow
+[s1] feat: add Google OAuth login flow
 [s2] feat: /api/ingest route with SendGrid payload parsing
 [s6] feat: add batch delete support
 [bug] fix: sidebar blank on mobile
-[bug] fix: raise Supabase auth email rate limit
+[bug] fix: OAuth redirect URI mismatch
 ```
 
 **Types:** `feat`, `fix`, `chore`, `refactor`, `test`, `docs`
@@ -183,9 +183,4 @@ Format: `[s{N}] type: description` or `[bug] type: description`
 - **v1 inbox model:** shared address (`drop@dropnote.com`), user identified by `from` email. Per-user token routing (`drop+[token]@dropnote.com`) is v2 — `users.drop_token` already in schema to support migration.
 - **Vercel preview URLs** are protected by Vercel auth on Hobby plan — expected behavior, not a bug.
 - **Port conflict:** if port 3000 is taken, Next.js falls back to 3001. Check the terminal output.
-- **Supabase Auth email rate limit** — controls how many magic link emails can be sent per hour across the entire project. This is a Supabase platform-level setting, **not** per-tier. It applies equally to all users (free, pro, power). The limit must be kept in sync in **three places**:
-  1. `supabase/config.toml` → `[auth.rate_limit]` → `email_sent` (local dev)
-  2. Supabase Dashboard → Authentication → Rate Limits → "Rate limit for sending emails" (production — **must be updated manually**, cannot be set via CLI or migration on the free Supabase plan)
-  3. `packages/shared/src/ratelimit.ts` → `AUTH_EMAIL_RATE_LIMIT_PER_HOUR` (used in user-facing error messages in login + register forms)
-
-  Current value: **30 emails/hour**. If you change it, update all three.
+- **Auth:** Google OAuth only. One-time Supabase + Google Cloud setup required — see `docs/google-oauth-setup.md`.

@@ -6,7 +6,11 @@ export const metadata: Metadata = {
   title: 'Register — drop-note',
 }
 
-export default async function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>
+}) {
   // Determine if invite mode is required
   const [{ data: setting }, { count }] = await Promise.all([
     supabaseAdmin.from('site_settings').select('value').eq('key', 'registration_mode').single(),
@@ -14,6 +18,7 @@ export default async function RegisterPage() {
   ])
 
   const needsCode = setting?.value === 'invite' || (count ?? 0) >= 50
+  const errorParam = typeof searchParams?.error === 'string' ? searchParams.error : undefined
 
-  return <RegisterForm needsCode={needsCode} />
+  return <RegisterForm needsCode={needsCode} errorParam={errorParam} />
 }

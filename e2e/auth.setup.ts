@@ -5,11 +5,13 @@ import { createClient } from '@supabase/supabase-js'
 // Saves storage state to e2e/fixtures/*.json for use as storageState in test projects.
 //
 // Required env vars:
-//   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+//   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY
 //   E2E_FREE_USER_EMAIL, E2E_PRO_USER_EMAIL, E2E_ADMIN_USER_EMAIL, E2E_USER_PASSWORD
+//   BASE_URL (optional, defaults to http://localhost:3000)
 
 const SUPABASE_URL = process.env.SUPABASE_URL!
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!
 
 async function createSession(
   page: import('@playwright/test').Page,
@@ -29,7 +31,7 @@ async function createSession(
     email_confirm: true,
   })
 
-  const userId = userData?.user?.id
+  let userId = userData?.user?.id
 
   if (!userId) {
     // User may already exist — look them up.
@@ -37,24 +39,42 @@ async function createSession(
     const { data: existing } = await admin.auth.admin.listUsers({ perPage: 1000, page: 1 })
     const found = existing?.users?.find((u) => u.email === email)
     if (!found) throw new Error(`Could not create or find user: ${email}`)
-    if (isAdmin) {
-      await admin.from('users').update({ is_admin: true }).eq('id', found.id)
-    }
-  } else if (isAdmin) {
+    userId = found.id
+    // Reset password in case it differs from expected
+    await admin.auth.admin.updateUserById(userId, { password })
+  }
+
+  if (isAdmin) {
     await admin.from('users').update({ is_admin: true }).eq('id', userId)
   }
 
-  // Generate a magic link to sign in via browser (no password flow)
-  const { data: linkData } = await admin.auth.admin.generateLink({
-    type: 'magiclink',
-    email,
+  // Sign in via password using the anon client to get a real session token
+  const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
   })
-
-  if (!linkData?.properties?.action_link) {
-    throw new Error(`Could not generate magic link for: ${email}`)
+  const { data: sessionData, error: signInError } = await anonClient.auth.signInWithPassword({
+    email,
+    password,
+  })
+  if (signInError || !sessionData.session) {
+    throw new Error(`Could not sign in as ${email}: ${signInError?.message ?? 'no session'}`)
   }
 
-  await page.goto(linkData.properties.action_link)
+  // Inject session into browser localStorage.
+  // NOTE: compute the storage key in Node.js context — process.env is not available inside page.evaluate()
+  const supabaseProjectRef = new URL(SUPABASE_URL).hostname.split('.')[0]
+  const storageKey = `sb-${supabaseProjectRef}-auth-token`
+
+  const baseUrl = process.env.BASE_URL ?? 'http://localhost:3000'
+  await page.goto(baseUrl)
+  await page.evaluate(
+    ({ key, session }) => {
+      localStorage.setItem(key, JSON.stringify(session))
+    },
+    { key: storageKey, session: sessionData.session },
+  )
+
+  await page.goto(`${baseUrl}/items`)
   await page.waitForURL('**/items', { timeout: 15000 })
   await page.context().storageState({ path: storagePath })
 }

@@ -12,7 +12,6 @@ export default async function LoginPage({
 }) {
   return (
     <LoginForm
-      redirectTo={searchParams?.next as string | undefined}
       deleted={searchParams?.deleted === '1'}
       authError={searchParams?.error === 'auth'}
     />

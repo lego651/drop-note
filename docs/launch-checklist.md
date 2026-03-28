@@ -74,8 +74,11 @@ curl -X POST "https://drop-note-pi.vercel.app/api/ingest?key=YOUR_SENDGRID_WEBHO
 - [ ] Ran a live test checkout end-to-end before opening beta
 
 ## Auth & Email
-- [ ] Supabase Auth email provider configured (SMTP or Supabase-hosted email)
-- [ ] Magic link redirect URL: `https://dropnote.com/auth/callback`
+- [ ] Google Cloud Console OAuth app created with production domain
+- [ ] Supabase → Authentication → Providers → Google enabled (Client ID + Secret)
+- [ ] Supabase → Authentication → User Management → "Allow linking multiple providers" enabled
+- [ ] Authorized redirect URI includes: `https://<ref>.supabase.co/auth/v1/callback`
+- [ ] Authorized JavaScript origins include production domain + Vercel preview domain
 - [ ] Welcome email template live in Resend
 - [ ] Resend domain verified for sending from `@dropnote.com`
 
@@ -100,7 +103,7 @@ curl -X POST "https://drop-note-pi.vercel.app/api/ingest?key=YOUR_SENDGRID_WEBHO
 - [ ] GitHub Projects public roadmap board created
 
 ## Final Smoke Test (manual — run once before beta)
-- [ ] Register a new account → receive magic link email → click → land on `/items`
+- [ ] Register a new account → click "Continue with Google" → complete OAuth → land on `/items`
 - [ ] Send email to `drop@dropnote.com` from registered address → item appears in dashboard within 30s
 - [ ] Upgrade to Pro via Stripe (use live card) → tier changes to `pro` in Supabase
 - [ ] Admin panel accessible with `is_admin` account
