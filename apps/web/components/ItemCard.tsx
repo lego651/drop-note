@@ -70,7 +70,7 @@ export function ItemCard({
         />
       )}
 
-      {/* Text content — fills remaining space in list view */}
+      {/* Text content — fills remaining space */}
       <div className="flex flex-col gap-1.5 min-w-0 flex-1">
       {/* Header row: subject + pin */}
       <div className="flex items-start justify-between gap-2">
@@ -111,13 +111,13 @@ export function ItemCard({
         </button>
       </div>
 
-      {/* Thumbnail — YouTube / video items */}
-      {isDone && item.thumbnail_url && (
+      {/* Thumbnail — grid view only (list view renders it as right column) */}
+      {!isListView && isDone && item.thumbnail_url && (
         <ItemThumbnail
           thumbnailUrl={item.thumbnail_url}
           subject={item.subject}
           youtubeId={youtubeId}
-          isListView={isListView}
+          isListView={false}
           onVideoOpen={() => setVideoOpen(true)}
         />
       )}
@@ -147,11 +147,6 @@ export function ItemCard({
       {/* Footer: tags + date */}
       <div className="flex flex-wrap items-center justify-between gap-1 pt-0.5">
         <div className="flex flex-wrap items-center gap-1">
-          {item.source_type === 'youtube' && (
-            <Badge variant="outline" className="text-xs py-0 px-1.5">
-              Video
-            </Badge>
-          )}
           {visibleTags.map((tag) => (
             <Badge key={tag.id} variant="secondary" className="text-xs py-0 px-1.5">
               {tag.name}
@@ -171,6 +166,17 @@ export function ItemCard({
         </time>
       </div>
       </div>{/* end text content */}
+
+      {/* Thumbnail — list view right column */}
+      {isListView && isDone && item.thumbnail_url && (
+        <ItemThumbnail
+          thumbnailUrl={item.thumbnail_url}
+          subject={item.subject}
+          youtubeId={youtubeId}
+          isListView={true}
+          onVideoOpen={() => setVideoOpen(true)}
+        />
+      )}
     </div>
   )
 
