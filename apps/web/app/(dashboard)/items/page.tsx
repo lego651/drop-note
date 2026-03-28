@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ItemsPageClient } from '@/components/items/ItemsPageClient'
-import type { Tier } from '@drop-note/shared'
+import type { Tier, SourceType } from '@drop-note/shared'
+import type { ItemSummary } from '@/lib/items'
 
 export const metadata = { title: 'Items — drop-note' }
 
@@ -93,7 +94,11 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     }
   }
 
-  const { data: items, count } = await query.range(offset, offset + 24)
+  const { data: rawItems, count } = await query.range(offset, offset + 24)
+  const items = rawItems?.map((item) => ({
+    ...item,
+    source_type: item.source_type as SourceType | null,
+  })) as ItemSummary[] | null
 
   return (
     <ItemsPageClient

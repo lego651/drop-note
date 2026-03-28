@@ -120,6 +120,7 @@ npx supabase migration list --linked  # check migration status
 - **SQL migrations** — write migration files, never use the Supabase GUI to change schema
 - **No module-level env var access** — never call `requireEnv()` or read `process.env` at the top level of a module. Next.js imports all route modules at build time; env var reads must happen inside request handlers or lazy initializers. Use a lazy singleton (the Proxy pattern in `lib/supabase/admin.ts` and `lib/stripe.ts`) for any client that needs a secret key. This applies to Stripe, Redis, Resend, OpenAI — every service client.
 - **No `as any` outside tests** — use `unknown` + narrowing or `Record<string | symbol, unknown>` instead. Test files (`*.test.ts`) are exempt.
+- **Supabase query results vs. narrow app types** — Supabase generates DB types where every `text` column is `string`. App-level union types (e.g. `SourceType`, `Tier`, status enums) are narrower than `string` and are never auto-inferred from query results. Whenever a Supabase query feeds into a component or function that expects a narrow union type, cast the relevant fields explicitly at the query boundary (e.g. `source_type: row.source_type as SourceType | null`). Do not suppress this with `as any` — cast the specific field.
 - **ESLint config** — `apps/web/.eslintrc.json` extends `next/core-web-vitals`. Do not remove it. Inline `eslint-disable` comments for `@next/next/*` and `react-hooks/*` rules only work when the config loads those plugins.
 
 ---
