@@ -82,7 +82,7 @@ export function ItemCard({
 
       {/* Text content — fills remaining space */}
       <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-      {/* Header row: subject + pin */}
+      {/* Header row: subject + actions */}
       <div className="flex items-start justify-between gap-2">
         <p
           className={cn(
@@ -92,33 +92,35 @@ export function ItemCard({
         >
           {item.subject ?? '(No subject)'}
         </p>
-        <button
-          type="button"
-          aria-label={item.pinned ? 'Unpin item' : 'Pin item'}
-          className="shrink-0 text-muted-foreground"
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            onPinChange?.(item.id, !item.pinned)
-          }}
-        >
-          <Pin
-            size={14}
-            className={cn(item.pinned ? 'fill-foreground text-foreground' : 'opacity-40')}
-          />
-        </button>
-        <button
-          type="button"
-          aria-label="Delete item"
-          className="shrink-0 text-muted-foreground opacity-40 hover:opacity-100 transition-opacity"
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            onDelete?.(item.id)
-          }}
-        >
-          <Trash2 size={14} />
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            aria-label={item.pinned ? 'Unpin item' : 'Pin item'}
+            className="text-muted-foreground"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onPinChange?.(item.id, !item.pinned)
+            }}
+          >
+            <Pin
+              size={14}
+              className={cn(item.pinned ? 'fill-foreground text-foreground' : 'opacity-40')}
+            />
+          </button>
+          <button
+            type="button"
+            aria-label="Delete item"
+            className="text-muted-foreground opacity-40 hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onDelete?.(item.id)
+            }}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Thumbnail — grid view only (list view renders it as right column) */}
