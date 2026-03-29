@@ -12,3 +12,4 @@ e2e/fixtures/pro-user.json
 e2e/fixtures/admin.json
 .DS_Store
 supabase/.temp
+.vercel
