@@ -10,6 +10,7 @@ import { VideoModal } from '@/components/VideoModal'
 import { ItemThumbnail } from '@/components/ItemThumbnail'
 import { TagRow } from '@/components/TagRow'
 import { cn } from '@/lib/utils'
+import { openExternalUrl } from '@/lib/open-external'
 import type { ItemSummary } from '@/lib/items'
 import { extractYouTubeId } from '@drop-note/shared'
 
@@ -94,16 +95,18 @@ export function ItemCard({
         </p>
         <div className="flex items-center gap-1 shrink-0">
           {youtubeId && item.source_url && (
-            <a
-              href={item.source_url}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
               aria-label="Open on YouTube"
               className="text-muted-foreground opacity-40 hover:opacity-100 transition-opacity"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation()
+                const url = item.source_url
+                if (url) openExternalUrl(url)
+              }}
             >
               <ExternalLink size={14} />
-            </a>
+            </button>
           )}
           <button
             type="button"
