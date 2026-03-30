@@ -18,6 +18,10 @@ const connection = new IORedis(process.env.REDIS_URL!, {
 const worker = new Worker(QUEUE_NAME, processEmail, {
   connection,
   concurrency: 2,
+  stalledInterval: 300_000,        // check stalled jobs every 5 min (default: 30s)
+  drainDelay: 30,                  // wait 30s when queue is empty (default: 5s)
+  removeOnComplete: { count: 10 }, // keep only last 10 completed jobs in Redis
+  removeOnFail: { count: 20 },     // keep only last 20 failed jobs in Redis
 })
 
 worker.on('completed', (job) => {
