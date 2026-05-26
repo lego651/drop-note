@@ -10,7 +10,7 @@ import {
   fetchYouTubeTitle,
 } from '@drop-note/shared'
 import type { SourceType } from '@drop-note/shared'
-import { setItemProcessing, setItemDone, setItemFailed, upsertTags, createAttachmentItem } from '../lib/db'
+import { setItemProcessing, setItemDone, setItemFailed, setItemPending, upsertTags, createAttachmentItem } from '../lib/db'
 import { uploadAttachment } from '../lib/storage'
 import { summarizeEmailBody, describeImage } from '../lib/openai'
 import { extractPdfText } from '../lib/pdf'
@@ -69,13 +69,15 @@ export async function processEmail(job: Job<EmailJobPayload>): Promise<EmailJobR
     const bodyResult = await summarizeEmailBody(summarizeSubject, summarizeBody)
 
     if (bodyResult.error) {
-      if (bodyResult.error === 'Invalid AI response format') {
-        // Non-retryable parse error — mark failed and continue
-        await setItemFailed(bodyItemId, bodyResult.error)
+      if (bodyResult.retryable) {
+        // Transient AI service error — rethrow so BullMQ retries the job.
+        // Attach retryable flag so the outer catch can distinguish it.
+        const err = new Error(bodyResult.error) as Error & { retryable: boolean }
+        err.retryable = true
+        throw err
       } else {
-        // Transient AI service error — rethrow so BullMQ retries the job
-        // The outer catch will mark the item failed and rethrow
-        throw new Error(bodyResult.error)
+        // Non-retryable error (parse failure, 400, etc.) — mark failed, do not rethrow
+        await setItemFailed(bodyItemId, bodyResult.error)
       }
     } else {
       await setItemDone(bodyItemId, {
@@ -152,7 +154,17 @@ export async function processEmail(job: Job<EmailJobPayload>): Promise<EmailJobR
     return { itemIds, status: 'done' }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error'
-    await setItemFailed(bodyItemId, msg)
-    throw err // BullMQ will retry
+    const isRetryable = err instanceof Error && (err as Error & { retryable?: boolean }).retryable === true
+    const maxAttempts = job.opts.attempts ?? 1
+    const isLastAttempt = job.attemptsMade + 1 >= maxAttempts
+
+    if (isRetryable && !isLastAttempt) {
+      // Transient error with retries remaining — keep item accessible, BullMQ will retry
+      await setItemPending(bodyItemId, 'AI summary temporarily unavailable. Your content has been saved.')
+    } else {
+      // Non-retryable error, or retries exhausted — mark as failed
+      await setItemFailed(bodyItemId, msg)
+    }
+    throw err // BullMQ will retry (or move to failed queue on last attempt)
   }
 }

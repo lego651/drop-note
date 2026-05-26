@@ -13,6 +13,7 @@ interface SummarizeResult {
   summary: string
   tags: string[]
   error: string | null
+  retryable: boolean
 }
 
 export async function summarizeEmailBody(
@@ -32,12 +33,13 @@ export async function summarizeEmailBody(
 
     const deduped = [...new Set(tags)].slice(0, 10)
 
-    return { summary: result.summary ?? '', tags: deduped, error: null }
+    return { summary: result.summary ?? '', tags: deduped, error: null, retryable: false }
   } catch (err) {
     if (err instanceof SyntaxError) {
-      return { summary: '', tags: [], error: 'Invalid AI response format' }
+      return { summary: '', tags: [], error: 'Invalid AI response format', retryable: false }
     }
-    return { summary: '', tags: [], error: err instanceof Error ? err.message : 'Unknown error' }
+    const isRetryable = err instanceof Error && (err as Error & { retryable?: boolean }).retryable === true
+    return { summary: '', tags: [], error: err instanceof Error ? err.message : 'Unknown error', retryable: isRetryable }
   }
 }
 

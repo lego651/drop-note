@@ -42,6 +42,15 @@ export async function setItemDone(
   if (error || !data) throw new Error(error?.message ?? `Item ${itemId} not found`)
 }
 
+export async function setItemPending(itemId: string, summary: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('items')
+    .update({ status: 'pending', ai_summary: summary })
+    .eq('id', itemId)
+
+  if (error) throw new Error(error.message)
+}
+
 export async function setItemFailed(itemId: string, errorMessage: string): Promise<void> {
   const { error } = await supabaseAdmin
     .from('items')
