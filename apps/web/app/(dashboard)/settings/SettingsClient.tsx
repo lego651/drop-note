@@ -34,7 +34,7 @@ export function SettingsClient({ email, tier, memberSince }: SettingsClientProps
   const [deleteError, setDeleteError] = useState('')
 
   async function handleCopy() {
-    await navigator.clipboard.writeText('drop@dropnote.com')
+    await navigator.clipboard.writeText('drop@inbound.dropnote.me')
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -76,7 +76,7 @@ export function SettingsClient({ email, tier, memberSince }: SettingsClientProps
         <h2 className="text-sm font-medium">Drop Address</h2>
         <div className="flex items-center gap-2">
           <code className="flex-1 rounded-md border border-input bg-muted px-3 py-2 text-sm font-mono">
-            drop@dropnote.com
+            drop@inbound.dropnote.me
           </code>
           <Button
             variant="outline"

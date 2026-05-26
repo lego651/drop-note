@@ -19,8 +19,8 @@ export default function PrivacyPage() {
           <p>
             The data controller for drop-note is the operator of this service. For all data
             protection enquiries and data subject requests, contact us at{' '}
-            <a href="mailto:legal@dropnote.com" className="underline text-muted-foreground">
-              legal@dropnote.com
+            <a href="mailto:legal@dropnote.me" className="underline text-muted-foreground">
+              legal@dropnote.me
             </a>
             .
           </p>
@@ -40,7 +40,7 @@ export default function PrivacyPage() {
             <li>
               <span className="text-foreground font-medium">Content of emails</span> — the
               body, subject, and any attachments you send to{' '}
-              <span className="font-mono">drop@dropnote.com</span> are stored and processed
+              <span className="font-mono">drop@inbound.dropnote.me</span> are stored and processed
               to provide the service (summarisation, tagging, and display in your dashboard).
             </li>
             <li>
@@ -115,8 +115,8 @@ export default function PrivacyPage() {
             <li>
               <span className="text-foreground font-medium">Other data subject requests</span>{' '}
               — for access requests, portability, or rectification requests, email{' '}
-              <a href="mailto:legal@dropnote.com" className="underline">
-                legal@dropnote.com
+              <a href="mailto:legal@dropnote.me" className="underline">
+                legal@dropnote.me
               </a>
               . We will respond within 30 days.
             </li>
@@ -186,8 +186,8 @@ export default function PrivacyPage() {
           <p>
             For any privacy-related questions or to exercise your data subject rights,
             contact us at{' '}
-            <a href="mailto:legal@dropnote.com" className="underline text-muted-foreground">
-              legal@dropnote.com
+            <a href="mailto:legal@dropnote.me" className="underline text-muted-foreground">
+              legal@dropnote.me
             </a>
             .
           </p>

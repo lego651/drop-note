@@ -18,7 +18,7 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold mb-3">1. The Service</h2>
           <p className="mb-3">
             drop-note is an email-to-dashboard content saver. By emailing any content to{' '}
-            <span className="font-mono">drop@dropnote.com</span> from your registered email
+            <span className="font-mono">drop@inbound.dropnote.me</span> from your registered email
             address, an AI pipeline summarises and tags each item, which you can then browse,
             search, and manage from your personal dashboard.
           </p>
@@ -186,8 +186,8 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold mb-3">10. Contact</h2>
           <p>
             Questions about these terms? Contact us at{' '}
-            <a href="mailto:legal@dropnote.com" className="underline text-muted-foreground">
-              legal@dropnote.com
+            <a href="mailto:legal@dropnote.me" className="underline text-muted-foreground">
+              legal@dropnote.me
             </a>
             .
           </p>

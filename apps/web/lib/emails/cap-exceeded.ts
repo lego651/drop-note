@@ -27,10 +27,10 @@ export async function sendCapExceededEmail({
 
   await redis.set(suppressKey, '1', { ex: 3600 })
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://dropnote.com'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://dropnote.me'
 
   await getResend().emails.send({
-    from: process.env.RESEND_FROM_ADDRESS ?? 'drop-note <noreply@dropnote.com>',
+    from: process.env.RESEND_FROM_ADDRESS ?? 'drop-note <noreply@dropnote.me>',
     to,
     subject: 'Your drop-note inbox is full',
     html: `
