@@ -2,7 +2,7 @@
 
 ## What this project is
 
-drop-note is an email-to-dashboard content saver. Users email anything to `drop@inbound.dropnote.me` from their registered address. An AI pipeline summarizes and tags each item. Users browse, search, and manage everything from a clean web dashboard.
+drop-note is an email-to-dashboard content saver. Users email anything to `drop@dropnote.me` from their registered address. An AI pipeline summarizes and tags each item. Users browse, search, and manage everything from a clean web dashboard.
 
 - **License:** AGPL-3.0
 - **Model:** Free tier + paid SaaS (Pro $9.99/mo, Power $49.99/mo) + self-hosted option
@@ -181,7 +181,7 @@ Format: `[s{N}] type: description` or `[bug] type: description`
 ## Notes & known limitations
 
 - **Session timebox** (30-day / 90-day inactivity) requires Supabase Pro plan — skipped for dev/alpha. Sessions currently never expire.
-- **v1 inbox model:** shared address (`drop@inbound.dropnote.me`), user identified by `from` email. Per-user token routing (`drop+[token]@inbound.dropnote.me`) is v2 — `users.drop_token` already in schema to support migration.
+- **v1 inbox model:** shared address (`drop@dropnote.me`), user identified by `from` email. Per-user token routing (`drop+[token]@dropnote.me`) is v2 — `users.drop_token` already in schema to support migration.
 - **Vercel preview URLs** are protected by Vercel auth on Hobby plan — expected behavior, not a bug.
 - **Port conflict:** if port 3000 is taken, Next.js falls back to 3001. Check the terminal output.
 - **Auth:** Google OAuth only. One-time Supabase + Google Cloud setup required — see `docs/google-oauth-setup.md`.

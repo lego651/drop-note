@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Mail, Copy, CheckCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-const DROP_ADDRESS = process.env.NEXT_PUBLIC_DROP_ADDRESS ?? 'drop@inbound.dropnote.me'
+const DROP_ADDRESS = process.env.NEXT_PUBLIC_DROP_ADDRESS ?? 'drop@dropnote.me'
 
 export function OnboardingPanel() {
   const [copied, setCopied] = useState(false)

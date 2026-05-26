@@ -9,7 +9,7 @@
 
 ---
 
-drop-note is an email-to-dashboard content saver. Email anything to `drop@inbound.dropnote.me` from your registered address and an AI pipeline automatically summarizes and tags it. Browse, search, pin, and manage everything from a clean web dashboard — no browser extension, no app to install.
+drop-note is an email-to-dashboard content saver. Email anything to `drop@dropnote.me` from your registered address and an AI pipeline automatically summarizes and tags it. Browse, search, pin, and manage everything from a clean web dashboard — no browser extension, no app to install.
 
 Free tier available. Pro ($9.99/mo) and Power ($49.99/mo) plans for higher volume. Fully self-hostable under AGPL-3.0.
 

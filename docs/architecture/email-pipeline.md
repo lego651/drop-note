@@ -6,7 +6,7 @@
 User Gmail
     │
     │  sends email to legogao651@gmail.com (dev)
-    │  sends email to drop@inbound.dropnote.me   (prod)
+    │  sends email to drop@dropnote.me   (prod)
     ▼
 SendGrid Inbound Parse
     │  parses raw email → structured multipart POST
@@ -70,4 +70,4 @@ SendGrid retries any non-200 response. Unknown senders, blocked addresses, and r
 
 **Dev vs prod inbound address**
 Dev: `legogao651@gmail.com` (manual curl simulation — no MX records needed).
-Prod: `drop@inbound.dropnote.me` (MX record on `inbound.dropnote.me` subdomain + SendGrid Inbound Parse config).
+Prod: `drop@dropnote.me` (MX record on `dropnote.me` root domain + SendGrid Inbound Parse config).

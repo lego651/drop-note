@@ -11,7 +11,7 @@ export async function sendWelcomeEmail(toEmail: string): Promise<void> {
         <p>Hi,</p>
         <p>Welcome to <strong>drop-note</strong>! Your drop address is ready to use.</p>
         <p style="font-size: 20px; font-weight: bold; padding: 16px; background: #f5f5f5; border-radius: 8px;">
-          drop@inbound.dropnote.me
+          drop@dropnote.me
         </p>
         <p>Forward any email to that address and it will appear in your dashboard with an AI-generated summary and tags.</p>
         <p><a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'https://dropnote.me'}/dashboard">Open your dashboard →</a></p>

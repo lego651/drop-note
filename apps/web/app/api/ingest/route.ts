@@ -121,10 +121,18 @@ export async function POST(request: Request) {
     const formData = await request.formData()
 
     const from = (formData.get('from') as string) ?? ''
+    const to = (formData.get('to') as string) ?? ''
     const subject = (formData.get('subject') as string) ?? ''
     const text = (formData.get('text') as string) ?? ''
     const html = (formData.get('html') as string) ?? ''
     const attachmentInfo = (formData.get('attachment-info') as string) ?? ''
+
+    // MX is on the root domain — all mail to dropnote.me hits this endpoint.
+    // Only process emails addressed to drop@dropnote.me; silently discard
+    // replies to outbound addresses (hello@, legal@, etc.).
+    if (!to.toLowerCase().includes('drop@dropnote.me')) {
+      return NextResponse.json({ ok: true }, { status: 200 })
+    }
 
     const attachmentKeys: string[] = []
     const attachmentData: Record<string, string> = {}

@@ -40,7 +40,7 @@ export default function PrivacyPage() {
             <li>
               <span className="text-foreground font-medium">Content of emails</span> — the
               body, subject, and any attachments you send to{' '}
-              <span className="font-mono">drop@inbound.dropnote.me</span> are stored and processed
+              <span className="font-mono">drop@dropnote.me</span> are stored and processed
               to provide the service (summarisation, tagging, and display in your dashboard).
             </li>
             <li>

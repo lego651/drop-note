@@ -194,7 +194,7 @@ function ItemsPageClientInner({
   const showPagination = !isSearchMode && totalCount > 25
 
   async function handleCopyEmail() {
-    await navigator.clipboard.writeText('drop@inbound.dropnote.me')
+    await navigator.clipboard.writeText('drop@dropnote.me')
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -282,7 +282,7 @@ function ItemsPageClientInner({
         <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
           <p className="text-sm text-muted-foreground">
             No items yet. Send an email to{' '}
-            <span className="font-medium text-foreground">drop@inbound.dropnote.me</span> to get
+            <span className="font-medium text-foreground">drop@dropnote.me</span> to get
             started.
           </p>
           <Button variant="outline" size="sm" onClick={handleCopyEmail} className="gap-1.5">
