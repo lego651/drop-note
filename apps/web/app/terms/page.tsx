@@ -50,9 +50,8 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold mb-3">3. Accounts</h2>
           <p className="mb-3">
-            You must provide a valid email address to create an account. You are responsible
-            for maintaining the security of your account. drop-note uses magic-link
-            authentication — no passwords are stored.
+            You must sign in with a Google account. You are responsible for maintaining the
+            security of your account. drop-note uses Google OAuth — no passwords are stored.
           </p>
           <p>
             You must be at least 16 years old to use the service (or the minimum age of
@@ -61,34 +60,12 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">4. Payment Terms</h2>
-          <p className="mb-3">
-            Paid plans (Pro and Power) are billed monthly in advance via Stripe. By
-            subscribing you authorise recurring charges to your payment method on file.
+          <h2 className="text-lg font-semibold mb-3">4. Free Tier Limits</h2>
+          <p>
+            The free tier allows up to 50 saved items. If you reach the limit, new emails
+            will be rejected until you delete existing items to free up space. This limit
+            may be adjusted over time with reasonable notice.
           </p>
-          <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-            <li>
-              <span className="text-foreground font-medium">Cancellation</span> — you may
-              cancel at any time from the billing portal. Your paid access continues until
-              the end of the current billing period, after which your account reverts to the
-              Free tier.
-            </li>
-            <li>
-              <span className="text-foreground font-medium">Refunds</span> — we do not
-              provide refunds for partial billing periods. If you cancel mid-month you retain
-              access for the remainder of that month; no pro-rata refund is issued.
-            </li>
-            <li>
-              <span className="text-foreground font-medium">Price changes</span> — we will
-              give at least 30 days notice of any price increase via email before it takes
-              effect.
-            </li>
-            <li>
-              <span className="text-foreground font-medium">Failed payments</span> — if a
-              payment fails we will retry according to Stripe&apos;s standard retry schedule.
-              After repeated failures your account will revert to the Free tier.
-            </li>
-          </ul>
         </section>
 
         <section>
@@ -148,12 +125,12 @@ export default function TermsPage() {
           <p className="mt-3">
             The full licence text is available in the repository at{' '}
             <a
-              href="https://github.com/drop-note/drop-note/blob/main/LICENSE"
+              href="https://github.com/lego651/drop-note/blob/main/LICENSE"
               target="_blank"
               rel="noopener noreferrer"
               className="underline text-muted-foreground"
             >
-              github.com/drop-note/drop-note
+              github.com/lego651/drop-note
             </a>
             .
           </p>
@@ -184,8 +161,9 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-lg font-semibold mb-3">10. Contact</h2>
-          <p>
-            Questions about these terms? Contact us at{' '}
+          <p className="mb-3">
+            drop-note is operated by <strong>Jason Gao</strong> (individual). Questions about
+            these terms or DMCA notices? Contact{' '}
             <a href="mailto:legal@dropnote.me" className="underline text-muted-foreground">
               legal@dropnote.me
             </a>

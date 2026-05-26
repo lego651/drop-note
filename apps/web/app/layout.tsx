@@ -28,6 +28,7 @@ export default function RootLayout({
               <span>© {new Date().getFullYear()} drop-note</span>
               <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
               <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
+              <Link href="/aup" className="hover:text-foreground transition-colors">Acceptable Use</Link>
             </div>
           </footer>
           <Toaster />

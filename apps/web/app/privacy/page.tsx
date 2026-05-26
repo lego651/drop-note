@@ -17,8 +17,8 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold mb-3">1. Data Controller</h2>
           <p>
-            The data controller for drop-note is the operator of this service. For all data
-            protection enquiries and data subject requests, contact us at{' '}
+            The data controller for drop-note is <strong>Jason Gao</strong> (individual operator).
+            For all data protection enquiries and data subject requests, contact{' '}
             <a href="mailto:legal@dropnote.me" className="underline text-muted-foreground">
               legal@dropnote.me
             </a>
@@ -47,11 +47,6 @@ export default function PrivacyPage() {
               <span className="text-foreground font-medium">IP address</span> — collected
               transiently for rate limiting and abuse prevention. Not stored long-term.
             </li>
-            <li>
-              <span className="text-foreground font-medium">Payment details</span> — billing
-              information (card number, billing address) is collected and stored exclusively
-              by Stripe. We do not store payment card data. See Section 7 for details.
-            </li>
           </ul>
         </section>
 
@@ -69,12 +64,11 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold mb-3">4. How We Use Your Data</h2>
           <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-            <li>Authenticate your account via magic-link sign-in</li>
+            <li>Authenticate your account via Google OAuth sign-in</li>
             <li>Receive and process emails you send to the ingest address</li>
             <li>Generate AI summaries and tags using OpenAI GPT-4o-mini (your content is sent to OpenAI&apos;s API and is subject to their data processing terms)</li>
             <li>Display saved items in your personal dashboard</li>
-            <li>Send transactional emails (sign-in links, account notifications) via Resend</li>
-            <li>Process subscription payments via Stripe</li>
+            <li>Send transactional account notifications via Resend</li>
           </ul>
         </section>
 
@@ -86,12 +80,8 @@ export default function PrivacyPage() {
               for as long as your account remains active.
             </li>
             <li>
-              <span className="text-foreground font-medium">Deleted items (Pro/Power tier)</span>{' '}
-              — moved to trash and retained for 30 days before permanent deletion.
-            </li>
-            <li>
-              <span className="text-foreground font-medium">Deleted items (Free tier)</span>{' '}
-              — permanently deleted immediately.
+              <span className="text-foreground font-medium">Deleted items</span> — permanently
+              deleted immediately on removal.
             </li>
             <li>
               <span className="text-foreground font-medium">Account data</span> — deleted
@@ -126,23 +116,6 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold mb-3">7. Third-Party Processors</h2>
           <div className="space-y-4">
-            <div>
-              <p className="font-medium mb-1">Stripe (payments)</p>
-              <p className="text-muted-foreground">
-                Stripe processes all payment transactions and stores your payment card data.
-                drop-note does not store payment card numbers or CVVs. Stripe&apos;s privacy
-                policy is available at{' '}
-                <a
-                  href="https://stripe.com/privacy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  stripe.com/privacy
-                </a>
-                .
-              </p>
-            </div>
             <div>
               <p className="font-medium mb-1">Sentry (error monitoring)</p>
               <p className="text-muted-foreground">
