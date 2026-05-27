@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>drop-note — 最终定位判断报告 2026-05-25</title>
+  <style>
+    :root {
+      --bg: #fafaf8;
+      --surface: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --border: #e5e7eb;
+      --done: #059669;
+      --progress: #d97706;
+      --blocked: #dc2626;
+      --killed: #6b7280;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    h1 { font-size: 32px; margin-bottom: 4px; letter-spacing: -0.02em; }
+    h2 { font-size: 22px; margin: 28px 0 14px; letter-spacing: -0.01em; }
+    h3 { font-size: 16px; margin: 16px 0 8px; }
+    h4 { font-size: 14px; margin: 12px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .meta { color: var(--muted); font-size: 14px; margin-top: 8px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .badge-draft { background: #fef3c7; color: #92400e; }
+    .badge-done { background: #d1fae5; color: #065f46; }
+    .badge-progress { background: #fed7aa; color: #9a3412; }
+    .badge-blocked { background: #fee2e2; color: #991b1b; }
+    .badge-killed { background: #e5e7eb; color: #4b5563; }
+    .badge-unknown { background: #ddd6fe; color: #5b21b6; }
+    .north-star {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 1px solid #bae6fd;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 16px 0;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 12px 0;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { background: #f9fafb; font-weight: 600; font-size: 13px; }
+    .phase {
+      border-left: 4px solid var(--accent);
+      padding: 4px 0 4px 20px;
+      margin: 24px 0;
+    }
+    .phase-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+    .phase-title { font-size: 18px; font-weight: 600; }
+    .phase-meta { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+    .scope-list {
+      list-style: none;
+      padding: 0;
+      margin: 8px 0;
+    }
+    .scope-list li {
+      padding: 5px 0 5px 26px;
+      position: relative;
+      font-size: 14px;
+    }
+    .scope-list li::before {
+      position: absolute;
+      left: 0;
+      top: 5px;
+      font-weight: 700;
+    }
+    .scope-in li::before { content: "✓"; color: var(--done); }
+    .scope-out li::before { content: "✗"; color: var(--killed); }
+    .question {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      padding: 14px 18px;
+      margin: 12px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .question-q { font-weight: 600; margin-bottom: 6px; font-size: 15px; }
+    .question-rec { color: #4b5563; font-size: 13px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 13px;
+    }
+    .warn-box {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #fee2e2;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      margin-top: 32px;
+      padding: 20px;
+    }
+    /* 会议发言气泡 */
+    .speaker-block {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin: 14px 0;
+      background: var(--surface);
+    }
+    .speaker-block.mic { border-left: 4px solid #2563eb; }
+    .speaker-block.mathieu { border-left: 4px solid #059669; }
+    .speaker-block.pm { border-left: 4px solid #d97706; }
+    .speaker-name {
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .speaker-name.mic { color: #2563eb; }
+    .speaker-name.mathieu { color: #059669; }
+    .speaker-name.pm { color: #d97706; }
+    .speaker-block p { font-size: 14px; line-height: 1.7; margin-bottom: 8px; }
+    .speaker-block p:last-child { margin-bottom: 0; }
+    .consensus-box {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin: 16px 0;
+    }
+    .consensus-box h4 { color: #166534; margin-bottom: 8px; }
+    .blocker-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .blocker-item:last-child { border-bottom: none; }
+    .blocker-tag {
+      flex-shrink: 0;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .tag-p0 { background: #fee2e2; color: #991b1b; }
+    .tag-p1 { background: #fef3c7; color: #92400e; }
+    @media (max-width: 720px) {
+      body { padding: 16px 8px; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <span class="badge badge-draft">内部报告 — 待 Jason 拍板 5 个核心问题</span>
+      <h1 style="margin-top: 14px;">drop-note — 最终定位判断报告</h1>
+      <div style="color: var(--muted); font-size: 18px; margin-top: 2px;">3 份 PRD 综合 · 三人会议纪要 · 拍板建议</div>
+      <div class="meta">
+        日期：2026-05-25 &nbsp;·&nbsp;
+        主持：<code>Mic</code>（drop-note Director）&nbsp;·&nbsp;
+        与会：<code>manager-mathieu</code>（Product &amp; Engineering VP）、<code>product-manager</code>&nbsp;·&nbsp;
+        汇报对象：Jason Gao
+      </div>
+    </header>
+
+    <!-- 北极星 -->
+    <section class="section">
+      <h2>北极星 — 一句话定位（三人共识）</h2>
+      <div class="north-star">
+        <strong>发给任何东西一封邮件，它就永远在那里，随时能找回来。</strong><br>
+        <span style="color: var(--muted); font-size: 14px; margin-top: 6px; display: block;">
+          "Drop anything to your inbox. Find it back instantly. No app. No extension. Just email."
+        </span>
+      </div>
+      <p style="font-size: 14px; color: var(--muted);">
+        PRD #1 的"AI-native memory layer"愿景太大、不好传播；PRD #3 的"fastest way to save"太像广告语。
+        最终采用 PRD #2 的核心承诺框架：<strong>零摩擦存、零摩擦找、存了不会忘</strong>。一句话定位聚焦"存得进去 + 找得回来"，AI 是执行工具不是卖点。
+      </p>
+
+      <h3 style="margin-top: 20px;">北极星指标</h3>
+      <table>
+        <tr><th style="width: 40%">指标</th><th>为什么选它</th></tr>
+        <tr>
+          <td><strong>被重看率</strong><br><code>被重新打开 / 总收藏 ≥ 20%</code></td>
+          <td>PRD #2 的建议。注册数只衡量获客；被重看率直接衡量"存了有没有用"——这才是和所有书签/收藏类产品的核心差异化点。如果用户存进来从不回看，产品就失败了，再多注册数也没意义。</td>
+        </tr>
+        <tr>
+          <td><strong>辅助指标：找回成功率</strong><br><code>搜索后有点击 / 总搜索次数</code></td>
+          <td>PRD #3 的建议。搜索是"找回"的直接行为，成功率低说明搜索体验或 AI 标签质量有问题，可快速定位。</td>
+        </tr>
+        <tr>
+          <td><strong>激活率（24h 内首存）</strong></td>
+          <td>衡量注册 → 真实使用的转化，是 retention 分析的前置指标。</td>
+        </tr>
+      </table>
+      <div class="warn-box">
+        注意：注册数、DAU、MAU 不是北极星指标。它们是渠道指标，留给营销看。drop-note 的胜负手在"存了能不能找回"，不在"有多少人注册过"。
+      </div>
+    </section>
+
+    <!-- 会议纪要 -->
+    <section class="section">
+      <h2>会议纪要 — 三人发言记录</h2>
+      <p style="font-size: 14px; color: var(--muted); margin-bottom: 16px;">2026-05-25，基于 3 份 PRD 的联合评审。记录主要分歧点和最终融合结论。</p>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="phase-title">议题一：定位叙事 — Omnivore 替代 vs 邮件零摩擦</span>
+        </div>
+
+        <div class="speaker-block mic">
+          <div class="speaker-name mic">Mic — drop-note Director</div>
+          <p>我必须先纠正一件事：<strong>我们在 2026-04-02 已经把定位锁成了 Omnivore 替代（D2）</strong>，但 PRD #2 明确建议"叙事从 Omnivore 难民改为邮件零摩擦"，理由是 Omnivore 社区 10 个月前就散了，靠这个定位难以持续建品牌。这是一个真实的分歧，需要在今天拍板。</p>
+          <p>我的立场：<strong>两手都要，但主叙事变</strong>。日常品牌沟通用"邮件零摩擦"——这是可以持续讲的故事，不依赖一个已关闭的产品。Omnivore 变成一个 SEO 落地页策略，悄悄接住搜索流量，但不出现在主页标题里。</p>
+        </div>
+
+        <div class="speaker-block mathieu">
+          <div class="speaker-name mathieu">Mathieu — Product &amp; Engineering VP</div>
+          <p>同意 Mic 的双轨策略。但我要补充一个公司视角：<strong>我们的 D2 锁定的是"Omnivore 社区是首发渠道"，不是"Omnivore 是品牌核心"</strong>——这两件事要分开看。HN/Reddit/r/selfhosted 上冷启动，Omnivore 关键词是流量入口；但首页的 tagline 应该是能活 5 年的定位，不是"我们是 X 的替代品"。</p>
+          <p>结论：D2 保留发射渠道策略（Omnivore 社区帖子、SEO 落地页），但主品牌叙事调整为"邮件入口的内容收件箱"。这不是推翻 D2，是补充它。</p>
+        </div>
+
+        <div class="speaker-block pm">
+          <div class="speaker-name pm">product-manager</div>
+          <p>从用户调研角度看，PRD #3 说得最准：<strong>真正的竞争对手不是 Omnivore，而是"微信收藏 + 浏览器书签 + 截图囤积"</strong>这个习惯。Omnivore 用户是高质量种子用户，但不是长期市场。长期市场是"每天看 Reddit/X/Newsletter 但什么都记不住"的内容消费重度用户。</p>
+          <p>建议：HN 发帖可以用"I rebuilt Omnivore"作为标题钩子（历史证明这类帖子有流量），但 Landing Page 的核心 CTA 应该是："Send anything by email. Find it back instantly." 不提 Omnivore。</p>
+        </div>
+
+        <div class="consensus-box">
+          <h4>共识：叙事双轨</h4>
+          <p style="font-size: 14px;">主品牌叙事 = <strong>邮件零摩擦收件箱</strong>（"Send anything. Find it back."）。Omnivore = 冷启动渠道 + SEO 落地页，不是品牌核心。D2 的发射渠道策略保留，主叙事升级。</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="phase-title">议题二：定价 — 三份 PRD 都在讨论 $5-7/mo，但我们的决定不同</span>
+        </div>
+
+        <div class="speaker-block mic">
+          <div class="speaker-name mic">Mic</div>
+          <p><strong>必须纠正三份 PRD 的定价建议。</strong> PRD #1/$2/#3 都在讨论 Free + Pro $5-7/mo + Power $12-15/mo，但这个讨论在我们这里是过时的。</p>
+          <p>2026-04-02 战略重置（D1）已经明确：<strong>杀掉付费层，先做 100% 免费 hosted + AGPL self-host，等 100 个活跃用户之后才上 $4.99/mo hosted tier</strong>。这不是我们没想到要收钱，而是主动选择先验证用户需求，再开价。Readwise $7.99/mo、Raindrop $3/mo 都是有年限积累的成熟产品，drop-note 一个刚发布的工具上来就收 $9.99 是不现实的。</p>
+          <p>今天不讨论定价。定价的触发条件是：<strong>100 个活跃用户 → Mathieu 和 Jason 联合拍板 → $4.99/mo hosted tier 1-PR 上线</strong>。Stripe 代码在库里，null-checked，随时可以开。</p>
+        </div>
+
+        <div class="speaker-block mathieu">
+          <div class="speaker-name mathieu">Mathieu</div>
+          <p>完全支持。从公司资源分配角度，drop-note 在 Q2 是第三优先级（trading #0，house-os #1）。我们没有资源在没有用户验证的情况下打磨付费流程。<strong>先免费活下来，等用户告诉我们他们愿意付钱，再讨论收多少。</strong></p>
+          <p>PRD #2 的 ARPU $6/mo 预测和 12 个月 $3K MRR 目标是合理的长期锚点，但不是现在要规划的事情。把这个数字锁在长期愿景区，不放进现在的执行计划。</p>
+        </div>
+
+        <div class="speaker-block pm">
+          <div class="speaker-name pm">product-manager</div>
+          <p>认可。但要做一件事：<strong>在产品里埋"你有 50 条了，自托管或者等我们开付费"的 CTA</strong>，即使现在不收钱，也要让用户知道这个限制存在，并且让技术圈用户感受到"自托管是官方支持的选项"。这是为 100 用户之后的转化做准备。</p>
+        </div>
+
+        <div class="consensus-box">
+          <h4>共识：定价锁定 D1，不被 PRD 带跑</h4>
+          <p style="font-size: 14px;">现在 = 100% 免费 hosted（50 条上限）+ AGPL self-host。付费触发条件 = 100 活跃用户。届时 = $4.99/mo hosted tier（Plausible 模型）。三份 PRD 的 $5-7/mo 建议作为长期参考，不进入当前执行计划。</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="phase-title">议题三：目标用户 — 技术圈 vs 普通人</span>
+        </div>
+
+        <div class="speaker-block mic">
+          <div class="speaker-name mic">Mic</div>
+          <p><strong>第一版押技术圈，没有争议。</strong> 理由：① HN/r/selfhosted 是我们唯一有信心的冷启动渠道 ② AGPL + Docker self-host 天然过滤出技术圈用户 ③ 技术圈用户会贡献 PR、发 bug report、帮你传播 ④ 普通人不配置 MX 记录，所以 hosted 版本是他们的入口，但获客渠道还是技术圈口碑带动。</p>
+        </div>
+
+        <div class="speaker-block mathieu">
+          <div class="speaker-name mathieu">Mathieu</div>
+          <p>补充一个资源约束：Jason 一个人发布，无法同时维护两个用户群的 onboarding 路径。技术圈用户自带调试能力，能容忍更粗糙的初体验。<strong>优先服务技术圈 = 降低早期支持成本。</strong></p>
+        </div>
+
+        <div class="speaker-block pm">
+          <div class="speaker-name pm">product-manager</div>
+          <p>同意押技术圈，但要注意：<strong>技术圈里的目标用户是"内容消费重度用户"，不是"要部署开源工具的 SRE"</strong>。具体画像：独立开发者、PM、研究员、重度 Reddit/X/Substack 用户——他们有信息过载的痛苦，但不一定想维护自己的服务器。所以 hosted 版本对技术圈也有吸引力，不能只做 self-host。</p>
+        </div>
+
+        <div class="consensus-box">
+          <h4>共识：技术圈内容消费重度用户</h4>
+          <p style="font-size: 14px;">独立开发者、PM、研究员、重度 Reddit/X/Substack 用户。自然扩展：非技术知识工作者（通过技术圈口碑）。坚决不做：学生/学术/重度 PKM 双链玩家。</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="phase-title">议题四：Retention — Weekly Digest 是不是必做</span>
+        </div>
+
+        <div class="speaker-block mic">
+          <div class="speaker-name mic">Mic</div>
+          <p>三份 PRD 都把 Weekly Resurface Digest 列为关键 feature，PRD #1 甚至标了"critical"。我同意，<strong>这是 MVP 必须做的，不是 V2</strong>。理由很简单：用户平时忙，不会主动打开 dashboard。Digest 是唯一能把"存了就忘"变成"存了能想起来"的机制——这直接驱动北极星指标（被重看率）。</p>
+          <p>但要做对：Digest 不是把最近 7 条发给你——那只是 email newsletter。真正的 Digest 应该是"你 3 周前存的这条，AI 认为现在和你正在关注的主题相关，推给你"。间隔重现，不是线性推送。</p>
+        </div>
+
+        <div class="speaker-block mathieu">
+          <div class="speaker-name mathieu">Mathieu</div>
+          <p>同意 Digest 必做，但警告：<strong>间隔重现算法是个兔子洞，MVP 阶段要克制</strong>。建议 V1 Digest = 每周一封，随机挑 3-5 条 30 天以前存的内容，带 AI 摘要 + "重新打开"按钮。简单，可发布，能驱动北极星指标。算法优化是 V2 的事。</p>
+        </div>
+
+        <div class="speaker-block pm">
+          <div class="speaker-name pm">product-manager</div>
+          <p>支持。另外，Digest 邮件本身就是最好的留存型营销渠道——每周都有 drop-note 品牌露出，而且是在用户本来就要看的邮件场景里。<strong>Digest 的 footer 放一行"用这个地址发给朋友，他也能存东西：drop@dropnote.com"</strong>，这是零成本的病毒传播。</p>
+        </div>
+
+        <div class="consensus-box">
+          <h4>共识：Weekly Digest 是 MVP 必做，但 V1 版本保持简单</h4>
+          <p style="font-size: 14px;">V1 = 每周一封，随机抽取 30 天前存的 3-5 条 + AI 摘要 + "重看"链接。不做复杂的间隔重现算法（V2）。Digest footer 加 referral 钩子。</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="phase-title">议题五：AI 成本 — 每条都摘要 vs 按需摘要</span>
+        </div>
+
+        <div class="speaker-block mic">
+          <div class="speaker-name mic">Mic</div>
+          <p>PRD #2 提出了一个真实的成本风险：如果每条 ingest 都立刻调 AI 摘要，成本随用户量线性增长。我们现在用的是 GPT-4o-mini（D8），已经是最便宜的可用模型，但免费用户囤积 50 条内容的摘要成本需要测算。</p>
+          <p>我的建议：<strong>维持现有"每条立刻摘要"的架构，但加一个单用户日成本上限</strong>。超过上限的条目排队延迟处理，不是不处理。这比"按需摘要"的用户体验更好（不用点开才摘要），也不会失控。</p>
+        </div>
+
+        <div class="speaker-block mathieu">
+          <div class="speaker-name mathieu">Mathieu</div>
+          <p>支持维持自动摘要，但要做一件事：<strong>让 Jose 建一个 AI 成本追踪，每周从 OpenAI 账单里拉一次，看每活跃用户的平均 AI 成本</strong>。如果超过 $0.10/用户/月，就考虑智能截断（长文本只摘前 2000 tokens）。如果超过 $0.50/用户/月，就讨论按需摘要。现在不需要过早优化，但要有数据。</p>
+        </div>
+
+        <div class="speaker-block pm">
+          <div class="speaker-name pm">product-manager</div>
+          <p>从用户体验角度，自动摘要是核心价值主张的一部分——用户存进来，AI 已经帮他读过了，这个"已读感"很重要。去掉自动摘要就破坏了产品承诺。<strong>成本优化应该在不改变用户体验的前提下做</strong>：比如对纯图片附件不摘要、对重复 URL 只摘要一次、对超长 PDF 只摘前 N 段。</p>
+        </div>
+
+        <div class="consensus-box">
+          <h4>共识：自动摘要保留，成本控制靠智能截断而非按需</h4>
+          <p style="font-size: 14px;">维持"每条 ingest 自动摘要"架构。加单用户日成本软上限（超限排队，不取消）。加 AI 成本追踪（每周拉 OpenAI 账单）。智能截断策略：纯图片不摘要、重复 URL 缓存、超长 PDF 截 2000 tokens。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 最终判断 -->
+    <section class="section">
+      <h2>最终判断 — 拍板表</h2>
+
+      <div class="grid-2">
+        <div>
+          <h3>MVP 必须做的 5 件事</h3>
+          <ul class="scope-list scope-in">
+            <li><strong>Email 入口 + AI 自动摘要 + 标签</strong>（已建好，维持）</li>
+            <li><strong>全文 + 语义搜索</strong>（已建好，维持 + 优化找回成功率）</li>
+            <li><strong>每周 Resurface Digest 邮件</strong>（未做，MVP 必做，V1 简单版）</li>
+            <li><strong>新用户激活仪式</strong>：欢迎弹窗 + 明显展示 drop 地址 + 引导发第一封邮件（已建 shell，需打磨）</li>
+            <li><strong>预发布 4 个 blocker 清零</strong>：domain、AI 错误处理、Dockerfile HOSTNAME、Legal pages（见下方详细）</li>
+          </ul>
+        </div>
+        <div>
+          <h3>MVP 坚决不做的 5 件事</h3>
+          <ul class="scope-list scope-out">
+            <li><strong>浏览器插件</strong>（邮件入口 IS 我们的楔子，不稀释）</li>
+            <li><strong>移动 App</strong>（solo 发布，10x 负担）</li>
+            <li><strong>团队协作 / 共享收件箱</strong>（B2B 方向，不是 V1）</li>
+            <li><strong>PKM 双链 / 知识图谱</strong>（PRD #1 提了，但这是重度 PKM 方向，我们不卖这个）</li>
+            <li><strong>付费功能 / Stripe 开放</strong>（触发条件未达，代码在库，等 100 活跃用户）</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 24px;">Retention 引擎落地计划</h3>
+      <table>
+        <tr><th style="width: 30%">机制</th><th>V1 实现</th><th>负责人</th></tr>
+        <tr>
+          <td>Weekly Resurface Digest</td>
+          <td>每周一，随机抽 30 天前 3-5 条 + AI 摘要 + 重看链接 + referral footer</td>
+          <td>Jose (实现) / Mic (内容 brief)</td>
+        </tr>
+        <tr>
+          <td>首次激活仪式</td>
+          <td>注册后弹窗显示个人 drop 地址，引导发第一封邮件，24h 后提醒"你存的第一条已就绪"</td>
+          <td>Jose (实现) / design-system-architect (UI)</td>
+        </tr>
+        <tr>
+          <td>搜索找回优化</td>
+          <td>追踪"搜索 → 点击"率，低于 30% 触发 AI 标签质量复盘</td>
+          <td>Jose (埋点) / Mic (复盘)</td>
+        </tr>
+        <tr>
+          <td>50 条上限提示</td>
+          <td>达到 40 条时 banner："还有 10 条额度，用完后可以自托管或等待 hosted 付费方案"</td>
+          <td>Jose</td>
+        </tr>
+      </table>
+
+      <h3 style="margin-top: 24px;">定价结构（D1 锁定，不复议）</h3>
+      <table>
+        <tr><th>阶段</th><th>方案</th><th>触发条件</th></tr>
+        <tr>
+          <td><span class="badge badge-progress">当前</span></td>
+          <td>Free hosted（50 条）+ AGPL self-host（无限）</td>
+          <td>现在</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-draft">下一步</span></td>
+          <td>$4.99/mo hosted tier（Plausible 模型）</td>
+          <td>100 个活跃用户 → Mathieu + Jason 联合拍板 → 1-PR Stripe 开放</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-killed">永久搁置</span></td>
+          <td>$9.99 Pro / $49.99 Power（D1 已杀）</td>
+          <td>不复议，除非有颠覆性新信息</td>
+        </tr>
+      </table>
+      <div class="warn-box">
+        三份 PRD 的 $5-7/mo Pro 建议是有道理的长期锚点，但不是现在的执行计划。CEO re-vive 的场景下，新 PRD 不能覆盖已锁定的 D1。如果 CEO 希望调整定价策略，需要明确说明，Mathieu 和 Mic 联合评估后再决定。
+      </div>
+    </section>
+
+    <!-- 预发布 blockers -->
+    <section class="section">
+      <h2>预发布 Blocker — 发布前必须清零</h2>
+      <p style="font-size: 14px; color: var(--muted); margin-bottom: 16px;">共 4 个 blocker。3 个派给 Jose，1 个需要 Jason 确认。每个 blocker 都有 brief 模板，窗口一开立刻派发。</p>
+
+      <div class="blocker-item">
+        <span class="blocker-tag tag-p0">P0 JASON</span>
+        <div>
+          <strong>Domain 确认</strong><br>
+          SendGrid Inbound Parse 需要真实域名的 MX 记录。Jason 曾在 4 月 11 日提到购买域名，当前状态未知。<br>
+          <span style="color: var(--muted); font-size: 13px;">需要 Jason 确认：① 域名是否已购买？② 域名是什么？③ DNS 是否指向 SendGrid MX？</span>
+        </div>
+      </div>
+
+      <div class="blocker-item">
+        <span class="blocker-tag tag-p0">P0 JOSE</span>
+        <div>
+          <strong>AI 错误处理</strong><br>
+          当前 worker 没有 <code>response.ok</code> 检查、没有 timeout、无法区分 OpenAI 4xx（不重试）vs 5xx（重试）。P0 级风险，生产环境会静默失败。<br>
+          <span style="color: var(--muted); font-size: 13px;">Brief 摘要：在 AI 调用外层包 <code>retryWithBackoff</code>，4xx 立刻标记 item 为 error 状态，5xx 最多重试 3 次，加 30s timeout。</span>
+        </div>
+      </div>
+
+      <div class="blocker-item">
+        <span class="blocker-tag tag-p0">P0 JOSE</span>
+        <div>
+          <strong>Dockerfile HOSTNAME</strong><br>
+          Next.js 在容器内绑定到 localhost，<code>docker compose up</code> 的 web 服务无法从外部访问。self-host 故事完全破碎。<br>
+          <span style="color: var(--muted); font-size: 13px;">Brief 摘要：在 Dockerfile CMD 或 next.config.js 中设置 <code>HOSTNAME=0.0.0.0</code>，验证 <code>docker compose up</code> 后 localhost:3000 可从宿主机访问。</span>
+        </div>
+      </div>
+
+      <div class="blocker-item">
+        <span class="blocker-tag tag-p1">P1 MIC+JOSE</span>
+        <div>
+          <strong>Legal Pages</strong><br>
+          <code>/terms</code> 和 <code>/privacy</code> 需要真实内容。数据控制方 = Jason Gao（D5）。AGPL-3.0 许可证要求隐私政策与自托管承诺对齐（不能说"我们出售你的数据"）。<br>
+          <span style="color: var(--muted); font-size: 13px;">计划：Mic 起草条款内容（中英双语），Jose 负责路由和页面渲染。不是法律文书，是创始人级别的诚实声明。</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 时间线建议 -->
+    <section class="section">
+      <h2>时间线建议 — CEO re-vive 场景下的节奏</h2>
+      <p style="font-size: 14px; color: var(--muted); margin-bottom: 16px;">
+        背景：drop-note 在 Q2 排序是 trading #0、house-os #1，drop-note 排第三，窗口预计 6 月。CEO re-vive 的意图是好的，但不应该打乱 Q2 资源排序——特别是 trading 纪律和 physio-os 的 6 月 5 日 ELT gate。
+      </p>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="badge badge-draft">现在 → 6 月初</span>
+          <span class="phase-title">预备阶段 — 不动代码，清理认知</span>
+        </div>
+        <div class="phase-meta">耗时：1-2 周 · 主要工作：Jason 确认域名 + Mic 起草 legal pages 内容 + 这份定位报告发给 CEO 对齐</div>
+        <ul class="scope-list scope-in">
+          <li>Jason 确认 domain 购买状态并提供域名</li>
+          <li>Mic 起草 /terms 和 /privacy 内容初稿（不需要 Jose）</li>
+          <li>CEO 和 Mathieu 确认今天的定位判断（这份报告）</li>
+          <li>Mathieu 拍板"drop-note 窗口正式开放"的时间点</li>
+        </ul>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="badge badge-progress">6 月初（Mathieu 开窗后）</span>
+          <span class="phase-title">发射冲刺 — 2-3 周</span>
+        </div>
+        <div class="phase-meta">前提：physio-os ELT gate 通过（6/5）+ Mathieu 明确开窗 + Jason domain 确认</div>
+        <ul class="scope-list scope-in">
+          <li>Jose 并行清 3 个 P0 blocker（AI 错误处理 + Dockerfile HOSTNAME + legal 页面路由）</li>
+          <li>SendGrid MX 记录配置（需要域名已确认）</li>
+          <li>Weekly Digest 功能实现（Jose）</li>
+          <li>新用户激活仪式打磨（Jose + design-system-architect）</li>
+          <li>邮件投递测试：Gmail / Outlook / ProtonMail（Mic 编排，Jose 修 bug）</li>
+          <li>SEO 落地页：Omnivore Alternative（marketing-manager → growth-marketer 执行）</li>
+        </ul>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="badge badge-unknown">6 月中下旬</span>
+          <span class="phase-title">发射周 — HN + Reddit + 冷启动</span>
+        </div>
+        <div class="phase-meta">渠道：HN Show HN → r/selfhosted → Omnivore 社区帖 → r/DataHoarder → IndieHackers → Twitter</div>
+        <ul class="scope-list scope-in">
+          <li>HN 发帖（Jason 执笔，Mic 提供一句话定位 + 背景故事框架）</li>
+          <li>r/selfhosted 帖子（强调 AGPL + Docker self-host）</li>
+          <li>Omnivore 社区旧帖子评论留痕（SEO 落地页对接）</li>
+          <li>Twitter 线程：Jason build-in-public 视角（marketing-manager → growth-marketer 协助）</li>
+        </ul>
+        <ul class="scope-list scope-out">
+          <li>Product Hunt（延迟 60 天，发布后再上 PH）</li>
+          <li>付费广告（无预算，无必要）</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 待 Jason 拍板 -->
+    <section class="section">
+      <h2>待 Jason 拍板的核心问题</h2>
+      <p style="font-size: 14px; color: var(--muted); margin-bottom: 8px;">今天给 CEO re-vive 场景下的 5 个必须拍板的问题。Mic 的推荐答案标在每条下方。</p>
+
+      <div class="question">
+        <div class="question-q">Q1. Domain 状态：4 月 11 日说要买的域名，现在是什么情况？</div>
+        <div class="question-rec">Mic 推荐：先告诉 Mic 域名是什么，Mic 马上检查 DNS / SendGrid MX 状态。这是发布的物理前提，没有域名什么都发不了。</div>
+      </div>
+
+      <div class="question">
+        <div class="question-q">Q2. CEO re-vive 的意图：是要改变 Q2 资源排序，还是希望 drop-note 在当前节奏下尽快就绪？</div>
+        <div class="question-rec">Mic 推荐：维持 Q2 排序（trading #0，house-os #1，drop-note 6 月）。CEO re-vive = 今天做定位对齐 + 预备工作，不等于立刻调整 Jose 的工作优先级。Jason 和 Mathieu 需要当着 CEO 的面确认这一点，避免 Jose 被夹在中间。</div>
+      </div>
+
+      <div class="question">
+        <div class="question-q">Q3. 定位叙事升级：是否同意今天的判断——主叙事改为"邮件零摩擦"，Omnivore 退居渠道策略？</div>
+        <div class="question-rec">Mic 推荐：同意。D2 的发射渠道不变，但首页 tagline 不再 lead with Omnivore。这不是推翻历史决策，是补充它。如果 CEO 或 Jason 有异议，今天就说清楚，否则按这个方向走。</div>
+      </div>
+
+      <div class="question">
+        <div class="question-q">Q4. Weekly Digest 是不是真的 MVP 必做（vs. 发布后 V1.1 再做）？</div>
+        <div class="question-rec">Mic 推荐：是 MVP 必做。Retention 是头号生死线，没有 Digest 的话用户注册后一周就会忘掉这个产品，北极星指标（被重看率）永远不会好看。V1 版本 Digest 足够简单（2-3 天 Jose 工作量），代价不高，收益极高。</div>
+      </div>
+
+      <div class="question">
+        <div class="question-q">Q5. Jason 自己的时间投入预期：发布周愿意花多少时间在社区运营（HN 回复、Reddit 帖子）？</div>
+        <div class="question-rec">Mic 推荐：发布周理想状态是 Jason 能投入 10-15 小时做社区互动（回复评论、参与讨论、发 Twitter 线程）。如果时间不够，Mic 和 growth-marketer 可以准备好草稿，Jason 只需审阅 + 发出。但冷启动的初始能量必须是 Jason 本人来带，不能全部外包。</div>
+      </div>
+    </section>
+
+    <!-- 一句话总结 -->
+    <section class="section" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-color: #86efac;">
+      <h2 style="color: #166534;">给 CEO 的一句话总结</h2>
+      <p style="font-size: 15px; line-height: 1.8;">
+        drop-note 已经 85-90% 就绪，不需要重新建，只需要 4 个 blocker 清零 + 1 个新 feature（Weekly Digest）+ 1 次发布冲刺。
+        定位已经找到：<strong>邮件入口的内容收件箱，发进去永远找得回来</strong>。
+        目标用户已经确认：<strong>独立开发者 / PM / 研究员等内容消费重度用户</strong>，技术圈先行。
+        定价已经锁定：<strong>先免费，100 用户后 $4.99/mo</strong>，不被新 PRD 带跑。
+        时间线建议：<strong>6 月初 Mathieu 开窗，2-3 周冲刺，6 月中下旬发布</strong>。
+        唯一的变量是 Jason 的 domain 状态和他发布周愿意投入的时间——这两件事需要今天确认。
+      </p>
+    </section>
+
+    <footer>
+      生成时间：2026-05-25 &nbsp;·&nbsp;
+      作者：<code>Mic</code>（drop-note Director）&nbsp;·&nbsp;
+      审阅：<code>manager-mathieu</code>（Product &amp; Engineering VP, LEDOO FORTUNE FINANCIAL INC.）&nbsp;·&nbsp;
+      工程执行：<code>techlead-jose</code>&nbsp;·&nbsp;
+      源文件：<code>/Users/lego/@Lego651/drop-note/docs/drop-note-final-positioning.html</code>
+    </footer>
+
+  </div>
+</body>
+</html>
