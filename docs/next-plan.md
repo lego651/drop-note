@@ -166,3 +166,43 @@ Only pursue these if the 50-signup milestone is hit:
 | Make.com | Free (remove soon) | Unnecessary middleman |
 | OpenAI | ~$0.50/mo | GPT-4o-mini is cheap at low volume |
 | **Total** | **~$0.50/mo** | |
+
+---
+
+## Addendum — 2026-05-26
+
+### D11 — Synchronous ingest (kill Railway + BullMQ)
+
+**Supersedes:** BullMQ + Railway architecture introduced in Sprint 2. `apps/worker/` deleted. Queue layer removed.
+
+**Decision:** Process AI summarization and tagging synchronously inside the `/api/ingest` Vercel function. Delete `apps/worker/`, remove BullMQ dependency, terminate Railway hosting. Upstash Redis is **retained** — still used for rate-limit counters, abuse counters, and save-limit enforcement.
+
+**Rationale:**
+
+1. drop-note workload (YouTube links, short text, PDFs) processes in 3–10s AI time — well under Vercel function 60s default timeout.
+2. Saves $5/mo Railway. Eliminates the 2-month-dead worker symptom: job 26 was stuck because Railway worker died; last completed job was 2026-03-30.
+3. Architecture simplification: `SendGrid → /api/ingest (insert + AI inline + update) → done`. No queue, no Railway, no two-deploy coordination.
+4. Retry coverage: SendGrid auto-retries on 5xx for 72 hours — sufficient for transient OpenAI failures.
+
+**Monitoring requirement (mandatory, not optional):** Every `/api/ingest` invocation must log `total_handling_ms` and `ai_processing_ms` as a structured log line AND a Sentry breadcrumb. This is the instrument that allows us to detect p95 degradation before it becomes a user-facing timeout.
+
+**Revisit triggers — flip back to async (Upstash QStash) if ANY of the following:**
+
+| Trigger | Threshold |
+|---|---|
+| Active hosted users | ≥ 100 |
+| `/api/ingest` p95 handling time | Approaching 30s |
+| Vercel function timeout errors | Appearing in logs |
+
+**Source:** Conversation 2026-05-26. Jason: "等我们有100个用户，并且要monitor processing time, 如果 server handling time 上来的话还是异步 QStash."
+
+**Monthly cost table updated:**
+
+| Service | Cost | Notes |
+|---------|------|-------|
+| Vercel | Free | Under limits |
+| Supabase | Free | Under limits |
+| Upstash Redis | Free | Rate-limit / abuse / save-limit counters only (BullMQ queue removed) |
+| ~~Railway~~ | ~~Free tier~~ | **Removed 2026-05-26 (D11)** |
+| OpenAI | ~$0.50/mo | GPT-4o-mini |
+| **Total** | **~$0.50/mo** | Railway $0 because free tier — no cash savings, but eliminates dead worker complexity |

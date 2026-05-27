@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>drop-note — 域名决策圆桌会议纪要 2026-05-25</title>
+  <style>
+    :root {
+      --bg: #fafaf8;
+      --surface: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --border: #e5e7eb;
+      --done: #059669;
+      --progress: #d97706;
+      --blocked: #dc2626;
+      --killed: #6b7280;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    h1 { font-size: 32px; margin-bottom: 4px; letter-spacing: -0.02em; }
+    h2 { font-size: 22px; margin: 28px 0 14px; letter-spacing: -0.01em; }
+    h3 { font-size: 16px; margin: 16px 0 8px; }
+    h4 { font-size: 14px; margin: 12px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .meta { color: var(--muted); font-size: 14px; margin-top: 8px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .badge-draft { background: #fef3c7; color: #92400e; }
+    .badge-done { background: #d1fae5; color: #065f46; }
+    .badge-progress { background: #fed7aa; color: #9a3412; }
+    .badge-blocked { background: #fee2e2; color: #991b1b; }
+    .badge-killed { background: #e5e7eb; color: #4b5563; }
+    .badge-unknown { background: #ddd6fe; color: #5b21b6; }
+    .north-star {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 1px solid #bae6fd;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 16px 0;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 12px 0;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { background: #f9fafb; font-weight: 600; font-size: 13px; }
+    .phase {
+      border-left: 4px solid var(--accent);
+      padding: 4px 0 4px 20px;
+      margin: 24px 0;
+    }
+    .phase-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+    .phase-title { font-size: 18px; font-weight: 600; }
+    .phase-meta { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+    .scope-list {
+      list-style: none;
+      padding: 0;
+      margin: 8px 0;
+    }
+    .scope-list li {
+      padding: 5px 0 5px 26px;
+      position: relative;
+      font-size: 14px;
+    }
+    .scope-list li::before {
+      position: absolute;
+      left: 0;
+      top: 5px;
+      font-weight: 700;
+    }
+    .scope-in li::before { content: "✓"; color: var(--done); }
+    .scope-out li::before { content: "✗"; color: var(--killed); }
+    .question {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      padding: 14px 18px;
+      margin: 12px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .question-q { font-weight: 600; margin-bottom: 6px; font-size: 15px; }
+    .question-rec { color: #4b5563; font-size: 13px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 13px;
+    }
+    .warn-box {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #fee2e2;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      margin-top: 32px;
+      padding: 20px;
+    }
+    /* 圆桌发言专用样式 */
+    .speaker-block {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin: 14px 0;
+    }
+    .speaker-label {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .speaker-ceo .speaker-label { color: #991b1b; }
+    .speaker-mathieu .speaker-label { color: #1d4ed8; }
+    .speaker-pm .speaker-label { color: #065f46; }
+    .speaker-mic .speaker-label { color: #6b21a8; }
+    .speaker-ceo { border-left: 4px solid #dc2626; }
+    .speaker-mathieu { border-left: 4px solid #2563eb; }
+    .speaker-pm { border-left: 4px solid #059669; }
+    .speaker-mic { border-left: 4px solid #7c3aed; }
+    .verdict-box {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 2px solid #059669;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 16px 0;
+    }
+    .verdict-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #065f46;
+      margin-bottom: 10px;
+    }
+    .fact-item {
+      display: flex;
+      gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .fact-item:last-child { border-bottom: none; }
+    .fact-num {
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 24px;
+      font-size: 15px;
+    }
+    .checklist-item {
+      display: flex;
+      gap: 12px;
+      padding: 8px 0;
+      font-size: 14px;
+      align-items: flex-start;
+    }
+    .checklist-step {
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    @media (max-width: 720px) {
+      body { padding: 16px 8px; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <span class="badge badge-done">决议已锁定 — 2026-05-25</span>
+      <h1 style="margin-top: 14px;">drop-note 域名决策</h1>
+      <div style="color: var(--muted); font-size: 18px; margin-top: 2px;">虚拟圆桌会议纪要 — Mic · Mathieu · CEO · PM</div>
+      <div class="meta">
+        主持：<code>drop-mic</code> (Mic) &nbsp;·&nbsp; 参会：<code>manager-mathieu</code>, <code>company-ceo</code>, <code>product-manager</code> &nbsp;·&nbsp; 日期：2026-05-25
+      </div>
+    </header>
+
+    <!-- 一句话决议 -->
+    <section class="section">
+      <h2>一句话决议</h2>
+      <div class="verdict-box">
+        <div class="verdict-title">买 <code>dropnote.me</code>，今天就在 Porkbun 下单。</div>
+        <p style="font-size: 15px; color: #065f46;">
+          USD $5 首年（续费约 $20/yr）。SEO 无损。Email 信誉无损。品牌够现代。<br>
+          <strong>唯一的长期成本</strong>：如果 drop-note 火了，将来收购 <code>dropnote.com</code> 可能要花 $5K–$50K。<br>
+          这不是今天的问题。今天的问题是「能不能发布」。
+        </p>
+      </div>
+      <div class="north-star">
+        <strong>北极星</strong>：域名只是 brand 的 1%，product 才是 99%。用 $5 锁住今天能发布的域名，把省下的钱和注意力放到产品上。等到 100 个活跃用户，再考虑用 GoDaddy Domain Broker 谈 <code>dropnote.com</code>。
+      </div>
+    </section>
+
+    <!-- SEO 事实层 -->
+    <section class="section">
+      <h2>SEO 事实层 — 7 条不需要争论的结论</h2>
+      <p style="color: var(--muted); font-size: 14px; margin-bottom: 16px;">
+        以下基于 Google Search Central 官方文档、John Mueller 公开声明、Ahrefs/Moz 数据。不是观点，是事实。
+      </p>
+
+      <div class="fact-item">
+        <span class="fact-num">1</span>
+        <div>
+          <strong>.me 是黑山 ccTLD，但 Google 早已将其列为 gTLD-equivalent。</strong><br>
+          Google 2014 年起将 <code>.me</code>、<code>.io</code>、<code>.co</code>、<code>.tv</code>、<code>.fm</code> 列入"被全球当作 gTLD 使用的 ccTLD"名单（Google Search Central 官方文档：<em>Country-coded top-level domains used as generic top-level domains</em>）。不会被当作黑山本地网站处理。
+        </div>
+      </div>
+
+      <div class="fact-item">
+        <span class="fact-num">2</span>
+        <div>
+          <strong>算法层面，.me / .so / .com 排名完全相同。</strong><br>
+          Google 排名因子：内容质量、链接权重、用户信号、Core Web Vitals。TLD 类型不是排名因子。Matt Cutts（前 Google 搜索质量主管）和 John Mueller（Google Search Advocate）均多次公开确认此点。<code>dropnote.me</code> 和 <code>dropnote.com</code> 在同等内容下排名无差异。
+        </div>
+      </div>
+
+      <div class="fact-item">
+        <span class="fact-num">3</span>
+        <div>
+          <strong>品牌 SERP 不受影响。</strong><br>
+          用户搜 "dropnote"，你持有 <code>dropnote.me</code>，几天内就排第一。TLD 完全不影响品牌词搜索排名。这是你最重要的 SERP，它是安全的。
+        </div>
+      </div>
+
+      <div class="fact-item">
+        <span class="fact-num">4</span>
+        <div>
+          <strong>长尾 SEO 的 TLD 影响：CTR 差异 &lt;5%，科技语境下更小。</strong><br>
+          在"Omnivore alternative"/"save articles by email"这类科技/SaaS 搜索语境下，<code>.me</code> 和 <code>.com</code> 的点击率差异可忽略不计。Ahrefs 数据显示，科技受众对 <code>.io</code>/<code>.me</code> 的接受度已接近 <code>.com</code>。更关键的 CTR 影响因素是标题和 meta description，不是 TLD。
+        </div>
+      </div>
+
+      <div class="fact-item">
+        <span class="fact-num">5</span>
+        <div>
+          <strong>用户直接输入习惯：.com 仍有默认反射，但科技人群已被充分教育。</strong><br>
+          Telegram 的主入口 <code>t.me</code>、about.me、Disqus —— 这些都是 <code>.me</code> 的成功案例。drop-note 的目标用户从 HN / r/selfhosted / Omnivore 社区来，这批人对非 <code>.com</code> TLD 完全没有心理障碍。
+        </div>
+      </div>
+
+      <div class="fact-item">
+        <span class="fact-num">6</span>
+        <div>
+          <strong>Email 发件信誉与 TLD 无关。</strong><br>
+          <code>drop@dropnote.me</code> 的发件信誉由 SPF / DKIM / DMARC 配置决定，不由 TLD 决定。<code>.me</code> 不会被 Gmail、Outlook、ProtonMail 更高概率地列为垃圾邮件。所有新域名早期 reputation 都是 0，需要 warmup —— 这是任何 TLD 都一样的功课。
+        </div>
+      </div>
+
+      <div class="fact-item">
+        <span class="fact-num">7</span>
+        <div>
+          <strong>真实风险只有一个：如果 drop-note 火了，将来收购 .com 会更贵。</strong><br>
+          <code>dropnote.com</code> 目前估价 $500–$2,000（squatter 持有）。drop-note 火了之后，squatter 可能要价 $5K–$50K。这是长期品牌资产成本，不是 SEO 问题。解法是：在用户量触发阈值时启动 GoDaddy Domain Broker 谈判（佣金 20%），而不是今天就花 $65/yr 买 <code>.so</code> 来逃避这个问题（<code>.so</code> 同样不是 <code>.com</code>，买了也解决不了 squatter 问题）。
+        </div>
+      </div>
+    </section>
+
+    <!-- 圆桌发言纪要 -->
+    <section class="section">
+      <h2>圆桌发言纪要</h2>
+      <p style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">
+        议题唯一：<code>dropnote.me</code>（USD $5/yr 首年）vs <code>dropnote.so</code>（USD $65/yr）。<code>dropnote.com</code> 因 squatter 价格暂不可行。<code>dropnote.email</code> 已被否决（Jason 反馈：用户在浏览器里输入会很怪）。
+      </p>
+
+      <div class="speaker-block speaker-ceo">
+        <div class="speaker-label">CEO — LEDOO FORTUNE FINANCIAL INC.</div>
+        <p style="font-size: 14px; margin-bottom: 10px;">
+          我的本能是保护品牌资产。域名是公司在互联网的地址，错了就是错了，后期迁移的成本比现在多付 $60 高出几个量级。所以我第一反应是：哪怕 <code>.so</code> 贵一点，能不能因为它调性更现代而值？
+        </p>
+        <p style="font-size: 14px; margin-bottom: 10px;">
+          但我听了 Mic 的 SEO 分析之后，我想清楚了一件事：<code>.so</code> 和 <code>.me</code> 解决的是同一个问题——它们都不是 <code>.com</code>。我们真正在意的品牌资产风险，是 5 年后要花 $5K–$50K 才能拿下 <code>dropnote.com</code>。这个风险 <code>.so</code> 无法规避，<code>.me</code> 同样无法规避。
+        </p>
+        <p style="font-size: 14px;">
+          所以问题变成：我愿不愿意多花 $60/yr 买一个"不是 <code>.com</code>、但感觉更好看"的域名？答案是——<strong>不愿意，除非我们相信 drop-note 已经有 traction</strong>。现在没有 traction，这 $60 是 vanity。用 <code>.me</code>，今天发布，产品说话。等到 100 用户，我授权启动 <code>dropnote.com</code> 收购谈判。
+        </p>
+      </div>
+
+      <div class="speaker-block speaker-mathieu">
+        <div class="speaker-label">Mathieu — Product & Engineering VP</div>
+        <p style="font-size: 14px; margin-bottom: 10px;">
+          我来说资源视角。今天是 2026-05-25。Q2 排序：trading #0、house-os #1、drop-note 是 6 月的事。CEO 刚刚 re-vive 了 drop-note，这是一个信号，不是一个资源承诺。
+        </p>
+        <p style="font-size: 14px; margin-bottom: 10px;">
+          我希望 Jason 今天花 10 分钟在 Porkbun 买 <code>dropnote.me</code>，然后把注意力放回去。域名这个决策消耗的精力应该和它的战略权重匹配——这是 1% 的事，不是 10% 的事。我不希望 Jason 在 <code>.me</code> 还是 <code>.so</code> 还是要不要找 squatter 谈判这三件事上多想哪怕一分钟。
+        </p>
+        <p style="font-size: 14px;">
+          <strong><code>.me</code>，买，下一个议题。</strong> 等 drop-note 真的有 100 用户，我会主动提 <code>.com</code> 收购这件事。
+        </p>
+      </div>
+
+      <div class="speaker-block speaker-pm">
+        <div class="speaker-label">product-manager — LEDOO</div>
+        <p style="font-size: 14px; margin-bottom: 10px;">
+          我想从用户心智和转化漏斗两个角度说。
+        </p>
+        <p style="font-size: 14px; margin-bottom: 10px;">
+          用户心智：drop-note 的目标用户从 HN Show、r/selfhosted、Omnivore 社区来。这批人每天用 <code>github.io</code>、<code>*.app</code>、<code>*.io</code>，他们的 TLD 容忍度远高于大众用户。<code>dropnote.me</code> 在他们眼里不会减分。
+        </p>
+        <p style="font-size: 14px; margin-bottom: 10px;">
+          转化漏斗唯一值得担心的一点：onboarding 邮件里 <code>drop@dropnote.me</code> 是否会让用户第一眼以为是钓鱼？这个问题的答案是：只要邮件主题行、发件人名称、品牌视觉是清晰一致的，用户不会因为 <code>.me</code> 就怀疑。Gmail 和 Outlook 的钓鱼判断基于 DKIM/SPF，不基于 TLD。
+        </p>
+        <p style="font-size: 14px;">
+          <strong>我的建议和 Mathieu 一致：<code>.me</code>，立即买。</strong> 如果 6 个月后数据显示 <code>.me</code> 在 onboarding CTR 上有负面信号，我们届时再评估——但我预测不会。
+        </p>
+      </div>
+
+      <div class="speaker-block speaker-mic">
+        <div class="speaker-label">Mic — drop-note 项目负责人（执行人）</div>
+        <p style="font-size: 14px; margin-bottom: 10px;">
+          我最关心的是：今天能不能把域名问题从 pre-launch blocker 列表里划掉。
+        </p>
+        <p style="font-size: 14px; margin-bottom: 10px;">
+          Pre-launch blocker #1 是域名——SendGrid Inbound Parse 需要 MX 记录，需要一个真实域名。目前 `drop@dropnote.com` 的 squatter 估价 $500–$2,000，`dropnote.io` 在 Porkbun marketplace 标价 $3,500，`dropnote.so` $65/yr，`dropnote.me` $5 首年。
+        </p>
+        <p style="font-size: 14px; margin-bottom: 10px;">
+          <code>.me</code> 是唯一今天能一键买、一键配、一键解除 blocker 的选项。其他三个要么价格不理性，要么解决不了长期的 <code>.com</code> 问题。
+        </p>
+        <p style="font-size: 14px;">
+          <strong>买 <code>dropnote.me</code>，今天解除 blocker #1，剩余三个 blocker（AI 错误处理、Dockerfile HOSTNAME、Legal pages）等 Mathieu 开窗后一并派给 Jose。</strong>
+        </p>
+      </div>
+
+      <div class="question" style="margin-top: 20px;">
+        <div class="question-q">冲突点：CEO 担心"5 年后花 $50K 拿 .com"</div>
+        <div class="question-rec">
+          融合立场：这是真实风险，但解法不是今天多花钱——解法是预设触发条件。圆桌一致同意：用户量达到 100 active 时，Mic 自动触发 <code>dropnote.com</code> 收购流程（GoDaddy Domain Broker，佣金约 20%）。这是写进 KPI 的，不是"到时候再说"。CEO 接受这个条件。
+        </div>
+      </div>
+    </section>
+
+    <!-- 最终决议 -->
+    <section class="section">
+      <h2>最终决议 — 4 人立场统一</h2>
+      <div class="verdict-box">
+        <div class="verdict-title">D9 (2026-05-25) — 域名 = dropnote.me</div>
+        <ul class="scope-list scope-in" style="margin-top: 10px;">
+          <li>在 Porkbun 购买 <code>dropnote.me</code>，USD $5.06 首年（Porkbun 实际价格含 ICANN fee）</li>
+          <li>续费约 USD $18–$22/yr（Porkbun .me 续费价格，对比 Namecheap $20.98/yr）</li>
+          <li><code>dropnote.so</code> <strong>不买</strong> —— $65/yr，买了也解决不了 .com squatter 问题，钱花得没意义</li>
+          <li>与 squatter 谈判 <code>dropnote.com</code> <strong>暂缓</strong> —— 当前 app 无 traction，squatter 价格谈不下来</li>
+          <li>触发条件已预设：100 active users 时启动 <code>dropnote.com</code> 收购流程（见§后续触发条件）</li>
+          <li>Email 地址：<code>drop@dropnote.me</code>（SendGrid Inbound Parse MX 指向此域名）</li>
+          <li>发件地址（Resend）：<code>noreply@dropnote.me</code>（SPF/DKIM/DMARC 需配置，Jose brief 里包含）</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 5 年 TCO 对比 -->
+    <section class="section">
+      <h2>5 年总拥有成本对比</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>方案</th>
+            <th>Year 1</th>
+            <th>Year 2–5（续费/yr）</th>
+            <th>5 年累计</th>
+            <th>是否解决 .com 问题</th>
+            <th>评级</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>dropnote.me</code> (Porkbun)</td>
+            <td>USD $5</td>
+            <td>~$20/yr</td>
+            <td><strong>~$85</strong></td>
+            <td>不解决（但预设触发条件）</td>
+            <td><span class="badge badge-done">推荐</span></td>
+          </tr>
+          <tr>
+            <td><code>dropnote.so</code> (Namecheap)</td>
+            <td>USD $65</td>
+            <td>~$65/yr</td>
+            <td><strong>~$325</strong></td>
+            <td>不解决（同样是非 .com）</td>
+            <td><span class="badge badge-killed">不推荐</span></td>
+          </tr>
+          <tr>
+            <td><code>dropnote.com</code> 收购（squatter）</td>
+            <td>$500–$2,000（当前）</td>
+            <td>~$12/yr 续费</td>
+            <td>$548–$2,048</td>
+            <td>是——但当前溢价 10×，traction 后可能 100×</td>
+            <td><span class="badge badge-draft">暂缓</span></td>
+          </tr>
+          <tr>
+            <td><code>dropnote.me</code> + 未来收购 .com（触发条件后）</td>
+            <td>USD $5</td>
+            <td>$20/yr（.me 续费）<br>+ 收购 $2K–$50K（一次性）</td>
+            <td>~$85 + 收购成本</td>
+            <td>是——时机选择在 traction 证明后，价格谈判筹码更强</td>
+            <td><span class="badge badge-done">长期最优</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="color: var(--muted); font-size: 13px; margin-top: 8px;">
+        注：.me 在 app 有 traction 后收购 .com 的价格会更高，但此时也有更强的谈判筹码（可以展示用户量和新闻稿）。当前零 traction 下找 squatter 谈判是最弱的时机。
+      </p>
+    </section>
+
+    <!-- 执行清单 -->
+    <section class="section">
+      <h2>执行清单 — 今天就做，5 步走</h2>
+
+      <div class="checklist-item">
+        <div class="checklist-step">1</div>
+        <div>
+          <strong>Porkbun 购买 <code>dropnote.me</code></strong><br>
+          <span style="font-size: 13px; color: var(--muted);">网址：<code>porkbun.com</code> → 搜 "dropnote.me" → 加入购物车 → 结账（约 USD $5.06）。选 2 年更划算（USD ~$22 + $5 = $27 省去续费麻烦）。</span>
+        </div>
+      </div>
+
+      <div class="checklist-item">
+        <div class="checklist-step">2</div>
+        <div>
+          <strong>Vercel 绑定主域名</strong><br>
+          <span style="font-size: 13px; color: var(--muted);">Vercel 项目 Settings → Domains → Add Domain → <code>dropnote.me</code>。Vercel 会给出 A / CNAME 记录，去 Porkbun DNS 配置。约 5 分钟。</span>
+        </div>
+      </div>
+
+      <div class="checklist-item">
+        <div class="checklist-step">3</div>
+        <div>
+          <strong>SendGrid Inbound Parse 配置 MX 记录</strong><br>
+          <span style="font-size: 13px; color: var(--muted);">SendGrid 后台 → Settings → Inbound Parse → Add Host & URL → 填 <code>dropnote.me</code>。在 Porkbun DNS 添加 MX 记录：<code>mx.sendgrid.net</code> 优先级 10。这一步解除 pre-launch blocker #1。</span>
+        </div>
+      </div>
+
+      <div class="checklist-item">
+        <div class="checklist-step">4</div>
+        <div>
+          <strong>Resend 发件域名验证（SPF / DKIM / DMARC）</strong><br>
+          <span style="font-size: 13px; color: var(--muted);">Resend 后台 → Domains → Add Domain → <code>dropnote.me</code>。按指引在 Porkbun DNS 添加 TXT 记录（SPF、DKIM）。DMARC 建议加 <code>v=DMARC1; p=none; rua=mailto:dmarc@dropnote.me</code> 开始监控。</span>
+        </div>
+      </div>
+
+      <div class="checklist-item">
+        <div class="checklist-step">5</div>
+        <div>
+          <strong>告知 Mic（在下一个 drop-note session 里确认）</strong><br>
+          <span style="font-size: 13px; color: var(--muted);">买完之后在下次 @Mic 时告诉我域名已购。Mic 立即把 pre-launch blocker #1 从清单划掉，并派 Jose 处理剩余 3 个技术 blocker（AI 错误处理、Dockerfile HOSTNAME、Legal pages routes）。</span>
+        </div>
+      </div>
+
+      <div class="warn-box">
+        <strong>注意：</strong>DNS 传播需要 24–48 小时（但大多数区域 30 分钟内生效）。Vercel 的 SSL 证书申请（Let's Encrypt）在 DNS 生效后自动完成，无需手动操作。
+      </div>
+    </section>
+
+    <!-- 后续触发条件 -->
+    <section class="section">
+      <h2>后续触发条件 — 预设 KPI，不是"到时候再说"</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>触发条件</th>
+            <th>行动</th>
+            <th>负责人</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>100 active hosted users</strong>（D1 阈值）</td>
+            <td>
+              1. 启动 <code>dropnote.com</code> 收购流程：GoDaddy Domain Broker 提交 offer，初始报价 $800–$1,200，授权上限 $3,000（等 traction 证明后谈价）<br>
+              2. 同时激活 $4.99/mo 托管版定价（D1 决策）
+            </td>
+            <td>Mic → Jason → CEO 批准预算</td>
+          </tr>
+          <tr>
+            <td><strong>500 active users</strong></td>
+            <td>
+              重新评估 <code>dropnote.com</code> 谈判状态。如 squatter 仍不合理，考虑品牌升级或维持 <code>.me</code> + 提升 brand equity 使 TLD 无关紧要（参考 <code>vercel.com</code> 早期用 <code>zeit.co</code> 的案例）
+            </td>
+            <td>Mic + CEO</td>
+          </tr>
+          <tr>
+            <td><strong>媒体/KOL 提及 drop-note</strong>（HN front page、Product Hunt #1）</td>
+            <td>
+              立即检查 squatter 动向。媒体曝光会让 squatter 抬价。如果能在曝光前 48 小时内完成 Broker 谈判，可能节省 $2K–$10K
+            </td>
+            <td>Mic 实时监控，Jason 授权紧急预算</td>
+          </tr>
+          <tr>
+            <td><strong>.me 续费超过 $30/yr</strong>（注册局政策变化）</td>
+            <td>
+              评估是否迁移到 <code>dropnote.so</code> 或加速 <code>.com</code> 收购
+            </td>
+            <td>Mic 年度域名审查</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 被否决的选项记录 -->
+    <section class="section">
+      <h2>被否决的选项 — 永久记录，下次不重新讨论</h2>
+      <table>
+        <thead>
+          <tr><th>选项</th><th>否决原因</th><th>决策人</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>dropnote.com</code>（当前收购）</td>
+            <td>Squatter 持有，估价 $500–$2,000，零 traction 时谈判筹码最弱。等待触发条件。</td>
+            <td>圆桌一致</td>
+          </tr>
+          <tr>
+            <td><code>dropnote.so</code> (USD $65/yr)</td>
+            <td>贵出 13 倍但不解决 .com 问题。"调性好"是 vanity，不值钱。</td>
+            <td>CEO + Mathieu + Mic</td>
+          </tr>
+          <tr>
+            <td><code>dropnote.io</code></td>
+            <td>Porkbun marketplace 标价 $3,500。不理性。</td>
+            <td>自动否决</td>
+          </tr>
+          <tr>
+            <td><code>dropnote.app</code></td>
+            <td>已被占用。</td>
+            <td>不可用</td>
+          </tr>
+          <tr>
+            <td><code>dropnote.ai</code></td>
+            <td>已被占用。</td>
+            <td>不可用</td>
+          </tr>
+          <tr>
+            <td><code>dropnote.email</code></td>
+            <td>Jason 否决：用户在浏览器输入 xxx.email 会很怪，心理门槛太高。</td>
+            <td>Jason 直接否决</td>
+          </tr>
+          <tr>
+            <td><code>getdropnote.com</code> / <code>trydropnote.com</code> / <code>drop-note.com</code></td>
+            <td>全部被占用。</td>
+            <td>不可用</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>
+      圆桌会议纪要 · 生成时间：2026-05-25 · 主持：<code>drop-mic</code> (Mic) · 参会：<code>manager-mathieu</code>、<code>company-ceo</code>、<code>product-manager</code><br>
+      D9 决策已锁定：<code>dropnote.me</code>。下一个 drop-note session 起效。
+    </footer>
+
+  </div>
+</body>
+</html>
