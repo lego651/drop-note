@@ -13,6 +13,7 @@ import { TimelineSpine } from '@/components/items/TimelineSpine'
 import { ViewSwitcher, VIEW_STORAGE_KEY } from '@/components/items/ViewSwitcher'
 import { BulkSelectProvider, useBulkSelect } from '@/components/items/BulkSelectProvider'
 import { BulkActionToolbar } from '@/components/items/BulkActionToolbar'
+import { WelcomeModal } from '@/components/dashboard/WelcomeModal'
 import type { ViewMode } from '@/components/items/ViewSwitcher'
 import type { ItemSummary } from '@/lib/items'
 import type { Tier } from '@drop-note/shared'
@@ -219,6 +220,7 @@ function ItemsPageClientInner({
 
   return (
     <div className="p-6 space-y-4">
+      <WelcomeModal />
       {/* Header row */}
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-lg font-semibold">Items</h1>
