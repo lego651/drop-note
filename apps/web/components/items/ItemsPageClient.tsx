@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRealtimeItems } from '@/hooks/useRealtimeItems'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Search, Copy, Check, X } from 'lucide-react'
+import { Search, Copy, Check, X, Mail } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ItemsListLayout } from '@/components/items/ItemsListLayout'
@@ -281,24 +281,59 @@ function ItemsPageClientInner({
 
       {/* Empty state */}
       {isEmpty && !isSearchMode && (
-        <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-          <p className="text-sm text-muted-foreground">
-            No items yet. Send an email to{' '}
-            <span className="font-medium text-foreground">drop@dropnote.me</span> to get
-            started.
-          </p>
-          <Button variant="outline" size="sm" onClick={handleCopyEmail} className="gap-1.5">
-            {copied ? (
-              <>
-                <Check size={13} />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Copy size={13} />
-                Copy address
-              </>
-            )}
+        <div className="flex flex-col items-center gap-4 py-16 text-center">
+          {/* Steps */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
+                1
+              </span>
+              Email it
+            </span>
+            <span className="text-border">→</span>
+            <span className="flex items-center gap-1.5">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
+                2
+              </span>
+              AI tags it
+            </span>
+            <span className="text-border">→</span>
+            <span className="flex items-center gap-1.5">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
+                3
+              </span>
+              Find it here
+            </span>
+          </div>
+
+          {/* Drop address */}
+          <div className="flex items-center gap-2 w-full max-w-xs">
+            <input
+              readOnly
+              value="drop@dropnote.me"
+              className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 font-mono text-sm text-foreground"
+            />
+            <Button variant="outline" size="sm" onClick={handleCopyEmail} className="shrink-0 gap-1.5">
+              {copied ? (
+                <>
+                  <Check size={13} />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy size={13} />
+                  Copy
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* CTA */}
+          <Button variant="default" size="sm" className="gap-2" asChild>
+            <a href="mailto:drop@dropnote.me?subject=Test drop">
+              <Mail size={13} />
+              Send yourself a test email
+            </a>
           </Button>
         </div>
       )}
