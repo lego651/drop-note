@@ -288,6 +288,7 @@ export type Database = {
       users: {
         Row: {
           created_at: string
+          digest_enabled: boolean
           drop_token: string | null
           email: string
           id: string
@@ -298,6 +299,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          digest_enabled?: boolean
           drop_token?: string | null
           email: string
           id: string
@@ -308,6 +310,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          digest_enabled?: boolean
           drop_token?: string | null
           email?: string
           id?: string

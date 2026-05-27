@@ -15,11 +15,14 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Copy, Check } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 
 interface SettingsClientProps {
   email: string
   tier: string
   memberSince: string
+  digestEnabled: boolean
 }
 
 const PLAN_COLORS: Record<string, string> = {
@@ -28,10 +31,11 @@ const PLAN_COLORS: Record<string, string> = {
   power: 'bg-primary text-primary-foreground',
 }
 
-export function SettingsClient({ email, tier, memberSince }: SettingsClientProps) {
+export function SettingsClient({ email, tier, memberSince, digestEnabled: initialDigestEnabled }: SettingsClientProps) {
   const [copied, setCopied] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [digestEnabled, setDigestEnabled] = useState(initialDigestEnabled)
 
   async function handleCopy() {
     await navigator.clipboard.writeText('drop@dropnote.me')
@@ -64,6 +68,21 @@ export function SettingsClient({ email, tier, memberSince }: SettingsClientProps
     } catch {
       setDeleteError('Something went wrong')
       setDeleting(false)
+    }
+  }
+
+  async function handleDigestToggle(next: boolean) {
+    // Optimistic update
+    setDigestEnabled(next)
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('users')
+      .update({ digest_enabled: next })
+      .eq('id', (await supabase.auth.getUser()).data.user?.id ?? '')
+    if (error) {
+      // Revert on failure
+      setDigestEnabled(!next)
+      console.error('[settings] Failed to update digest_enabled:', error.message)
     }
   }
 
@@ -134,6 +153,28 @@ export function SettingsClient({ email, tier, memberSince }: SettingsClientProps
             Manage Subscription
           </Button>
         )}
+      </section>
+
+      <hr className="border-border" />
+
+      {/* Weekly Digest */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium">Notifications</h2>
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <Label htmlFor="digest-toggle" className="text-sm font-medium leading-none">
+              Weekly digest email
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Receive a weekly email every Monday with your top saves and resurface picks.
+            </p>
+          </div>
+          <Switch
+            id="digest-toggle"
+            checked={digestEnabled}
+            onCheckedChange={handleDigestToggle}
+          />
+        </div>
       </section>
 
       <hr className="border-border" />

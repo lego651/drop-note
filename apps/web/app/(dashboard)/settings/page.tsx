@@ -15,7 +15,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabaseAdmin
     .from('users')
-    .select('tier, stripe_customer_id, created_at')
+    .select('tier, stripe_customer_id, created_at, digest_enabled')
     .eq('id', user.id)
     .single()
 
@@ -29,6 +29,7 @@ export default async function SettingsPage() {
       email={user.email ?? ''}
       tier={tier}
       memberSince={memberSince}
+      digestEnabled={profile?.digest_enabled ?? true}
     />
   )
 }
