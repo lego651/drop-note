@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       block_list: {
@@ -288,6 +263,7 @@ export type Database = {
       users: {
         Row: {
           created_at: string
+          digest_enabled: boolean
           drop_token: string | null
           email: string
           id: string
@@ -298,6 +274,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          digest_enabled?: boolean
           drop_token?: string | null
           email: string
           id: string
@@ -308,6 +285,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          digest_enabled?: boolean
           drop_token?: string | null
           email?: string
           id?: string
@@ -482,9 +460,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       block_list_entry_type: ["email", "ip"],
