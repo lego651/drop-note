@@ -1,6 +1,10 @@
+/**
+ * PDF text extraction for the synchronous ingest pipeline (D11, 2026-05-26).
+ * Lifted from apps/worker/src/lib/pdf.ts.
+ */
 import pdfParse from 'pdf-parse'
 
-interface PdfExtractResult {
+export interface PdfExtractResult {
   text: string
   error: string | null
 }

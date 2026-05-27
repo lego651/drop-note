@@ -1,4 +1,8 @@
-import { supabaseAdmin } from './supabase'
+/**
+ * Attachment upload helper for the synchronous ingest pipeline (D11, 2026-05-26).
+ * Lifted from apps/worker/src/lib/storage.ts. Uses the web app's supabaseAdmin.
+ */
+import { supabaseAdmin } from '../supabase/admin'
 import { enforceAttachmentSizeLimit } from '@drop-note/shared'
 
 interface UploadParams {
@@ -6,11 +10,11 @@ interface UploadParams {
   itemId: string
   filename: string
   mimeType: string
-  data: string  // base64
+  data: string // base64
   tier: 'free' | 'pro' | 'power'
 }
 
-interface UploadResult {
+export interface UploadResult {
   storagePath: string | null
   error: string | null
 }
@@ -22,7 +26,6 @@ function sanitizeFilename(filename: string): string {
 export async function uploadAttachment(params: UploadParams): Promise<UploadResult> {
   const { userId, itemId, filename, mimeType, data, tier } = params
 
-  // Compute decoded size
   const size = Math.floor(data.length * 0.75)
   const withinLimit = enforceAttachmentSizeLimit({ filename, mimeType, data, size }, tier)
 

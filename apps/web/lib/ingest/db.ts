@@ -1,4 +1,8 @@
-import { supabaseAdmin } from './supabase'
+/**
+ * DB state-update helpers for the synchronous ingest pipeline (D11, 2026-05-26).
+ * Lifted from apps/worker/src/lib/db.ts. Uses the web app's supabaseAdmin.
+ */
+import { supabaseAdmin } from '../supabase/admin'
 import { normalizeTags } from '@drop-note/shared'
 import type { SourceType } from '@drop-note/shared'
 
@@ -22,7 +26,7 @@ export async function setItemDone(
     sourceType?: SourceType | null
     sourceUrl?: string | null
     thumbnailUrl?: string | null
-  }
+  },
 ): Promise<void> {
   const { data, error } = await supabaseAdmin
     .from('items')
@@ -85,22 +89,21 @@ export async function upsertTags(userId: string, itemId: string, tagNames: strin
   const normalized = normalizeTags(tagNames)
   if (normalized.length === 0) return
 
-  // Upsert all tags in parallel
   const tagResults = await Promise.all(
     normalized.map((name) =>
       supabaseAdmin
         .from('tags')
         .upsert({ user_id: userId, name }, { onConflict: 'user_id,name' })
         .select('id')
-        .single()
-    )
+        .single(),
+    ),
   )
 
   const validTagIds: string[] = []
   for (let i = 0; i < tagResults.length; i++) {
     const { data: tag, error: tagError } = tagResults[i]
     if (tagError || !tag) {
-      console.warn(`[db] Failed to upsert tag "${normalized[i]}":`, tagError?.message)
+      console.warn(`[ingest:db] Failed to upsert tag "${normalized[i]}":`, tagError?.message)
       continue
     }
     validTagIds.push(tag.id)
@@ -108,13 +111,12 @@ export async function upsertTags(userId: string, itemId: string, tagNames: strin
 
   if (validTagIds.length === 0) return
 
-  // Batch upsert all item_tag links in one call
   const pairs = validTagIds.map((tagId) => ({ item_id: itemId, tag_id: tagId }))
   const { error: linkError } = await supabaseAdmin
     .from('item_tags')
     .upsert(pairs, { onConflict: 'item_id,tag_id' })
 
   if (linkError) {
-    console.warn(`[db] Failed to upsert item_tags for item ${itemId}:`, linkError.message)
+    console.warn(`[ingest:db] Failed to upsert item_tags for item ${itemId}:`, linkError.message)
   }
 }

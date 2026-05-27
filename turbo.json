@@ -13,7 +13,6 @@
         "STRIPE_WEBHOOK_SECRET",
         "UPSTASH_REDIS_REST_URL",
         "UPSTASH_REDIS_REST_TOKEN",
-        "REDIS_URL",
         "RESEND_API_KEY",
         "RESEND_FROM_ADDRESS",
         "OPENAI_API_KEY"

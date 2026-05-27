@@ -1,3 +1,14 @@
+/**
+ * AI processing helpers for the synchronous ingest pipeline (D11, 2026-05-26).
+ *
+ * Lifted from apps/worker/src/lib/openai.ts. Uses `createAIProvider` from
+ * @drop-note/shared so the provider (OpenAI / Anthropic / Gemini) is still
+ * controlled by the AI_PROVIDER + AI_MODEL env vars — no change to self-hosted
+ * behaviour.
+ *
+ * Keeping this in a separate module (not inlined in route.ts) so a future
+ * QStash async pivot can wrap it without rewriting the logic.
+ */
 import { createAIProvider, type AIProvider } from '@drop-note/shared'
 
 let _aiProvider: AIProvider | null = null
@@ -9,7 +20,7 @@ function getAIProvider(): AIProvider {
 const MAX_INPUT_CHARS = 50_000
 const IMAGE_MAX_BASE64_SIZE = 5 * 1024 * 1024
 
-interface SummarizeResult {
+export interface SummarizeResult {
   summary: string
   tags: string[]
   error: string | null
@@ -38,12 +49,18 @@ export async function summarizeEmailBody(
     if (err instanceof SyntaxError) {
       return { summary: '', tags: [], error: 'Invalid AI response format', retryable: false }
     }
-    const isRetryable = err instanceof Error && (err as Error & { retryable?: boolean }).retryable === true
-    return { summary: '', tags: [], error: err instanceof Error ? err.message : 'Unknown error', retryable: isRetryable }
+    const isRetryable =
+      err instanceof Error && (err as Error & { retryable?: boolean }).retryable === true
+    return {
+      summary: '',
+      tags: [],
+      error: err instanceof Error ? err.message : 'Unknown error',
+      retryable: isRetryable,
+    }
   }
 }
 
-interface DescribeResult {
+export interface DescribeResult {
   description: string
   error: string | null
 }

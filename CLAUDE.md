@@ -15,8 +15,7 @@ drop-note is an email-to-dashboard content saver. Users email anything to `drop@
 ```
 drop-note/
 ├── apps/
-│   ├── web/          # Next.js 14 dashboard — deployed to Vercel
-│   └── worker/       # BullMQ AI processing worker — deployed to Railway
+│   └── web/          # Next.js 14 dashboard — deployed to Vercel
 ├── packages/
 │   └── shared/       # Shared TypeScript types, helpers, AI prompts
 ├── supabase/
@@ -34,12 +33,12 @@ drop-note/
 | Auth | Supabase Auth (Google OAuth only) |
 | File Storage | Supabase Storage |
 | Email Inbound | SendGrid Inbound Parse → `/api/ingest` |
-| Queue | BullMQ + Redis (Upstash/Railway) |
+| Queue | None — AI runs synchronously in `/api/ingest` (D11); Upstash Redis for rate limiting |
 | AI | OpenAI GPT-4o-mini (SaaS fixed); `.env` configurable self-hosted |
 | Email Sending | Resend |
 | Payments | Stripe (Sprint 3) |
 | Error Monitoring | Sentry (Sprint 5) |
-| Deployment | Vercel (web) + Railway (worker) |
+| Deployment | Vercel |
 | Monorepo | pnpm workspaces + Turborepo |
 
 ## Key env vars (all in `apps/web/.env.local`)
@@ -93,15 +92,6 @@ npx supabase migration list --linked  # check migration status
 
 > **Before pushing to Vercel:** run `pnpm turbo lint && pnpm turbo typecheck && pnpm --filter @drop-note/web build` locally. Vercel runs all three and a build failure blocks the deployment.
 
-> **Railway auto-deploys on push to `main`** — but there is a build delay (typically 2–4 minutes). Any emails processed during that window will use the old worker code. If you change anything in `apps/worker/` or `packages/shared/`, note that:
-> - Items processed before the Railway deploy finishes won't reflect the new logic (re-send the email to reprocess)
-> - Check the Railway dashboard to confirm the deploy succeeded before testing worker behaviour
-> - **Watch Paths must be newline-separated** (one pattern per line) in Railway Settings. Comma-separated values are not parsed correctly and will silently break auto-deploy. Correct config:
->   ```
->   apps/worker/**
->   packages/shared/**
->   ```
-
 > **IMPORTANT:** Every time the database schema changes (new migration applied), run `pnpm gen:types` to regenerate `packages/shared/src/database.types.ts`. All three Supabase client factories (`client.ts`, `server.ts`, `middleware.ts`) are typed with `Database` — stale types will cause TypeScript errors or silently wrong column names across the entire app.
 
 ---
@@ -121,6 +111,11 @@ npx supabase migration list --linked  # check migration status
 - **No module-level env var access** — never call `requireEnv()` or read `process.env` at the top level of a module. Next.js imports all route modules at build time; env var reads must happen inside request handlers or lazy initializers. Use a lazy singleton (the Proxy pattern in `lib/supabase/admin.ts` and `lib/stripe.ts`) for any client that needs a secret key. This applies to Stripe, Redis, Resend, OpenAI — every service client.
 - **No `as any` outside tests** — use `unknown` + narrowing or `Record<string | symbol, unknown>` instead. Test files (`*.test.ts`) are exempt.
 - **Supabase query results vs. narrow app types** — Supabase generates DB types where every `text` column is `string`. App-level union types (e.g. `SourceType`, `Tier`, status enums) are narrower than `string` and are never auto-inferred from query results. Whenever a Supabase query feeds into a component or function that expects a narrow union type, cast the relevant fields explicitly at the query boundary (e.g. `source_type: row.source_type as SourceType | null`). Do not suppress this with `as any` — cast the specific field.
+- **`/api/ingest` structured log** — every code path emits a JSON log line for p95 monitoring. Field names are stable; do not rename them:
+  ```json
+  { "event": "ingest.completed", "userId": "...", "itemId": "...", "status": "done|pending|failed|error",
+    "total_handling_ms": 1234, "ai_processing_ms": 890, "text_length": 500, "html_length": 1200, "attachment_count": 0 }
+  ```
 - **ESLint config** — `apps/web/.eslintrc.json` extends `next/core-web-vitals`. Do not remove it. Inline `eslint-disable` comments for `@next/next/*` and `react-hooks/*` rules only work when the config loads those plugins.
 
 ---

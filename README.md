@@ -60,16 +60,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full local development guide.
 graph LR
     A[Email] --> B[SendGrid Inbound Parse]
     B --> C[/api/ingest]
-    C --> D[BullMQ Queue]
-    D --> E[Worker]
-    E --> F[OpenAI / Anthropic / Gemini]
+    C --> F[OpenAI / Anthropic / Gemini]
     F --> G[Supabase DB]
     H[Dashboard\nNext.js] --> G
     G --> I[Supabase Realtime]
     I --> H
 ```
 
-An inbound email hits SendGrid's Inbound Parse webhook, which POSTs the payload to `/api/ingest`. The route handler validates the sender, writes a pending item to Supabase, and enqueues a job in BullMQ (Redis). The worker picks up the job, calls the configured AI provider to summarize and tag the content, and writes the result back to Supabase. The dashboard receives the update in real time via Supabase Realtime.
+An inbound email hits SendGrid's Inbound Parse webhook, which POSTs the payload to `/api/ingest`. The route handler validates the sender, calls the configured AI provider synchronously to summarize and tag the content, and writes the result to Supabase. The dashboard receives the update in real time via Supabase Realtime.
 
 ---
 
@@ -82,12 +80,12 @@ An inbound email hits SendGrid's Inbound Parse webhook, which POSTs the payload 
 | Auth | Supabase Auth (magic link — no passwords) |
 | File Storage | Supabase Storage |
 | Email Inbound | SendGrid Inbound Parse |
-| Queue | BullMQ + Redis (Upstash) |
+| Queue | None — AI runs synchronously in `/api/ingest`; Upstash Redis for rate limiting |
 | AI | OpenAI GPT-4o-mini (SaaS); configurable for self-hosted |
 | Email Sending | Resend |
 | Payments | Stripe |
 | Error Monitoring | Sentry |
-| Deployment | Vercel (web) + Railway (worker) |
+| Deployment | Vercel |
 | Monorepo | pnpm workspaces + Turborepo |
 
 ---

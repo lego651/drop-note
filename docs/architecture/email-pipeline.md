@@ -1,44 +1,48 @@
 # Email Pipeline Architecture
 
+> **D11 (2026-05-26):** Migrated to synchronous processing. BullMQ queue and Railway worker removed.
+> Revisit to async (QStash) when active hosted users >= 100 or `/api/ingest` p95 > 30s.
+
 ## Overview
 
 ```
 User Gmail
     │
-    │  sends email to legogao651@gmail.com (dev)
     │  sends email to drop@dropnote.me   (prod)
     ▼
 SendGrid Inbound Parse
     │  parses raw email → structured multipart POST
     ▼
-POST /api/ingest  (Next.js on Vercel)
+POST /api/ingest  (Next.js on Vercel, maxDuration=60)
     │
     ├─ auth: shared secret in ?key= query param
     ├─ user lookup: from address → public.users (Supabase)
     ├─ block list: public.block_list (Supabase)
-    ├─ rate limit: Redis INCR/EXPIRE (Upstash)
-    ├─ create pending item: public.items status=pending (Supabase)
-    └─ enqueue job → BullMQ queue (Upstash Redis)
-            │
-            ▼
-    BullMQ Worker  (Node.js on Railway)
-            │
-            ├─ setItemProcessing → status=processing
+    ├─ rate limit: Redis INCR/EXPIRE (Upstash REST)
+    ├─ save action limit: Redis atomic Lua INCR (Upstash REST, free tier)
+    ├─ item cap check: public.items count (Supabase)
+    ├─ create item: public.items status=processing (Supabase)
+    │
+    └─ processEmail() — synchronous inline AI pipeline
             │
             ├─ [email body]
-            │     └─ GPT-4o-mini → summary + tags (OpenAI)
+            │     └─ AI provider → summary + tags
+            │           (OpenAI GPT-4o-mini default; Anthropic / Gemini via env)
             │
             ├─ [image attachments]
-            │     └─ GPT-4o-mini Vision → description (OpenAI)
+            │     └─ AI provider Vision → description
             │
             ├─ [PDF attachments]
-            │     └─ pdf-parse → extract text → GPT-4o-mini → summary
+            │     └─ pdf-parse → extract text → AI provider → summary
             │
             ├─ upload attachments → storage.attachments (Supabase Storage)
             │
             ├─ upsert tags → public.tags + public.item_tags (Supabase)
             │
-            └─ setItemDone → status=done, ai_summary written (Supabase)
+            ├─ setItemDone → status=done, ai_summary written (Supabase)
+            │
+            └─ structured log emitted:
+                  { event: 'ingest.completed', total_handling_ms, ai_processing_ms, ... }
 ```
 
 ---
@@ -48,26 +52,35 @@ POST /api/ingest  (Next.js on Vercel)
 | Tool | Role |
 |---|---|
 | **SendGrid Inbound Parse** | Receives inbound email, parses MIME, delivers structured POST to `/api/ingest` |
-| **Vercel** | Hosts Next.js app including `/api/ingest` serverless function |
-| **Upstash Redis** | Dual use: rate limiting (REST API via `@upstash/redis`) + BullMQ job queue (ioredis) |
-| **Railway** | Hosts the persistent BullMQ worker process (can't run on Vercel serverless) |
+| **Vercel** | Hosts Next.js app including `/api/ingest` serverless function (maxDuration=60) |
+| **Upstash Redis** | Rate limiting + save action counters via `@upstash/redis` REST client |
 | **Supabase** | Postgres DB (items, tags, users), Storage (attachments), RLS auth |
-| **OpenAI GPT-4o-mini** | Summarizes email body + PDFs, describes images via Vision API |
-| **Resend** | Sends welcome email on first sign-in (outbound only) |
+| **OpenAI GPT-4o-mini** | Default AI provider — summarizes email body + PDFs, describes images |
+| **Resend** | Sends notification emails (cap exceeded, save limit, welcome) |
 
 ---
 
 ## Key Decisions
 
-**Why two Redis clients?**
-`@upstash/redis` (REST) works in Vercel serverless for rate limiting. BullMQ requires a persistent TCP connection (`ioredis`) — only viable in the Railway worker.
+**Why synchronous (D11)?**
+Railway trial expired ($5/mo); worker had been dead since 2026-03-30. Moving AI calls inline
+eliminates the operational footprint entirely. Vercel's 60s maxDuration comfortably covers
+typical email processing. The `processEmail()` function is decoupled from the HTTP layer so
+a QStash async wrapper is a future swap, not a rewrite.
 
-**Why a separate worker process?**
-Vercel functions time out at 10–60s and don't hold persistent connections. The worker needs both — Railway runs it as a long-lived Node.js process.
+**Single Redis client — why `@upstash/redis` REST only?**
+No persistent TCP connection needed without BullMQ. `@upstash/redis` works in Vercel
+serverless and stays within the Upstash free tier.
 
 **Why always return HTTP 200 from `/api/ingest`?**
-SendGrid retries any non-200 response. Unknown senders, blocked addresses, and rate-limited users are all silently discarded with 200 to prevent retry storms.
+SendGrid retries any non-200 response. Unknown senders, blocked addresses, and rate-limited
+users are all silently discarded with 200 to prevent retry storms.
 
-**Dev vs prod inbound address**
-Dev: `legogao651@gmail.com` (manual curl simulation — no MX records needed).
-Prod: `drop@dropnote.me` (MX record on `dropnote.me` root domain + SendGrid Inbound Parse config).
+**Retryable vs non-retryable AI errors**
+On a transient AI error (e.g. OpenAI 500), the item is left at `status=pending` with a
+placeholder summary — the user can re-send the email to reprocess. On a non-retryable error
+(parse failure, 400), the item is marked `status=failed` with `error_message`.
+
+**Stuck item from before D11 (item `4d3c37b7`, 2026-05-26)**
+Jason's test email that landed while the worker was dead is stuck at `status=pending`. Simplest
+fix: re-send the email. The new synchronous pipeline will process it immediately.

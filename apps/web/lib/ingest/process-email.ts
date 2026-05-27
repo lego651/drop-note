@@ -1,7 +1,18 @@
-import { Job } from 'bullmq'
+/**
+ * Core email processing logic for the synchronous ingest pipeline (D11, 2026-05-26).
+ *
+ * This module contains the pure processing logic — AI summarize, tag, attachment
+ * handling — extracted from the old apps/worker/src/processors/email.ts.
+ *
+ * It is intentionally decoupled from the HTTP layer so that a future QStash async
+ * pivot wraps this function in a new route handler rather than rewrites it.
+ *
+ * Calling convention:
+ *   - Returns normally on success (status 'done') or non-retryable failure (status 'failed').
+ *   - On retryable AI error, updates the body item to 'pending' and returns status 'pending'.
+ *   - Never throws — all errors are caught and surfaced via status fields.
+ */
 import {
-  EmailJobPayload,
-  EmailJobResult,
   parseSendGridPayload,
   isAllowedMimeType,
   extractSingleUrl,
@@ -10,21 +21,39 @@ import {
   fetchYouTubeTitle,
 } from '@drop-note/shared'
 import type { SourceType } from '@drop-note/shared'
-import { setItemProcessing, setItemDone, setItemFailed, setItemPending, upsertTags, createAttachmentItem } from '../lib/db'
-import { uploadAttachment } from '../lib/storage'
-import { summarizeEmailBody, describeImage } from '../lib/openai'
-import { extractPdfText } from '../lib/pdf'
+import { setItemProcessing, setItemDone, setItemFailed, setItemPending, upsertTags, createAttachmentItem } from './db'
+import { uploadAttachment } from './storage'
+import { summarizeEmailBody, describeImage } from './ai'
+import { extractPdfText } from './pdf'
 
-export async function processEmail(job: Job<EmailJobPayload>): Promise<EmailJobResult> {
-  const { userId, userTier, from, subject, text, html, attachmentInfo, attachmentKeys, attachmentData, bodyItemId } = job.data
+export interface ProcessEmailParams {
+  userId: string
+  userTier: 'free' | 'pro' | 'power'
+  from: string
+  subject: string
+  text: string
+  html: string
+  attachmentInfo: string
+  attachmentKeys: string[]
+  attachmentData: Record<string, string>
+  bodyItemId: string
+}
 
-  console.log(`[processor] Processing job ${job.id} for user ${userId}`)
+export interface ProcessEmailResult {
+  itemIds: string[]
+  status: 'done' | 'failed' | 'pending'
+  /** Wall-clock ms spent on AI calls only */
+  aiMs: number
+}
 
-  // Mark body item as processing
+export async function processEmail(params: ProcessEmailParams): Promise<ProcessEmailResult> {
+  const { userId, userTier, from, subject, text, html, attachmentInfo, attachmentKeys, attachmentData, bodyItemId } = params
+
   await setItemProcessing(bodyItemId)
 
+  const aiStart = Date.now()
+
   try {
-    // Build field map for parsing
     const fields: Record<string, string> = {
       from,
       subject,
@@ -52,45 +81,45 @@ export async function processEmail(job: Job<EmailJobPayload>): Promise<EmailJobR
       sourceType = 'youtube'
       sourceUrl = detectedUrl
       thumbnailUrl = getYouTubeThumbnailUrl(youtubeId)
-      // Fetch title via oEmbed so the AI has something meaningful to summarize
       const videoTitle = await fetchYouTubeTitle(detectedUrl)
       summarizeSubject = videoTitle ?? parsed.subject
       summarizeBody = `YouTube video: ${videoTitle ?? detectedUrl}`
-      console.log(`[processor] Detected YouTube video: ${youtubeId} — "${summarizeSubject}"`)
+      console.log(`[ingest] Detected YouTube video: ${youtubeId} — "${summarizeSubject}"`)
     } else if (detectedUrl) {
       sourceType = 'url'
       sourceUrl = detectedUrl
-      console.log(`[processor] Detected URL: ${detectedUrl}`)
+      console.log(`[ingest] Detected URL: ${detectedUrl}`)
     } else {
       sourceType = 'email'
     }
 
     // Summarize body
     const bodyResult = await summarizeEmailBody(summarizeSubject, summarizeBody)
+    const aiMs = Date.now() - aiStart
 
     if (bodyResult.error) {
       if (bodyResult.retryable) {
-        // Transient AI service error — rethrow so BullMQ retries the job.
-        // Attach retryable flag so the outer catch can distinguish it.
-        const err = new Error(bodyResult.error) as Error & { retryable: boolean }
-        err.retryable = true
-        throw err
+        // Transient AI error — item remains accessible with placeholder summary.
+        // SendGrid already got 200 so it won't retry. User can re-send to reprocess.
+        await setItemPending(bodyItemId, 'AI summary temporarily unavailable. Your content has been saved.')
+        return { itemIds: [bodyItemId], status: 'pending', aiMs }
       } else {
-        // Non-retryable error (parse failure, 400, etc.) — mark failed, do not rethrow
         await setItemFailed(bodyItemId, bodyResult.error)
+        return { itemIds: [bodyItemId], status: 'failed', aiMs }
       }
-    } else {
-      await setItemDone(bodyItemId, {
-        aiSummary: bodyResult.summary,
-        storagePath: null,
-        filename: null,
-        sourceType,
-        sourceUrl,
-        thumbnailUrl,
-      })
-      if (bodyResult.tags.length > 0) {
-        await upsertTags(userId, bodyItemId, bodyResult.tags)
-      }
+    }
+
+    await setItemDone(bodyItemId, {
+      aiSummary: bodyResult.summary,
+      storagePath: null,
+      filename: null,
+      sourceType,
+      sourceUrl,
+      thumbnailUrl,
+    })
+
+    if (bodyResult.tags.length > 0) {
+      await upsertTags(userId, bodyItemId, bodyResult.tags)
     }
 
     // Process attachments
@@ -107,7 +136,6 @@ export async function processEmail(job: Job<EmailJobPayload>): Promise<EmailJobR
       await setItemProcessing(attachItemId)
 
       try {
-        // Upload file
         const uploadResult = await uploadAttachment({
           userId,
           itemId: attachItemId,
@@ -131,8 +159,6 @@ export async function processEmail(job: Job<EmailJobPayload>): Promise<EmailJobR
             const sumResult = await summarizeEmailBody(attachment.filename, pdfResult.text)
             aiSummary = sumResult.summary
             aiTags = sumResult.tags
-          } else if (pdfResult.error) {
-            aiSummary = ''
           }
         }
 
@@ -151,20 +177,16 @@ export async function processEmail(job: Job<EmailJobPayload>): Promise<EmailJobR
       }
     }
 
-    return { itemIds, status: 'done' }
+    return { itemIds, status: 'done', aiMs }
   } catch (err) {
+    const aiMs = Date.now() - aiStart
     const msg = err instanceof Error ? err.message : 'Unknown error'
-    const isRetryable = err instanceof Error && (err as Error & { retryable?: boolean }).retryable === true
-    const maxAttempts = job.opts.attempts ?? 1
-    const isLastAttempt = job.attemptsMade + 1 >= maxAttempts
-
-    if (isRetryable && !isLastAttempt) {
-      // Transient error with retries remaining — keep item accessible, BullMQ will retry
-      await setItemPending(bodyItemId, 'AI summary temporarily unavailable. Your content has been saved.')
-    } else {
-      // Non-retryable error, or retries exhausted — mark as failed
+    console.error('[ingest] processEmail unexpected error:', msg)
+    try {
       await setItemFailed(bodyItemId, msg)
+    } catch {
+      // best-effort
     }
-    throw err // BullMQ will retry (or move to failed queue on last attempt)
+    return { itemIds: [bodyItemId], status: 'failed', aiMs }
   }
 }

@@ -1,42 +1,42 @@
+/**
+ * D11 (2026-05-26): Synchronous AI processing — no BullMQ, no Railway worker.
+ * AI summarize + tag runs inline. maxDuration=60 covers typical emails.
+ *
+ * Revisit triggers (flip to async QStash):
+ *   - active hosted users >= 100
+ *   - p95 total_handling_ms approaching 30 000
+ *   - Vercel function timeout errors in runtime logs
+ *
+ * Structured log emitted on every path for p95 monitoring:
+ *   { event, userId, itemId, status, total_handling_ms, ai_processing_ms,
+ *     text_length, html_length, attachment_count }
+ */
+
+export const maxDuration = 60
+export const runtime = 'nodejs'
+
 import { NextResponse } from 'next/server'
 import { Redis } from '@upstash/redis'
-import { Queue } from 'bullmq'
-import IORedis from 'ioredis'
 import {
   parseFromAddress,
   isOverRateLimit,
-  QUEUE_NAME,
   TIER_ITEM_LIMITS,
   TIER_ATTACHMENT_SIZE_MB,
   SAVE_ACTIONS_FREE_LIMIT,
   getCurrentMonth,
   isAllowedMimeType,
-  type EmailJobPayload,
 } from '@drop-note/shared'
 import { timingSafeEqual } from 'crypto'
 import { sendCapExceededEmail } from '../../../lib/emails/cap-exceeded'
 import { sendSaveLimitExceededEmail } from '../../../lib/emails/save-limit-exceeded'
 import { supabaseAdmin } from '../../../lib/supabase/admin'
+import { processEmail } from '../../../lib/ingest/process-email'
 
 function getRedis() {
   return new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL!,
     token: process.env.UPSTASH_REDIS_REST_TOKEN!,
   })
-}
-
-let _queue: Queue | null = null
-
-function getQueue(): Queue {
-  if (!_queue) {
-    const connection = new IORedis(process.env.REDIS_URL!, {
-      maxRetriesPerRequest: null,
-      enableOfflineQueue: false,
-      lazyConnect: true,
-    })
-    _queue = new Queue(QUEUE_NAME, { connection })
-  }
-  return _queue
 }
 
 function timingSafeCompare(a: string, b: string): boolean {
@@ -53,7 +53,7 @@ function timingSafeCompare(a: string, b: string): boolean {
 /**
  * Count how many items this email would create.
  * = 1 (email body) + valid attachments (allowed MIME type + within size limit for tier)
- * Oversized attachments are excluded — they'll be dropped by the worker anyway.
+ * Oversized attachments are excluded — they'll be dropped during processing anyway.
  */
 function countIncomingItems(
   attachmentInfo: string,
@@ -79,7 +79,7 @@ function countIncomingItems(
 
     const base64Data = attachmentData[key] ?? ''
     const sizeBytes = Math.floor(base64Data.length * 0.75)
-    if (sizeBytes > sizeLimitBytes) continue // oversized — exclude from count
+    if (sizeBytes > sizeLimitBytes) continue
 
     count++
   }
@@ -102,6 +102,8 @@ return new
 `
 
 export async function POST(request: Request) {
+  const startMs = Date.now()
+
   // Always 200 to SendGrid — never let it retry on error
   try {
     // Auth check
@@ -271,7 +273,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Create pending item
+    // Create item with status 'processing' immediately
     const { data: item, error: itemError } = await supabase
       .from('items')
       .insert({
@@ -279,37 +281,15 @@ export async function POST(request: Request) {
         subject: subject || '(no subject)',
         sender_email: senderEmail,
         type: 'email_body',
-        status: 'pending',
+        status: 'processing',
       })
       .select('id')
       .single()
 
     if (itemError || !item) {
-      console.error('[ingest] Failed to create pending item:', itemError?.message)
+      console.error('[ingest] Failed to create item:', itemError?.message)
       return NextResponse.json({ ok: true }, { status: 200 })
     }
-
-    // Enqueue BullMQ job
-    const queue = getQueue()
-
-    const payload: EmailJobPayload = {
-      userId: user.id,
-      userTier: user.tier,
-      from,
-      subject,
-      text,
-      html,
-      attachmentInfo,
-      attachmentKeys,
-      attachmentData,
-      bodyItemId: item.id,
-      receivedAt: new Date().toISOString(),
-    }
-
-    await queue.add('process-email', payload, {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 5000 },
-    })
 
     // S308 — Fire-and-forget usage_log write (for admin reporting)
     if (user.tier === 'free') {
@@ -322,9 +302,50 @@ export async function POST(request: Request) {
         })
     }
 
+    // Synchronous AI processing (D11)
+    const result = await processEmail({
+      userId: user.id,
+      userTier: user.tier,
+      from,
+      subject,
+      text,
+      html,
+      attachmentInfo,
+      attachmentKeys,
+      attachmentData,
+      bodyItemId: item.id,
+    })
+
+    const totalMs = Date.now() - startMs
+
+    // Structured log for p95 monitoring — field names are stable; do not rename
+    console.log(JSON.stringify({
+      event: 'ingest.completed',
+      userId: user.id,
+      itemId: item.id,
+      status: result.status,
+      total_handling_ms: totalMs,
+      ai_processing_ms: result.aiMs,
+      text_length: text.length,
+      html_length: html.length,
+      attachment_count: attachmentKeys.length,
+    }))
+
     return NextResponse.json({ ok: true }, { status: 200 })
   } catch (err) {
+    const totalMs = Date.now() - startMs
     console.error('[ingest] Unhandled error:', err)
+    console.log(JSON.stringify({
+      event: 'ingest.completed',
+      userId: null,
+      itemId: null,
+      status: 'error',
+      total_handling_ms: totalMs,
+      ai_processing_ms: 0,
+      text_length: 0,
+      html_length: 0,
+      attachment_count: 0,
+    }))
     return NextResponse.json({ ok: true }, { status: 200 })
   }
 }
