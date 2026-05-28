@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { Mail } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 
@@ -40,29 +41,38 @@ export default function LoginForm({ deleted, authError }: LoginFormProps) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-sm space-y-6 px-6">
-        <div className="space-y-1 text-center">
-          <h1 className="text-2xl font-semibold">drop-note</h1>
-          <p className="text-sm text-muted-foreground">Sign in to your account</p>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+      {/* Brand block */}
+      <div className="mb-8 flex flex-col items-center gap-2">
+        <div className="flex items-center gap-2">
+          <Mail className="h-6 w-6" aria-hidden="true" />
+          <span className="text-xl font-medium">drop-note</span>
+        </div>
+        <p className="text-sm text-muted-foreground">Your personal content inbox</p>
+      </div>
+
+      {/* Sign-in card */}
+      <div className="w-full max-w-[400px] rounded-xl border border-border bg-card px-7 py-8 shadow-sm">
+        <div className="mb-6 space-y-1 text-center">
+          <h1 className="text-xl font-semibold tracking-tight">Sign in to drop-note</h1>
+          <p className="text-sm text-muted-foreground">Continue with your Google account</p>
         </div>
 
         {deleted && (
-          <p className="rounded-md bg-muted px-4 py-3 text-sm text-muted-foreground text-center">
+          <p className="mb-4 rounded-md bg-muted px-4 py-3 text-sm text-muted-foreground text-center">
             Your account has been deleted.
           </p>
         )}
         {authError && (
-          <p className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
+          <p className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive text-center">
             Authentication failed. Please try again.
           </p>
         )}
-
-        {error && <p className="text-xs text-destructive text-center">{error}</p>}
+        {error && <p className="mb-4 text-xs text-destructive text-center">{error}</p>}
 
         <Button
           variant="outline"
-          className="w-full gap-2"
+          className="h-[52px] w-full gap-3 text-sm font-medium hover:bg-muted/50"
           onClick={handleGoogleSignIn}
           disabled={loading}
         >
@@ -70,13 +80,26 @@ export default function LoginForm({ deleted, authError }: LoginFormProps) {
           {loading ? 'Redirecting…' : 'Continue with Google'}
         </Button>
 
+        <div className="my-5 border-t border-border" />
+
         <p className="text-center text-xs text-muted-foreground">
-          New here?{' '}
-          <a href="/register" className="underline">
-            Create an account
-          </a>
+          Don&apos;t have an account?{' '}
+          <strong>Signing in creates one automatically.</strong>
         </p>
       </div>
+
+      {/* Legal microcopy */}
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        By continuing, you agree to our{' '}
+        <a href="/terms" className="underline underline-offset-2 hover:text-foreground">
+          Terms of Service
+        </a>{' '}
+        and{' '}
+        <a href="/privacy" className="underline underline-offset-2 hover:text-foreground">
+          Privacy Policy
+        </a>
+        .
+      </p>
     </div>
   )
 }
