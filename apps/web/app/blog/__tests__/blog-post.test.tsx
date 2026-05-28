@@ -9,7 +9,7 @@ describe('Blog post page — open-source-omnivore-alternative', () => {
   it('renders h1 with the expected heading text', () => {
     render(<BlogPostPage />)
     expect(
-      screen.getByRole('heading', { level: 1, name: /The Best Open-Source Omnivore Alternative in 2026/i }),
+      screen.getByRole('heading', { level: 1, name: /Save Anything From Anywhere/i }),
     ).toBeInTheDocument()
   })
 

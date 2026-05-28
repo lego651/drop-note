@@ -5,10 +5,10 @@ import { render, screen } from '@testing-library/react'
 import { LandingPage } from '../LandingPage'
 
 describe('LandingPage', () => {
-  it('renders the hero heading with Omnivore positioning', () => {
+  it('renders the hero heading with universal-capture positioning', () => {
     render(<LandingPage />)
     expect(
-      screen.getByRole('heading', { level: 1, name: /open-source omnivore alternative/i }),
+      screen.getByRole('heading', { level: 1, name: /save anything from anywhere/i }),
     ).toBeInTheDocument()
   })
 

@@ -37,14 +37,15 @@ export function LandingPage() {
       {/* ── Hero ── */}
       <section className="mx-auto max-w-5xl px-4 py-20 text-center">
         <h1 className="text-4xl font-bold tracking-tight leading-tight sm:text-5xl">
-          The open-source Omnivore alternative
+          Save anything from anywhere
         </h1>
         <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Email anything to{' '}
+          Share from any app. Email from any device. AI summarizes and tags it — everything
+          lands in one searchable dashboard at{' '}
           <code className="rounded bg-muted px-2 py-0.5 text-sm font-mono text-foreground">
             drop@dropnote.me
           </code>
-          . AI summarizes and tags it. Find it in your dashboard.
+          .
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button asChild size="lg">
