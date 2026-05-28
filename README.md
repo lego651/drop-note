@@ -2,16 +2,16 @@
 
 > **[Next Plan: Market Analysis & Launch Strategy](docs/next-plan.md)** — competitive research, pricing decisions, and minimal launch plan.
 
-**Email anything. Find it later.**
+**Save anything from anywhere. Find it later.**
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![CI](https://github.com/TODO-ORG/drop-note/actions/workflows/ci.yml/badge.svg)](https://github.com/TODO-ORG/drop-note/actions/workflows/ci.yml)
+[![CI](https://github.com/lego651/drop-note/actions/workflows/ci.yml/badge.svg)](https://github.com/lego651/drop-note/actions/workflows/ci.yml)
 
 ---
 
 drop-note is an email-to-dashboard content saver. Email anything to `drop@dropnote.me` from your registered address and an AI pipeline automatically summarizes and tags it. Browse, search, pin, and manage everything from a clean web dashboard — no browser extension, no app to install.
 
-Free tier available. Pro ($9.99/mo) and Power ($49.99/mo) plans for higher volume. Fully self-hostable under AGPL-3.0.
+Free. Open source (AGPL-3.0). Self-hostable.
 
 ---
 
@@ -19,38 +19,28 @@ Free tier available. Pro ($9.99/mo) and Power ($49.99/mo) plans for higher volum
 
 ---
 
-## Use the SaaS version
+## Use the hosted version
 
-[dropnote.me](https://dropnote.me) — free tier, no credit card required.
+[dropnote.me](https://dropnote.me) — free, no credit card required.
 
 ---
 
-## Self-hosted quickstart
+## Tech stack
 
-You'll need Docker Desktop and a Supabase project (free tier works).
-
-1. Clone the repo and copy the env template:
-   ```bash
-   git clone https://github.com/TODO-ORG/drop-note.git
-   cd drop-note
-   cp .env.example .env
-   ```
-
-2. Fill in `.env` with your Supabase URL, anon key, service role key, and any other required values (see `.env.example` for the full list).
-
-3. Apply the database schema:
-   ```bash
-   npx supabase db push --linked
-   ```
-
-4. Start the stack:
-   ```bash
-   docker compose up
-   ```
-
-5. Open `http://localhost:3000`, register with your email, and send a test email to the ingest address configured in your `.env`.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full local development guide.
+| Layer | Choice |
+|---|---|
+| Frontend | Next.js 14 (App Router) + TypeScript + shadcn/ui + Tailwind |
+| Database | Supabase (Postgres + RLS) |
+| Auth | Supabase Auth (Google OAuth only) |
+| File Storage | Supabase Storage |
+| Email Inbound | SendGrid Inbound Parse |
+| Queue | None — AI runs synchronously in `/api/ingest`; Upstash Redis for rate limiting |
+| AI | OpenAI GPT-4o-mini (SaaS); configurable for self-hosted |
+| Email Sending | Resend |
+| Payments | Stripe (disabled at launch — reactivated at 100 active users) |
+| Error Monitoring | Sentry |
+| Deployment | Vercel |
+| Monorepo | pnpm workspaces + Turborepo |
 
 ---
 
@@ -71,22 +61,96 @@ An inbound email hits SendGrid's Inbound Parse webhook, which POSTs the payload 
 
 ---
 
-## Tech stack
+## Self-hosting
 
-| Layer | Choice |
+### Prerequisites
+
+| Service | Why | Free tier? |
+|---|---|---|
+| [Supabase](https://supabase.com) | Postgres database + auth + storage | Yes |
+| [SendGrid](https://sendgrid.com) | Inbound Parse for email → webhook | Yes (100 emails/day) |
+| [Resend](https://resend.com) | Outbound transactional email | Yes (3,000/mo) |
+| [OpenAI](https://platform.openai.com) | GPT-4o-mini summarization + tagging | Pay-per-use (~$0.01/100 items) |
+| [Vercel](https://vercel.com) | Hosting the Next.js dashboard | Yes (Hobby plan) |
+| [Upstash](https://upstash.com) | Redis for rate limiting | Yes |
+
+### Deploy in 10 minutes
+
+**1. Clone and install**
+```bash
+git clone https://github.com/lego651/drop-note.git
+cd drop-note
+pnpm install
+```
+
+**2. Create a Supabase project**
+
+Go to [supabase.com](https://supabase.com), create a new project, and copy:
+- Project URL → `NEXT_PUBLIC_SUPABASE_URL`
+- Anon key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- Service role key → `SUPABASE_SERVICE_ROLE_KEY`
+
+**3. Apply the database schema**
+```bash
+npx supabase link --project-ref <your-project-ref>
+npx supabase db push --linked
+```
+
+**4. Configure Google OAuth**
+
+In [Google Cloud Console](https://console.cloud.google.com):
+- Create an OAuth 2.0 Client ID (Web Application)
+- Add `https://<your-domain>/auth/callback` as an authorized redirect URI
+
+In Supabase Dashboard → Authentication → Providers → Google:
+- Paste your Client ID and Client Secret
+
+**5. Configure SendGrid Inbound Parse**
+
+- Add your domain's MX record: `MX @ → mx.sendgrid.net` (priority 10)
+- In SendGrid Dashboard → Inbound Parse: set Host = your domain, URL = `https://<your-domain>/api/ingest?key=<SENDGRID_WEBHOOK_SECRET>`
+- Set `SENDGRID_WEBHOOK_SECRET` env var (any random string)
+
+**6. Configure Resend (outbound email)**
+
+- Create a [Resend](https://resend.com) account and add your domain
+- Copy the API key → `RESEND_API_KEY`
+- Set `RESEND_FROM_EMAIL` = `hello@<your-domain>`
+
+**7. Set environment variables**
+
+Copy `apps/web/.env.example` to `apps/web/.env.local` and fill in all values:
+
+| Variable | Description |
 |---|---|
-| Frontend | Next.js 14 (App Router) + TypeScript + shadcn/ui + Tailwind |
-| Database | Supabase (Postgres + RLS) |
-| Auth | Supabase Auth (magic link — no passwords) |
-| File Storage | Supabase Storage |
-| Email Inbound | SendGrid Inbound Parse |
-| Queue | None — AI runs synchronously in `/api/ingest`; Upstash Redis for rate limiting |
-| AI | OpenAI GPT-4o-mini (SaaS); configurable for self-hosted |
-| Email Sending | Resend |
-| Payments | Stripe |
-| Error Monitoring | Sentry |
-| Deployment | Vercel |
-| Monorepo | pnpm workspaces + Turborepo |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
+| `OPENAI_API_KEY` | OpenAI API key (GPT-4o-mini) |
+| `RESEND_API_KEY` | Resend API key |
+| `RESEND_FROM_EMAIL` | From address (e.g. `hello@yourdomain.com`) |
+| `SENDGRID_WEBHOOK_SECRET` | Random secret for webhook auth |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis URL (rate limiting) |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis token |
+| `CRON_SECRET` | Random secret for cron job auth |
+| `NEXT_PUBLIC_APP_URL` | Your deployment URL |
+
+**8. Deploy to Vercel**
+```bash
+vercel --prod
+```
+
+Or connect your GitHub repo to Vercel for automatic deploys on every push to `main`.
+
+### Self-host vs hosted
+
+| | Self-hosted | Hosted (dropnote.me) |
+|---|---|---|
+| Cost | Your infra costs | Free |
+| Data location | Your Supabase | Supabase (US) |
+| Updates | Manual pull + redeploy | Automatic |
+| Item limit | Configurable | 50 items (free tier) |
+| License | AGPL-3.0 | AGPL-3.0 |
 
 ---
 
