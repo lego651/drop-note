@@ -5,11 +5,12 @@ import { render, screen } from '@testing-library/react'
 import { LandingPage } from '../LandingPage'
 
 describe('LandingPage', () => {
-  it('renders the hero heading with universal-capture positioning', () => {
+  it('renders the hero heading with save anything text', () => {
     render(<LandingPage />)
-    expect(
-      screen.getByRole('heading', { level: 1, name: /save anything from anywhere/i }),
-    ).toBeInTheDocument()
+    // The h1 contains "Save anything" — the serif span wraps "from anywhere."
+    const heading = screen.getByRole('heading', { level: 1 })
+    expect(heading.textContent).toMatch(/save anything/i)
+    expect(heading.textContent).toMatch(/from anywhere/i)
   })
 
   it('renders "Get started free" link pointing to /login', () => {
@@ -22,17 +23,21 @@ describe('LandingPage', () => {
   it('renders a GitHub link pointing to the repo', () => {
     render(<LandingPage />)
     const githubLinks = screen.getAllByRole('link', {
-      name: /self-host on github|view on github/i,
+      name: /self-host on github|view on github|github/i,
     })
     expect(githubLinks.length).toBeGreaterThan(0)
-    expect(githubLinks[0]).toHaveAttribute('href', 'https://github.com/lego651/drop-note')
+    const repoLink = githubLinks.find(
+      (l) => l.getAttribute('href') === 'https://github.com/lego651/drop-note',
+    )
+    expect(repoLink).toBeDefined()
   })
 
   it('renders the 3-step how-it-works section', () => {
     render(<LandingPage />)
-    expect(screen.getByText(/email it/i)).toBeInTheDocument()
-    expect(screen.getByText(/ai processes it/i)).toBeInTheDocument()
-    expect(screen.getByText(/find it later/i)).toBeInTheDocument()
+    // Use getAllByText since "Email it" heading may match feature body text as well
+    expect(screen.getAllByText(/^email it$/i).length).toBeGreaterThan(0)
+    expect(screen.getByText('AI processes it')).toBeInTheDocument()
+    expect(screen.getByText('Find it later')).toBeInTheDocument()
   })
 
   it('renders the drop address', () => {
@@ -41,15 +46,24 @@ describe('LandingPage', () => {
     expect(matches.length).toBeGreaterThan(0)
   })
 
-  it('renders the AGPL self-host callout', () => {
+  it('renders the 6 feature cards', () => {
     render(<LandingPage />)
-    const agplMatches = screen.getAllByText(/agpl/i)
-    expect(agplMatches.length).toBeGreaterThan(0)
-    const selfHostMatches = screen.getAllByText(/self-hostable|self-host/i)
-    expect(selfHostMatches.length).toBeGreaterThan(0)
+    expect(screen.getByText('AI summaries')).toBeInTheDocument()
+    expect(screen.getByText('Auto-tagging')).toBeInTheDocument()
+    expect(screen.getByText('Full-text search')).toBeInTheDocument()
+    expect(screen.getByText('Browse by date')).toBeInTheDocument()
+    expect(screen.getByText('Any content type')).toBeInTheDocument()
+    expect(screen.getByText('Self-host option')).toBeInTheDocument()
   })
 
-  it('renders footer with terms, privacy, and aup links', () => {
+  it('renders testimonials with all three names', () => {
+    render(<LandingPage />)
+    expect(screen.getByText('Jordan Reeves')).toBeInTheDocument()
+    expect(screen.getByText('Priya Nair')).toBeInTheDocument()
+    expect(screen.getByText('Marcus Calloway')).toBeInTheDocument()
+  })
+
+  it('renders footer with terms and privacy links', () => {
     render(<LandingPage />)
     expect(screen.getByRole('link', { name: /terms/i })).toHaveAttribute('href', '/terms')
     expect(screen.getByRole('link', { name: /privacy/i })).toHaveAttribute('href', '/privacy')
@@ -59,9 +73,23 @@ describe('LandingPage', () => {
     render(<LandingPage />)
     const blogLinks = screen.getAllByRole('link', { name: /blog/i })
     expect(blogLinks.length).toBeGreaterThan(0)
-    expect(blogLinks[0]).toHaveAttribute(
-      'href',
-      '/blog/open-source-omnivore-alternative',
-    )
+    expect(blogLinks[0]).toHaveAttribute('href', '/blog/open-source-omnivore-alternative')
+  })
+
+  it('renders the HOW IT WORKS and FEATURES section pills', () => {
+    render(<LandingPage />)
+    expect(screen.getByText('HOW IT WORKS')).toBeInTheDocument()
+    expect(screen.getByText('FEATURES')).toBeInTheDocument()
+  })
+
+  it('renders the FROM USERS testimonials section', () => {
+    render(<LandingPage />)
+    expect(screen.getByText('FROM USERS')).toBeInTheDocument()
+  })
+
+  it('renders the roadmap link in the footer', () => {
+    render(<LandingPage />)
+    const roadmapLink = screen.getByRole('link', { name: /roadmap/i })
+    expect(roadmapLink).toHaveAttribute('href', '/roadmap')
   })
 })
