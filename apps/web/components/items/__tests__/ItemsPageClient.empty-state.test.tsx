@@ -87,7 +87,7 @@ describe('ItemsPageClient empty state', () => {
 
   it('shows the 3-step pill labels when items list is empty', () => {
     render(<ItemsPageClient {...defaultProps} />)
-    expect(screen.getByText('Email it')).toBeInTheDocument()
+    expect(screen.getByText('Send it')).toBeInTheDocument()
     expect(screen.getByText('AI tags it')).toBeInTheDocument()
     expect(screen.getByText('Find it here')).toBeInTheDocument()
   })
@@ -97,7 +97,7 @@ describe('ItemsPageClient with items', () => {
   it('does NOT show empty state when items exist', () => {
     render(<ItemsPageClient {...defaultProps} items={[mockItem]} totalCount={1} />)
     expect(screen.queryByDisplayValue('drop@dropnote.me')).not.toBeInTheDocument()
-    expect(screen.queryByText('Email it')).not.toBeInTheDocument()
+    expect(screen.queryByText('Send it')).not.toBeInTheDocument()
   })
 
   it('renders the search input regardless of items state', () => {

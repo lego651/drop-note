@@ -38,6 +38,9 @@ describe('WelcomeModal', () => {
   it('shows modal when localStorage key is absent', () => {
     render(<WelcomeModal />)
     expect(screen.getByText('Welcome to drop-note')).toBeInTheDocument()
+    // New universal-capture framing — no longer says "Email anything" exclusively
+    // The phrase appears in both description and step 1, so use getAllByText
+    expect(screen.getAllByText(/send anything to your drop address/i).length).toBeGreaterThan(0)
   })
 
   it('does not show modal when localStorage key is already set', () => {
