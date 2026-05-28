@@ -41,6 +41,7 @@ export default function RootLayout({
           <footer className="border-t border-border py-6 px-4">
             <div className="max-w-5xl mx-auto flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
               <span>© {new Date().getFullYear()} drop-note</span>
+              <Link href="/roadmap" className="hover:text-foreground transition-colors">Roadmap</Link>
               <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
               <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
               <Link href="/aup" className="hover:text-foreground transition-colors">Acceptable Use</Link>

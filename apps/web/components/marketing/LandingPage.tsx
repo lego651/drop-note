@@ -132,6 +132,9 @@ export function LandingPage() {
         <div className="mx-auto max-w-5xl px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <span>AGPL-3.0 · Built by Jason Gao</span>
           <div className="flex items-center gap-4">
+            <Link href="/roadmap" className="hover:text-foreground transition-colors">
+              Roadmap
+            </Link>
             <Link href="/terms" className="hover:text-foreground transition-colors">
               Terms
             </Link>
