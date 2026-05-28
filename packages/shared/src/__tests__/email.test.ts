@@ -131,6 +131,49 @@ describe('parseSendGridPayload', () => {
     })
     expect(result.attachments[0].size).toBe(Math.floor(100 * 0.75))
   })
+
+  it('handles missing text and html fields gracefully (nullish fallbacks)', () => {
+    // fields.text and fields.html omitted — should default to empty string
+    const result = parseSendGridPayload({
+      from: 'user@example.com',
+      subject: 'No body',
+    })
+    expect(result.bodyText).toBe('')
+    expect(result.bodyHtml).toBe('')
+  })
+
+  it('falls back to key name as filename when info.filename is missing', () => {
+    const attachmentInfo = JSON.stringify({
+      attachment1: { type: 'image/png' }, // no filename field
+    })
+    const result = parseSendGridPayload({
+      from: 'user@example.com',
+      subject: 'Missing filename',
+      text: '',
+      html: '',
+      'attachment-info': attachmentInfo,
+      attachment1: 'base64data',
+    })
+    expect(result.attachments[0].filename).toBe('attachment1')
+  })
+
+  it('falls back to empty string mimeType when info.type is missing', () => {
+    // An attachment with no type field — isAllowedMimeType('') returns false
+    // so the attachment is filtered out
+    const attachmentInfo = JSON.stringify({
+      attachment1: { filename: 'mystery.bin' }, // no type field
+    })
+    const result = parseSendGridPayload({
+      from: 'user@example.com',
+      subject: 'No type',
+      text: '',
+      html: '',
+      'attachment-info': attachmentInfo,
+      attachment1: 'base64data',
+    })
+    // mimeType='' is not allowed, so filtered
+    expect(result.attachments.length).toBe(0)
+  })
 })
 
 describe('countItems', () => {

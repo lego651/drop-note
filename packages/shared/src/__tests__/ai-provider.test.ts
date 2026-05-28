@@ -139,6 +139,61 @@ describe('GeminiProvider.processText', () => {
     const result = await provider.processText('Some content', [])
     expect(result).toEqual({ summary: 'Gemini summary', tags: ['x', 'y'] })
   })
+
+  it('throws with retryable=true on 429 rate limit', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      text: () => Promise.resolve('Quota exceeded'),
+    }) as unknown as typeof fetch
+
+    const provider = new GeminiProvider('gemini-key')
+    const err = await provider.processText('content', []).catch((e: unknown) => e) as Error & { retryable: boolean; status: number }
+    expect(err.message).toMatch(/rate limit/)
+    expect(err.retryable).toBe(true)
+    expect(err.status).toBe(429)
+  })
+
+  it('throws with retryable=false on 401 unauthorized', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: () => Promise.resolve('Unauthorized'),
+    }) as unknown as typeof fetch
+
+    const provider = new GeminiProvider('gemini-key')
+    const err = await provider.processText('content', []).catch((e: unknown) => e) as Error & { retryable: boolean }
+    expect(err.message).toMatch(/unauthorized/i)
+    expect(err.retryable).toBe(false)
+  })
+})
+
+describe('GeminiProvider.describeImage', () => {
+  afterEach(() => { vi.restoreAllMocks() })
+
+  it('calls Gemini vision API and returns image description', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        candidates: [{ content: { parts: [{ text: 'A mountain landscape' }] } }],
+      }),
+    }) as unknown as typeof fetch
+
+    const provider = new GeminiProvider('gemini-key')
+    const result = await provider.describeImage('base64data', 'image/jpeg')
+    expect(result).toBe('A mountain landscape')
+  })
+
+  it('throws on non-ok HTTP response from Gemini vision', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: () => Promise.resolve('Internal Server Error'),
+    }) as unknown as typeof fetch
+
+    const provider = new GeminiProvider('gemini-key')
+    await expect(provider.describeImage('base64data', 'image/jpeg')).rejects.toThrow(/Gemini HTTP 500/)
+  })
 })
 
 describe('OpenAIProvider.describeImage', () => {

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('@/lib/supabase/admin', () => ({ supabaseAdmin: {} }))
 
-import { groupItemsByDate } from '../items'
+import { groupItemsByDate, deleteItems } from '../items'
 
 const base = { ai_summary: null, status: 'done', error_message: null, pinned: false, source_type: null, source_url: null, thumbnail_url: null }
 
@@ -64,5 +64,46 @@ describe('groupItemsByDate', () => {
     ]
     const groups = groupItemsByDate(items)
     expect(groups[0].label).toBe('05 January 2026')
+  })
+})
+
+describe('deleteItems', () => {
+  it('hard-deletes for free tier and returns count', async () => {
+    const mockClient = {
+      from: vi.fn().mockReturnValue({
+        delete: vi.fn().mockReturnThis(),
+        in: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        select: vi.fn().mockResolvedValue({ data: [{ id: '1' }, { id: '2' }], error: null }),
+      }),
+    }
+    const result = await deleteItems(['1', '2'], 'user-1', 'free', mockClient as Parameters<typeof deleteItems>[3])
+    expect(result.deleted).toBe(2)
+  })
+
+  it('returns 0 when Supabase returns an error on free tier', async () => {
+    const mockClient = {
+      from: vi.fn().mockReturnValue({
+        delete: vi.fn().mockReturnThis(),
+        in: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        select: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+      }),
+    }
+    const result = await deleteItems(['1'], 'user-1', 'free', mockClient as Parameters<typeof deleteItems>[3])
+    expect(result.deleted).toBe(0)
+  })
+
+  it('returns 0 when pro tier fetch returns an error', async () => {
+    // The pro tier first does a select to find which items are trashed
+    // If that fetch fails, it should return { deleted: 0 }
+    const selectChain = {
+      select: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+    }
+    const mockClient = { from: vi.fn().mockReturnValue(selectChain) }
+    const result = await deleteItems(['1'], 'user-1', 'pro', mockClient as Parameters<typeof deleteItems>[3])
+    expect(result.deleted).toBe(0)
   })
 })

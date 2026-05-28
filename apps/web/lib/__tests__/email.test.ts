@@ -30,6 +30,18 @@ describe('sendWeeklyDigestEmail', () => {
     mockSend.mockResolvedValueOnce({ data: { id: 'msg_1' }, error: null })
     await expect(sendWeeklyDigestEmail(digestArgs)).resolves.toBeUndefined()
   })
+
+  it('includes resurface items section when resurfaceItems is non-empty', async () => {
+    mockSend.mockResolvedValueOnce({ data: { id: 'msg_3' }, error: null })
+    const argsWithResurface = {
+      ...digestArgs,
+      resurfaceItems: [{ id: '2', subject: 'Old article', source_type: 'email' as const, created_at: '2026-01-01T00:00:00Z' }],
+    }
+    await expect(sendWeeklyDigestEmail(argsWithResurface)).resolves.toBeUndefined()
+    // The html passed to Resend should contain the resurface section heading
+    const callArgs = mockSend.mock.calls[0][0]
+    expect(callArgs.html).toContain('From the vault')
+  })
 })
 
 describe('sendWelcomeEmail', () => {

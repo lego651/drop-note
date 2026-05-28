@@ -64,6 +64,21 @@ const defaultProps = {
   userId: 'user-123',
 }
 
+const mockItem = {
+  id: 'item-1',
+  subject: 'Test subject',
+  sender_email: 'sender@example.com',
+  ai_summary: 'A test summary',
+  status: 'done',
+  error_message: null,
+  pinned: false,
+  created_at: '2026-05-28T00:00:00Z',
+  source_type: 'email' as const,
+  source_url: null,
+  thumbnail_url: null,
+  item_tags: [],
+}
+
 describe('ItemsPageClient empty state', () => {
   it('shows the drop address when items list is empty', () => {
     render(<ItemsPageClient {...defaultProps} />)
@@ -75,5 +90,39 @@ describe('ItemsPageClient empty state', () => {
     expect(screen.getByText('Email it')).toBeInTheDocument()
     expect(screen.getByText('AI tags it')).toBeInTheDocument()
     expect(screen.getByText('Find it here')).toBeInTheDocument()
+  })
+})
+
+describe('ItemsPageClient with items', () => {
+  it('does NOT show empty state when items exist', () => {
+    render(<ItemsPageClient {...defaultProps} items={[mockItem]} totalCount={1} />)
+    expect(screen.queryByDisplayValue('drop@dropnote.me')).not.toBeInTheDocument()
+    expect(screen.queryByText('Email it')).not.toBeInTheDocument()
+  })
+
+  it('renders the search input regardless of items state', () => {
+    render(<ItemsPageClient {...defaultProps} items={[mockItem]} totalCount={1} />)
+    // input[type="search"] has role searchbox in ARIA
+    expect(screen.getByRole('searchbox', { name: /search items/i })).toBeInTheDocument()
+  })
+})
+
+describe('ItemsPageClient with activeTagName', () => {
+  it('shows the active tag filter pill when activeTagName is provided', () => {
+    render(
+      <ItemsPageClient
+        {...defaultProps}
+        items={[mockItem]}
+        totalCount={1}
+        activeTagName="productivity"
+      />
+    )
+    // The tag pill renders with the tag name and a clear aria-label
+    expect(screen.getByLabelText('Clear tag filter: productivity')).toBeInTheDocument()
+  })
+
+  it('does NOT show the tag pill when activeTagName is absent', () => {
+    render(<ItemsPageClient {...defaultProps} items={[mockItem]} totalCount={1} />)
+    expect(screen.queryByLabelText(/clear tag filter/i)).not.toBeInTheDocument()
   })
 })

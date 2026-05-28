@@ -57,4 +57,21 @@ describe('WelcomeModal', () => {
     expect(screen.queryByText('Welcome to drop-note')).not.toBeInTheDocument()
     expect(localStorage.getItem('drop-note:welcomed')).toBe('true')
   })
+
+  it('copies the drop address when the copy button is clicked', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', {
+      ...global.navigator,
+      clipboard: { writeText },
+    })
+
+    render(<WelcomeModal />)
+
+    const copyBtn = screen.getByRole('button', { name: /copy drop address/i })
+    await act(async () => {
+      fireEvent.click(copyBtn)
+    })
+
+    expect(writeText).toHaveBeenCalledWith('drop@dropnote.me')
+  })
 })
