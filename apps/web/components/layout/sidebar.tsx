@@ -91,7 +91,7 @@ export function SidebarNav({
       return
     }
     router.refresh()
-    router.push('/login')
+    router.push('/')
   }
 
   function cycleTheme() {
