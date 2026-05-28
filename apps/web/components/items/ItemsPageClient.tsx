@@ -288,7 +288,7 @@ function ItemsPageClientInner({
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
                 1
               </span>
-              Email it
+              Send it
             </span>
             <span className="text-border">→</span>
             <span className="flex items-center gap-1.5">

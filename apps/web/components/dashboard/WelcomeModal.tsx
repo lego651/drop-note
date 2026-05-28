@@ -50,7 +50,7 @@ export function WelcomeModal() {
         <DialogHeader>
           <DialogTitle>Welcome to drop-note</DialogTitle>
           <DialogDescription>
-            Email anything to your drop address. AI tags it. Find it here.
+            Send anything to your drop address. AI tags it. Find it here.
           </DialogDescription>
         </DialogHeader>
 
@@ -60,7 +60,7 @@ export function WelcomeModal() {
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
               1
             </span>
-            Email anything to your drop address
+            Send anything to your drop address
           </span>
           <span className="text-border">→</span>
           <span className="flex items-center gap-1.5">
