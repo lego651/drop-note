@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task H — Email Deliverability QA Runbook</title>
+  <style>
+    :root {
+      --bg: #fafaf8;
+      --surface: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --border: #e5e7eb;
+      --done: #059669;
+      --progress: #d97706;
+      --blocked: #dc2626;
+      --killed: #6b7280;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    h1 { font-size: 32px; margin-bottom: 4px; letter-spacing: -0.02em; }
+    h2 { font-size: 22px; margin: 28px 0 14px; letter-spacing: -0.01em; }
+    h3 { font-size: 16px; margin: 16px 0 8px; }
+    h4 { font-size: 14px; margin: 12px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .meta { color: var(--muted); font-size: 14px; margin-top: 8px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .badge-draft { background: #fef3c7; color: #92400e; }
+    .badge-done { background: #d1fae5; color: #065f46; }
+    .badge-progress { background: #fed7aa; color: #9a3412; }
+    .badge-blocked { background: #fee2e2; color: #991b1b; }
+    .badge-killed { background: #e5e7eb; color: #4b5563; }
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 12px 0;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { background: #f9fafb; font-weight: 600; font-size: 13px; }
+    .north-star {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 1px solid #bae6fd;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 16px 0;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    .scope-list {
+      list-style: none;
+      padding: 0;
+      margin: 8px 0;
+    }
+    .scope-list li {
+      padding: 5px 0 5px 26px;
+      position: relative;
+      font-size: 14px;
+    }
+    .scope-list li::before {
+      position: absolute;
+      left: 0;
+      top: 5px;
+      font-weight: 700;
+    }
+    .scope-in li::before { content: "✓"; color: var(--done); }
+    .warn-box {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: #fee2e2;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .info-box {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      border-radius: 0 6px 6px 0;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 13px;
+    }
+    pre {
+      background: #f3f4f6;
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin: 10px 0;
+      line-height: 1.5;
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .checkbox-row:last-child { border-bottom: none; }
+    .checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      cursor: pointer;
+      background: white;
+    }
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .provider-gmail { color: #ea4335; font-weight: 600; }
+    .provider-outlook { color: #0078d4; font-weight: 600; }
+    .provider-proton { color: #6d4aff; font-weight: 600; }
+    .pass-fail {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    }
+    .pass { background: #d1fae5; color: #065f46; }
+    .fail { background: #fee2e2; color: #991b1b; }
+    footer {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      margin-top: 32px;
+      padding: 20px;
+    }
+    @media (max-width: 720px) {
+      body { padding: 16px 8px; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <span class="badge badge-draft">MANUAL QA — Jason executes — ~20 min</span>
+      <h1 style="margin-top: 14px;">Task H — Email Deliverability QA</h1>
+      <div style="color: var(--muted); font-size: 18px; margin-top: 2px;">Gmail / Outlook / ProtonMail — end-to-end pipeline verification</div>
+      <div class="meta">
+        Owner: Jason (sends test emails) · Prepared by: Mic · Date: 2026-05-28 · Drop address: <code>drop@dropnote.me</code>
+      </div>
+    </header>
+
+    <!-- PRE-FLIGHT -->
+    <section class="section">
+      <h2>Pre-flight Checks — Do These First</h2>
+      <p style="color: var(--muted); margin-bottom: 16px;">Confirm infrastructure is ready before sending any test emails. If any check fails, stop and fix it before continuing.</p>
+
+      <div class="checkbox-row">
+        <input type="checkbox" class="checkbox">
+        <div>
+          <strong>MX records resolve for dropnote.me</strong><br>
+          <span style="color: var(--muted); font-size: 13px;">Run in Terminal:</span>
+          <pre>dig MX dropnote.me +short</pre>
+          <span style="color: var(--muted); font-size: 13px;">Expected output contains: <code>mx.sendgrid.net</code></span>
+        </div>
+      </div>
+
+      <div class="checkbox-row">
+        <input type="checkbox" class="checkbox">
+        <div>
+          <strong>SendGrid Inbound Parse is configured</strong><br>
+          <span style="color: var(--muted); font-size: 13px;">Log in to SendGrid → Settings → Inbound Parse. Confirm entry:</span>
+          <ul style="margin-top: 6px; padding-left: 20px; font-size: 13px;">
+            <li>Receiving Domain: <code>dropnote.me</code></li>
+            <li>Destination URL: <code>https://dropnote.me/api/ingest?key=&lt;secret&gt;</code></li>
+            <li>Check for spam: on or off — either is fine for QA</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="checkbox-row">
+        <input type="checkbox" class="checkbox">
+        <div>
+          <strong>Your Gmail address is registered in public.users</strong><br>
+          <span style="color: var(--muted); font-size: 13px;">Log in to <code>https://dropnote.me</code> with <code>jasonusca@gmail.com</code>. Confirm dashboard loads with your existing 12 items. If not, OAuth is broken — stop and debug.</span>
+        </div>
+      </div>
+
+      <div class="checkbox-row">
+        <input type="checkbox" class="checkbox">
+        <div>
+          <strong>Vercel logs are tailable</strong><br>
+          <span style="color: var(--muted); font-size: 13px;">In a separate terminal window, run:</span>
+          <pre>vercel logs --prod https://dropnote.me --follow</pre>
+          <span style="color: var(--muted); font-size: 13px;">Keep this running throughout QA. Every ingest call should produce a JSON log line. If nothing appears, check you're pointing at the right project.</span>
+        </div>
+      </div>
+
+      <div class="checkbox-row">
+        <input type="checkbox" class="checkbox">
+        <div>
+          <strong>SendGrid domain auth is verified</strong><br>
+          <span style="color: var(--muted); font-size: 13px;">SendGrid → Settings → Sender Authentication → Domain Authentication. dropnote.me should show "Verified". If still pending (DNS propagation can take 24–48h), proceed anyway — inbound parse still works; this only affects outbound deliverability scoring.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEST MATRIX -->
+    <section class="section">
+      <h2>Test Matrix — Send From Each Provider</h2>
+
+      <div class="north-star">
+        <strong>How to read this matrix:</strong> Each row is one email you send to <code>drop@dropnote.me</code>.
+        After sending, wait up to 60 seconds, then check your dashboard. Tick Pass if the item appears with a non-empty AI summary and at least one tag. Tick Fail if the item is missing, has <code>error_message</code> set, or has no AI output.
+      </div>
+
+      <h3 style="margin-top: 20px;"><span class="provider-gmail">Gmail</span> — send from jasonusca@gmail.com</h3>
+      <p style="color: var(--muted); font-size: 13px; margin-bottom: 8px;">This is your registered account. All 5 cases should work end-to-end.</p>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 5%;">#</th>
+            <th style="width: 25%;">Test Case</th>
+            <th style="width: 35%;">What to Send</th>
+            <th style="width: 25%;">Expected Result</th>
+            <th style="width: 10%;">Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>G1</td>
+            <td>Plain text email</td>
+            <td>Subject: "Test plain text"<br>Body: "This is a plain text test email with no formatting."</td>
+            <td>Item appears in dashboard. Summary present. At least 1 tag.</td>
+            <td><span class="pass-fail pass">PASS</span> / <span class="pass-fail fail">FAIL</span></td>
+          </tr>
+          <tr>
+            <td>G2</td>
+            <td>HTML email with links</td>
+            <td>Subject: "Test HTML with links"<br>Body (HTML): a few paragraphs + 1 hyperlink (e.g. https://github.com)</td>
+            <td>Item appears. Summary reflects article content, not raw HTML tags. Link visible in item view.</td>
+            <td><span class="pass-fail pass">PASS</span> / <span class="pass-fail fail">FAIL</span></td>
+          </tr>
+          <tr>
+            <td>G3</td>
+            <td>Email with PDF attachment</td>
+            <td>Attach any PDF (e.g. a one-page resume or article). Body can be blank.</td>
+            <td>Item appears. Summary mentions PDF content. <code>attachment_count: 1</code> in Vercel log.</td>
+            <td><span class="pass-fail pass">PASS</span> / <span class="pass-fail fail">FAIL</span></td>
+          </tr>
+          <tr>
+            <td>G4</td>
+            <td>YouTube URL in body</td>
+            <td>Subject: "YouTube test"<br>Body: paste a YouTube video URL (any video)</td>
+            <td>Item appears with YouTube thumbnail. Source type detected as <code>youtube</code>.</td>
+            <td><span class="pass-fail pass">PASS</span> / <span class="pass-fail fail">FAIL</span></td>
+          </tr>
+          <tr>
+            <td>G5</td>
+            <td>Email with inline image</td>
+            <td>Compose a Gmail email and paste or drag an image inline (not as attachment). Add a sentence of text.</td>
+            <td>Item appears. Summary describes the image content or body text. No error_message on the row.</td>
+            <td><span class="pass-fail pass">PASS</span> / <span class="pass-fail fail">FAIL</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin-top: 28px;"><span class="provider-outlook">Outlook</span> — send from any Outlook / Hotmail / Live address you have access to</h3>
+      <p style="color: var(--muted); font-size: 13px; margin-bottom: 4px;">You need to have this Outlook address registered at dropnote.me first (log in with Google OAuth using a Google account linked to that email, OR use the same jasonusca@gmail.com account to test that the drop address accepts email from an unregistered sender).</p>
+      <div class="info-box" style="margin-bottom: 12px;">
+        <strong>Note on sender validation:</strong> The ingest pipeline identifies users by their <code>from</code> email address matched against <code>public.users.email</code>. If you send from an Outlook address that is NOT registered, the item will be silently dropped (no user found). To test Outlook delivery, either: (a) register a second Google account with the same Outlook email as alias, or (b) send a forwarded email from your registered Gmail using Outlook as the sending client with jasonusca@gmail.com as the reply-to. Option (b) is the easier test for QA purposes.
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 5%;">#</th>
+            <th style="width: 25%;">Test Case</th>
+            <th style="width: 35%;">What to Send</th>
+            <th style="width: 25%;">Expected Result</th>
+            <th style="width: 10%;">Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>O1</td>
+            <td>Plain text from Outlook client</td>
+            <td>Use Outlook web or desktop. Send from your registered address (see note above). Subject: "Outlook plain text test". Body: 2–3 sentences.</td>
+            <td>Item appears in dashboard. Summary present.</td>
+            <td><span class="pass-fail pass">PASS</span> / <span class="pass-fail fail">FAIL</span></td>
+          </tr>
+          <tr>
+            <td>O2</td>
+            <td>Rich HTML from Outlook</td>
+            <td>Outlook applies its own HTML wrapper (conditional comments, VML). Send a styled email using Outlook's formatting toolbar.</td>
+            <td>Item appears. Summary does not contain garbage HTML like <code>&lt;!--[if mso]&gt;</code>. Check item body text renders cleanly.</td>
+            <td><span class="pass-fail pass">PASS</span> / <span class="pass-fail fail">FAIL</span></td>
+          </tr>
+          <tr>
+            <td>O3</td>
+            <td>Email with Word attachment (.docx)</td>
+            <td>Attach any .docx file. Drop-note processes PDF natively; .docx is treated as a generic attachment. Verify graceful handling.</td>
+            <td>Item appears without <code>error_message</code>. Summary based on email body text. Attachment count logged.</td>
+            <td><span class="pass-fail pass">PASS</span> / <span class="pass-fail fail">FAIL</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin-top: 28px;"><span class="provider-proton">ProtonMail</span> — send from a ProtonMail address</h3>
+      <p style="color: var(--muted); font-size: 13px; margin-bottom: 4px;">ProtonMail encrypts messages end-to-end between ProtonMail users. When sending to a non-ProtonMail address (<code>drop@dropnote.me</code> is on SendGrid, not Proton), Proton sends standard SMTP — no E2E encryption. The risk here is DMARC/SPF alignment and whether Proton's headers confuse the parser.</p>
+      <div class="info-box" style="margin-bottom: 12px;">
+        <strong>Same sender-validation note applies.</strong> Register a ProtonMail address in drop-note first, or use the same workaround as Outlook above.
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 5%;">#</th>
+            <th style="width: 25%;">Test Case</th>
+            <th style="width: 35%;">What to Send</th>
+            <th style="width: 25%;">Expected Result</th>
+            <th style="width: 10%;">Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>P1</td>
+            <td>Plain text from ProtonMail</td>
+            <td>Send from your registered ProtonMail address. Subject: "ProtonMail plain text". Body: 2–3 sentences about any topic.</td>
+            <td>Item appears. Summary present. No parse errors in Vercel log.</td>
+            <td><span class="pass-fail pass">PASS</span> / <span class="pass-fail fail">FAIL</span></td>
+          </tr>
+          <tr>
+            <td>P2</td>
+            <td>HTML email with link from Proton</td>
+            <td>Compose a Proton email using their rich editor. Include a clickable link and some bold/italic text.</td>
+            <td>Item appears. Summary reflects text content, not raw HTML. Link present.</td>
+            <td><span class="pass-fail pass">PASS</span> / <span class="pass-fail fail">FAIL</span></td>
+          </tr>
+          <tr>
+            <td>P3</td>
+            <td>Email forwarded via Proton</td>
+            <td>Forward any interesting article email (a newsletter, a GitHub notification) from Proton's inbox to <code>drop@dropnote.me</code>.</td>
+            <td>Item appears. This tests whether the from-address rewrite on forwarded mail causes sender-lookup failures.</td>
+            <td><span class="pass-fail pass">PASS</span> / <span class="pass-fail fail">FAIL</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- HOW TO CHECK RESULTS -->
+    <section class="section">
+      <h2>Checking Results After Each Send</h2>
+      <p style="color: var(--muted); margin-bottom: 16px;">For each test email, do all three of the following checks before marking Pass.</p>
+
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span class="step-number">1</span>
+          <div>
+            <strong>Dashboard check</strong> — open <code>https://dropnote.me/items</code> within 60 seconds. The new item should appear at the top of the list. Verify:
+            <ul style="margin-top: 6px; padding-left: 20px; font-size: 13px;">
+              <li>Item title matches your email subject</li>
+              <li>AI summary is non-empty (not just "Processing..." or blank)</li>
+              <li>At least one tag has been assigned</li>
+              <li>No red error badge on the item card</li>
+            </ul>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span class="step-number">2</span>
+          <div>
+            <strong>Vercel log check</strong> — in your tailing terminal, look for a line matching:
+            <pre>{"event":"ingest.completed","userId":"...","itemId":"...","status":"done","total_handling_ms":...}</pre>
+            Key fields to verify:
+            <table style="margin-top: 8px;">
+              <tr><td style="font-family: monospace; font-size: 12px; white-space: nowrap;">status</td><td>Must be <code>"done"</code>, not <code>"error"</code> or <code>"failed"</code></td></tr>
+              <tr><td style="font-family: monospace; font-size: 12px; white-space: nowrap;">total_handling_ms</td><td>Should be under 30,000 (30s). Alert Mic if over 20,000 consistently.</td></tr>
+              <tr><td style="font-family: monospace; font-size: 12px; white-space: nowrap;">ai_processing_ms</td><td>Typically 1,000–8,000ms for normal emails. Over 15,000ms = worth noting.</td></tr>
+              <tr><td style="font-family: monospace; font-size: 12px; white-space: nowrap;">attachment_count</td><td>For G3 (PDF test), must be 1, not 0.</td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <span class="step-number">3</span>
+          <div>
+            <strong>Supabase item row check (optional, only if dashboard shows nothing)</strong> — go to your Supabase project → Table Editor → items table. Filter by <code>user_id</code> = your user UUID. Look for the row. Check:
+            <ul style="margin-top: 6px; padding-left: 20px; font-size: 13px;">
+              <li><code>status</code> — should be <code>done</code></li>
+              <li><code>error_message</code> — should be null</li>
+              <li><code>summary</code> — should be non-empty</li>
+              <li><code>deleted_at</code> — should be null</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHAT TO DO IF IT FAILS -->
+    <section class="section">
+      <h2>What To Do If a Test Fails</h2>
+      <p style="color: var(--muted); margin-bottom: 16px;">Work through this triage order. Stop when you find the cause.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 30%;">Symptom</th>
+            <th style="width: 35%;">Likely Cause</th>
+            <th style="width: 35%;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Item never appears in dashboard (not even after 2 min)</td>
+            <td>SendGrid did not deliver to /api/ingest — MX misconfiguration, or from-address not recognized</td>
+            <td>Check Vercel logs: <code>vercel logs --prod https://dropnote.me | grep ingest</code>. If no log line at all, SendGrid never called the webhook. Check SendGrid Activity Feed for the inbound parse event.</td>
+          </tr>
+          <tr>
+            <td>Item appears but summary is empty or says "error"</td>
+            <td>OpenAI call failed, timed out, or returned non-OK</td>
+            <td>Check Vercel log line for this item: look for <code>status:"error"</code> or <code>status:"failed"</code>. Check <code>error_message</code> on the Supabase row. If OpenAI 429 (rate limit) or 5xx, the retry logic should have caught it — if not, escalate to Mic.</td>
+          </tr>
+          <tr>
+            <td>Item appears but no tags</td>
+            <td>Tag extraction returned empty; can happen with very short or ambiguous content</td>
+            <td>Not a hard failure. Check the Vercel log for <code>ai_processing_ms</code> — if it ran successfully and just returned no tags, that is expected for very short emails. Note it for future AI prompt tuning.</td>
+          </tr>
+          <tr>
+            <td>Vercel log shows <code>status:"error"</code></td>
+            <td>Ingest route threw an unhandled exception</td>
+            <td>Copy the full log line and the <code>itemId</code>. Check Supabase <code>items</code> row for <code>error_message</code>. Send the log line to Mic to brief Jose on a fix.</td>
+          </tr>
+          <tr>
+            <td>PDF attachment not processed (attachment_count: 0 in log)</td>
+            <td>Attachment MIME type rejected, or attachment size over free tier 10MB limit</td>
+            <td>Verify the PDF is under 10MB. Check Vercel log for any <code>attachment rejected</code> message. If under 10MB and still ignored, send the log to Mic — likely a MIME-type matching bug.</td>
+          </tr>
+          <tr>
+            <td>Outlook HTML comes through garbled</td>
+            <td>Outlook's VML / conditional comments leaking into the text extraction</td>
+            <td>Screenshot the item body in the dashboard. Note the garbled HTML. This is a known Outlook quirk and will need a post-QA fix in the HTML sanitizer — escalate to Mic after completing the full matrix.</td>
+          </tr>
+          <tr>
+            <td>ProtonMail forwarded email (P3) drops silently</td>
+            <td>Proton rewrites the from-address on forward — the sender no longer matches public.users.email</td>
+            <td>This is a known limitation of the V1 shared-inbox model. Note it. Not a blocker for launch (V2 per-user routing with drop_token is the fix — see docs/v2-per-user-routing.md).</td>
+          </tr>
+          <tr>
+            <td>total_handling_ms &gt; 30,000 on any item</td>
+            <td>OpenAI response slow, or attachment processing stalling</td>
+            <td>Note the item ID and total_handling_ms. If it happens on 3+ consecutive emails, escalate to Mic immediately — D11 revisit trigger may have been hit (p95 approaching 30s threshold).</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="info-box">
+        <strong>Quick Vercel log query:</strong><br>
+        To search logs for a specific item or for failures:
+        <pre>vercel logs --prod https://dropnote.me | grep '"status":"error"'
+vercel logs --prod https://dropnote.me | grep '"event":"ingest.completed"'</pre>
+        To inspect a specific Supabase row by item ID, use the Table Editor filter in the Supabase dashboard, or run:
+        <pre>-- In Supabase SQL editor:
+SELECT id, status, error_message, summary, created_at
+FROM items
+WHERE id = '&lt;item-id-from-log&gt;';</pre>
+      </div>
+    </section>
+
+    <!-- PASS/FAIL SUMMARY -->
+    <section class="section">
+      <h2>Pass / Fail Summary</h2>
+      <p style="color: var(--muted); margin-bottom: 12px;">Fill in after running all 11 test cases. Send this table to Mic when done.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Case</th>
+            <th>Provider</th>
+            <th>Test Type</th>
+            <th>Result</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>G1</td><td class="provider-gmail">Gmail</td><td>Plain text</td><td>_____</td><td></td></tr>
+          <tr><td>G2</td><td class="provider-gmail">Gmail</td><td>HTML + links</td><td>_____</td><td></td></tr>
+          <tr><td>G3</td><td class="provider-gmail">Gmail</td><td>PDF attachment</td><td>_____</td><td></td></tr>
+          <tr><td>G4</td><td class="provider-gmail">Gmail</td><td>YouTube URL</td><td>_____</td><td></td></tr>
+          <tr><td>G5</td><td class="provider-gmail">Gmail</td><td>Inline image</td><td>_____</td><td></td></tr>
+          <tr><td>O1</td><td class="provider-outlook">Outlook</td><td>Plain text</td><td>_____</td><td></td></tr>
+          <tr><td>O2</td><td class="provider-outlook">Outlook</td><td>Rich HTML</td><td>_____</td><td></td></tr>
+          <tr><td>O3</td><td class="provider-outlook">Outlook</td><td>Word attachment</td><td>_____</td><td></td></tr>
+          <tr><td>P1</td><td class="provider-proton">ProtonMail</td><td>Plain text</td><td>_____</td><td></td></tr>
+          <tr><td>P2</td><td class="provider-proton">ProtonMail</td><td>HTML + link</td><td>_____</td><td></td></tr>
+          <tr><td>P3</td><td class="provider-proton">ProtonMail</td><td>Forwarded email</td><td>_____</td><td></td></tr>
+        </tbody>
+      </table>
+
+      <div class="warn-box" style="margin-top: 16px;">
+        <strong>Launch gate:</strong> Gmail cases G1–G5 must ALL pass before public launch announcement. Outlook and ProtonMail failures are notable but not launch-blocking — they are expected edge cases given V1 sender-based identification.
+      </div>
+    </section>
+
+    <footer>
+      Prepared by Mic (drop-note PM) · 2026-05-28 · Drop address: drop@dropnote.me · Dashboard: https://dropnote.me
+    </footer>
+
+  </div>
+</body>
+</html>
