@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
 
     let processed = 0
     let skipped = 0
+    let failed = 0
 
     const results = await Promise.allSettled(
       users.map(async (user) => {
@@ -107,12 +108,12 @@ export async function GET(request: NextRequest) {
           skipped++
         }
       } else {
-        skipped++
+        failed++
         console.error('[cron/digest] User digest failed:', result.reason)
       }
     }
 
-    return NextResponse.json({ ok: true, processed, skipped })
+    return NextResponse.json({ ok: true, processed, skipped, failed })
   } catch (err) {
     console.error('[GET /api/cron/digest]', err instanceof Error ? err.message : err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

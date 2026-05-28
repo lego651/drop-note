@@ -5,6 +5,7 @@ import {
   isOverItemCap,
   isOverSaveLimit,
   getCurrentMonth,
+  isAllowedMimeType,
 } from '../tier'
 import { priceIdToTier } from '../stripe-helpers'
 
@@ -82,6 +83,25 @@ describe('getCurrentMonth', () => {
   it('handles year boundary', () => {
     const date = new Date('2026-01-01T00:00:00Z')
     expect(getCurrentMonth(date)).toBe('2026-01')
+  })
+})
+
+describe('isAllowedMimeType', () => {
+  it('allows application/pdf', () => {
+    expect(isAllowedMimeType('application/pdf')).toBe(true)
+  })
+
+  it('allows text/* types', () => {
+    expect(isAllowedMimeType('text/plain')).toBe(true)
+    expect(isAllowedMimeType('text/html')).toBe(true)
+  })
+
+  it('rejects application/zip', () => {
+    expect(isAllowedMimeType('application/zip')).toBe(false)
+  })
+
+  it('rejects empty string', () => {
+    expect(isAllowedMimeType('')).toBe(false)
   })
 })
 
