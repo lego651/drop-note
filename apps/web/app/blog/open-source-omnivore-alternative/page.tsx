@@ -2,9 +2,21 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Save Anything From Anywhere — drop-note',
+  title: 'Open-Source Omnivore Alternative — drop-note',
   description:
-    'Email it, forward it, share it. drop-note is your universal inbox: AI summarizes and tags everything, free, open-source (AGPL), self-hostable.',
+    'Omnivore was shut down. drop-note is a free, self-hostable replacement built with Next.js, Supabase, and OpenAI.',
+  openGraph: {
+    title: 'Open-Source Omnivore Alternative — drop-note',
+    description: 'Omnivore was shut down. drop-note is a free, self-hostable replacement.',
+    url: 'https://dropnote.me/blog/open-source-omnivore-alternative',
+    images: [{ url: '/api/og', width: 1200, height: 630, alt: 'drop-note' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Open-Source Omnivore Alternative — drop-note',
+    description: 'Omnivore was shut down. drop-note is a free, self-hostable replacement.',
+    images: ['/api/og'],
+  },
 }
 
 export default function BlogPostPage() {

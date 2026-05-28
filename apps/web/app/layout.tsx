@@ -10,7 +10,22 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'drop-note',
-  description: 'Save anything by email. AI organizes it.',
+  description: 'Save anything from anywhere. AI summarizes and tags it — everything lands in one searchable dashboard.',
+  metadataBase: new URL('https://dropnote.me'),
+  openGraph: {
+    title: 'drop-note — Save anything from anywhere',
+    description: 'Share from any app. Email from any device. AI summarizes and tags it automatically.',
+    url: 'https://dropnote.me',
+    siteName: 'drop-note',
+    images: [{ url: '/api/og', width: 1200, height: 630, alt: 'drop-note' }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'drop-note — Save anything from anywhere',
+    description: 'Share from any app. Email from any device. AI summarizes and tags it automatically.',
+    images: ['/api/og'],
+  },
 }
 
 export default function RootLayout({
