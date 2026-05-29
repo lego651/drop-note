@@ -5,7 +5,7 @@ import { render, screen } from '@testing-library/react'
 import BlogPostPage from '../open-source-omnivore-alternative/page'
 import sitemap from '../../sitemap'
 
-describe('Blog post page — open-source-omnivore-alternative', () => {
+describe('Blog post page — save-anything-from-anywhere', () => {
   it('renders h1 with the expected heading text', () => {
     render(<BlogPostPage />)
     expect(
@@ -13,10 +13,10 @@ describe('Blog post page — open-source-omnivore-alternative', () => {
     ).toBeInTheDocument()
   })
 
-  it('contains the word "Omnivore" in the page', () => {
+  it('does NOT contain the word "Omnivore" in user-facing copy', () => {
     render(<BlogPostPage />)
-    const matches = screen.getAllByText(/Omnivore/i)
-    expect(matches.length).toBeGreaterThan(0)
+    const allText = document.body.textContent ?? ''
+    expect(allText.toLowerCase()).not.toContain('omnivore')
   })
 
   it('contains a link to /login', () => {

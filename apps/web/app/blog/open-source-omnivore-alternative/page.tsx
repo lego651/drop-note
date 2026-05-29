@@ -2,19 +2,21 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Open-Source Omnivore Alternative — drop-note',
+  title: 'Save Anything From Anywhere — drop-note',
   description:
-    'Omnivore was shut down. drop-note is a free, self-hostable replacement built with Next.js, Supabase, and OpenAI.',
+    'Email it, forward it, share it. drop-note is your universal inbox: AI summarizes and tags everything, free, open-source (AGPL), self-hostable.',
   openGraph: {
-    title: 'Open-Source Omnivore Alternative — drop-note',
-    description: 'Omnivore was shut down. drop-note is a free, self-hostable replacement.',
+    title: 'Save Anything From Anywhere — drop-note',
+    description:
+      'Email it, forward it, share it. drop-note is your universal inbox — AI summarizes and tags everything.',
     url: 'https://dropnote.me/blog/open-source-omnivore-alternative',
     images: [{ url: '/api/og', width: 1200, height: 630, alt: 'drop-note' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Open-Source Omnivore Alternative — drop-note',
-    description: 'Omnivore was shut down. drop-note is a free, self-hostable replacement.',
+    title: 'Save Anything From Anywhere — drop-note',
+    description:
+      'Email it, forward it, share it. drop-note is your universal inbox — AI summarizes and tags everything.',
     images: ['/api/og'],
   },
 }
@@ -106,20 +108,6 @@ export default function BlogPostPage() {
             The hosted version at{' '}
             <span className="font-mono">dropnote.me</span> is free. The self-hosted
             version is free. There is no paid tier right now.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-semibold mb-3">If you used Omnivore</h2>
-          <p className="mb-4">
-            Omnivore was acquired by ElevenLabs in late 2024 and shut down. If you were
-            a user, drop-note covers the email-ingestion and self-hostable parts of what
-            Omnivore offered, with AI summarization added.
-          </p>
-          <p>
-            It is not a one-to-one replacement — there is no browser extension or mobile
-            app right now — but it fills the open-source, email-first, self-hostable
-            slot that Omnivore left.
           </p>
         </section>
 

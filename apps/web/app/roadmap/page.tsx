@@ -58,8 +58,8 @@ const SHIPPED = [
     detail: 'GDPR-aware, Jason Gao as data controller',
   },
   {
-    label: 'SEO blog: Open-Source Omnivore Alternative',
-    detail: 'Targets the post-Omnivore search intent',
+    label: 'SEO blog: Save Anything From Anywhere',
+    detail: 'Universal capture positioning — email as the interface',
   },
   {
     label: 'Public landing page + free pricing',
