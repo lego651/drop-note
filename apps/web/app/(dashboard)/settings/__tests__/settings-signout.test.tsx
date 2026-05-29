@@ -2,7 +2,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
-import { SidebarNav } from '../sidebar'
+import { SettingsClient } from '../SettingsClient'
 
 // ---------- mocks ----------
 
@@ -11,8 +11,6 @@ const mockRefresh = vi.fn()
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
-  usePathname: () => '/items',
-  useSearchParams: () => ({ get: () => null }),
 }))
 
 const mockSignOut = vi.fn()
@@ -23,11 +21,7 @@ vi.mock('@/lib/supabase/client', () => ({
   }),
 }))
 
-vi.mock('next-themes', () => ({
-  useTheme: () => ({ theme: 'light', setTheme: vi.fn() }),
-}))
-
-// Radix UI needs matchMedia in jsdom
+// Radix components need matchMedia in jsdom
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
@@ -48,17 +42,31 @@ beforeEach(() => {
   mockSignOut.mockClear()
 })
 
+function renderSettings() {
+  render(
+    <SettingsClient
+      email="test@example.com"
+      tier="free"
+      memberSince="Jan 2026"
+      digestEnabled={true}
+    />,
+  )
+}
+
 // ---------- tests ----------
 
-describe('SidebarNav sign-out redirect', () => {
+describe('SettingsClient sign-out', () => {
+  it('renders a Sign out button', () => {
+    renderSettings()
+    expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument()
+  })
+
   it('redirects to / (landing page) after successful sign-out', async () => {
     mockSignOut.mockResolvedValue({ error: null })
+    renderSettings()
 
-    render(<SidebarNav userEmail="test@example.com" />)
-
-    const signOutBtn = screen.getByRole('button', { name: /sign out/i })
     await act(async () => {
-      fireEvent.click(signOutBtn)
+      fireEvent.click(screen.getByRole('button', { name: /sign out/i }))
     })
 
     await waitFor(() => {
@@ -70,17 +78,14 @@ describe('SidebarNav sign-out redirect', () => {
 
   it('does NOT redirect when sign-out fails', async () => {
     mockSignOut.mockResolvedValue({ error: new Error('network error') })
+    renderSettings()
 
-    render(<SidebarNav userEmail="test@example.com" />)
-
-    const signOutBtn = screen.getByRole('button', { name: /sign out/i })
     await act(async () => {
-      fireEvent.click(signOutBtn)
+      fireEvent.click(screen.getByRole('button', { name: /sign out/i }))
     })
 
     await waitFor(() => {
       expect(mockPush).not.toHaveBeenCalled()
-      // Error message shown to user
       expect(screen.getByText(/sign out failed/i)).toBeInTheDocument()
     })
   })

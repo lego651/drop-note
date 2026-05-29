@@ -23,6 +23,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     { data: monthData },
     { count: trashCount },
     { count: archiveCount },
+    { count: allItemsCount },
+    { count: pinnedCount },
   ] = await Promise.all([
     supabase.from('users').select('tier').eq('id', user.id).single(),
     supabase
@@ -43,6 +45,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
       .eq('user_id', user.id)
       .is('deleted_at', null)
       .not('archived_at', 'is', null),
+    // "All Items" count — active, non-archived, email-body items (matches /items view)
+    supabase
+      .from('items')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .is('archived_at', null)
+      .eq('type', 'email_body'),
+    // "Pinned" count — same scope, pinned only
+    supabase
+      .from('items')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .is('archived_at', null)
+      .eq('type', 'email_body')
+      .eq('pinned', true),
   ])
 
   const tier = (userData?.tier ?? 'free') as Tier
@@ -62,6 +81,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         monthCounts={monthData ?? []}
         trashCount={trashCount ?? 0}
         archiveCount={archiveCount ?? 0}
+        totalCount={allItemsCount ?? 0}
+        pinnedCount={pinnedCount ?? 0}
       />
       <div className="flex flex-col flex-1 min-w-0">
         {/* Mobile top bar */}
@@ -72,6 +93,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
             monthCounts={monthData ?? []}
             trashCount={trashCount ?? 0}
             archiveCount={archiveCount ?? 0}
+            totalCount={allItemsCount ?? 0}
+            pinnedCount={pinnedCount ?? 0}
           />
           <span className="text-sm font-semibold">drop-note</span>
         </header>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
@@ -32,10 +33,23 @@ const PLAN_COLORS: Record<string, string> = {
 }
 
 export function SettingsClient({ email, tier, memberSince, digestEnabled: initialDigestEnabled }: SettingsClientProps) {
+  const router = useRouter()
   const [copied, setCopied] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [signOutError, setSignOutError] = useState('')
   const [digestEnabled, setDigestEnabled] = useState(initialDigestEnabled)
+
+  async function handleSignOut() {
+    const supabase = createClient()
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      setSignOutError('Sign out failed. Please try again.')
+      return
+    }
+    router.refresh()
+    router.push('/')
+  }
 
   async function handleCopy() {
     await navigator.clipboard.writeText('drop@dropnote.me')
@@ -132,6 +146,12 @@ export function SettingsClient({ email, tier, memberSince, digestEnabled: initia
             </span>
           </div>
         </div>
+        {signOutError && (
+          <p className="text-xs text-destructive">{signOutError}</p>
+        )}
+        <Button variant="outline" size="sm" onClick={handleSignOut}>
+          Sign out
+        </Button>
       </section>
 
       <hr className="border-border" />
