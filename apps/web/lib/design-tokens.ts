@@ -29,6 +29,7 @@ export const TAG_PALETTE = [
 /**
  * Returns a deterministic CSS variable string for a tag name.
  * Same name always returns the same variable. Zero DB round-trips.
+ * Use this for backgrounds/borders that wrap hsl() themselves.
  */
 export function colorForTag(name: string): string {
   const hash = [...name].reduce((a, c) => a + c.charCodeAt(0), 0)
@@ -36,15 +37,40 @@ export function colorForTag(name: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Tag palette as raw HSL values (for hsl(... / 0.12) opacity syntax)
+// Must stay in sync with TAG_PALETTE order and globals.css --color-tag-* values
+// ---------------------------------------------------------------------------
+
+export const TAG_PALETTE_HSL = [
+  '214 89% 52%',
+  '270 60% 55%',
+  '330 70% 55%',
+  '142 55% 42%',
+  '45 90% 45%',
+  '25 85% 50%',
+  '180 55% 40%',
+  '245 65% 52%',
+] as const
+
+/**
+ * Returns raw HSL numbers (e.g. "214 89% 52%") for use in hsl(... / opacity) syntax.
+ * Use this when you need: `hsl(${colorForTagHsl(name)} / 0.12)`
+ */
+export function colorForTagHsl(name: string): string {
+  const hash = [...name].reduce((a, c) => a + c.charCodeAt(0), 0)
+  return TAG_PALETTE_HSL[hash % TAG_PALETTE_HSL.length]
+}
+
+// ---------------------------------------------------------------------------
 // Source type dot colors
 // ---------------------------------------------------------------------------
 
 export const SOURCE_DOT: Record<string, string> = {
-  email: 'var(--color-source-email)',
-  youtube: 'var(--color-source-youtube)',
-  article: 'var(--color-source-article)',
-  note: 'var(--color-source-note)',
-  default: 'var(--color-source-default)',
+  email: 'hsl(var(--color-source-email))',
+  youtube: 'hsl(var(--color-source-youtube))',
+  article: 'hsl(var(--color-source-article))',
+  note: 'hsl(var(--color-source-note))',
+  default: 'hsl(var(--color-source-default))',
 }
 
 // ---------------------------------------------------------------------------

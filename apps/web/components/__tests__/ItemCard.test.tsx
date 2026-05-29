@@ -94,4 +94,39 @@ describe('ItemCard', () => {
 
     expect(screen.queryByRole('link')).toBeNull()
   })
+
+  it('renders a source dot with a background color', () => {
+    const { container } = render(<ItemCard item={base} />)
+    // Source dot is an aria-hidden span with a backgroundColor style
+    const dot = container.querySelector('[aria-hidden="true"][style*="background"]')
+    expect(dot).toBeTruthy()
+  })
+
+  it('renders source dot for youtube source type', () => {
+    const { container } = render(<ItemCard item={{ ...base, source_type: 'youtube' }} />)
+    const dot = container.querySelector('[aria-hidden="true"][style*="background"]')
+    expect(dot).toBeTruthy()
+  })
+
+  it('renders source dot for email source type', () => {
+    const emailItem: ItemSummary = {
+      ...base,
+      source_type: 'email',
+      source_url: null,
+      thumbnail_url: null,
+    }
+    const { container } = render(<ItemCard item={emailItem} />)
+    const dot = container.querySelector('[aria-hidden="true"][style*="background"]')
+    expect(dot).toBeTruthy()
+  })
+
+  it('shows read time for done items with ai_summary', () => {
+    render(<ItemCard item={{ ...base, ai_summary: 'A '.repeat(200) }} />)
+    expect(screen.getByText(/min read/)).toBeInTheDocument()
+  })
+
+  it('does not show read time for processing items', () => {
+    render(<ItemCard item={{ ...base, status: 'processing', ai_summary: null }} />)
+    expect(screen.queryByText(/min read/)).toBeNull()
+  })
 })

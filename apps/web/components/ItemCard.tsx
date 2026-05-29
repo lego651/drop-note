@@ -8,9 +8,11 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { VideoModal } from '@/components/VideoModal'
 import { ItemThumbnail } from '@/components/ItemThumbnail'
+import { ItemFavicon } from '@/components/ItemFavicon'
 import { TagRow } from '@/components/TagRow'
 import { cn } from '@/lib/utils'
 import { openExternalUrl } from '@/lib/open-external'
+import { SOURCE_DOT } from '@/lib/design-tokens'
 import type { ItemSummary } from '@/lib/items'
 import { extractYouTubeId } from '@drop-note/shared'
 
@@ -81,13 +83,28 @@ export function ItemCard({
         />
       )}
 
+      {/* Favicon / letter avatar — list view only */}
+      {isListView && (
+        <ItemFavicon
+          sourceUrl={item.source_url}
+          sourceType={item.source_type}
+          size={20}
+        />
+      )}
+
       {/* Text content — fills remaining space */}
       <div className="flex flex-col gap-1.5 min-w-0 flex-1">
       {/* Header row: subject + actions */}
       <div className="flex items-start justify-between gap-2">
+        {/* Source dot */}
+        <span
+          className="w-1.5 h-1.5 rounded-full shrink-0 mt-1"
+          style={{ backgroundColor: SOURCE_DOT[item.source_type ?? 'default'] }}
+          aria-hidden="true"
+        />
         <p
           className={cn(
-            'truncate text-sm font-medium leading-snug',
+            'truncate text-sm font-medium leading-snug flex-1',
             isBulkMode && 'pl-6',
           )}
         >
@@ -140,13 +157,27 @@ export function ItemCard({
 
       {/* Thumbnail — grid view only (list view renders it as right column) */}
       {!isListView && isDone && item.thumbnail_url && (
-        <ItemThumbnail
-          thumbnailUrl={item.thumbnail_url}
-          subject={item.subject}
-          youtubeId={youtubeId}
-          isListView={false}
-          onVideoOpen={() => setVideoOpen(true)}
-        />
+        <div className="relative">
+          <ItemThumbnail
+            thumbnailUrl={item.thumbnail_url}
+            subject={item.subject}
+            youtubeId={youtubeId}
+            isListView={false}
+            onVideoOpen={() => setVideoOpen(true)}
+          />
+          {youtubeId && (
+            <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-xs px-1 rounded font-mono">
+              —:——
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Article placeholder — grid view, done items with no thumbnail */}
+      {!isListView && isDone && !item.thumbnail_url && (
+        <div className="w-full h-24 rounded-md bg-muted flex items-center justify-center">
+          <ItemFavicon sourceUrl={item.source_url} sourceType={item.source_type} size={28} />
+        </div>
       )}
 
       {/* Summary / skeleton */}
@@ -166,9 +197,16 @@ export function ItemCard({
           </p>
         </div>
       ) : (
-        <p className="line-clamp-2 text-xs text-muted-foreground">
-          {item.ai_summary ?? ''}
-        </p>
+        <>
+          <p className="line-clamp-2 text-xs text-muted-foreground">
+            {item.ai_summary ?? ''}
+          </p>
+          {isDone && item.ai_summary && (
+            <p className="text-xs text-muted-foreground">
+              ⏱ {Math.max(1, Math.round(item.ai_summary.split(/\s+/).length / 200))} min read
+            </p>
+          )}
+        </>
       )}
 
       {/* Footer: tags + date */}
