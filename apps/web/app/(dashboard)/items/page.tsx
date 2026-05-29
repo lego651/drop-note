@@ -4,6 +4,7 @@ import { ItemsPageClient } from '@/components/items/ItemsPageClient'
 import { colorForTag } from '@/lib/design-tokens'
 import type { Tier, SourceType } from '@drop-note/shared'
 import type { ItemSummary } from '@/lib/items'
+import type { SortOption } from '@/components/items/SortDropdown'
 
 export const metadata = { title: 'Items — drop-note' }
 
@@ -14,6 +15,7 @@ interface ItemsPageProps {
     year?: string
     month?: string
     q?: string
+    sort?: string
   }
 }
 
@@ -35,6 +37,11 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   const q = params.q
   const page = Math.max(1, parseInt(params.page ?? '1') || 1)
   const offset = (page - 1) * 25
+  const activeSort: SortOption = (['oldest', 'pinned'] as SortOption[]).includes(
+    params.sort as SortOption,
+  )
+    ? (params.sort as SortOption)
+    : 'newest'
 
   // Avatar derived from Google OAuth user metadata
   const avatarUrl = (user.user_metadata?.avatar_url as string | undefined) ?? null
@@ -105,6 +112,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
         activeTagName={activeTagName}
         activeTagId={tagId}
         tags={tags}
+        activeSort={activeSort}
         userTier={userTier}
         userId={user.id}
         statsData={{
@@ -129,7 +137,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     .is('deleted_at', null)
     .eq('type', 'email_body')
     .order('pinned', { ascending: false })
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: activeSort === 'oldest' })
 
   if (tagFilterIds !== null) {
     query = query.in('id', tagFilterIds)

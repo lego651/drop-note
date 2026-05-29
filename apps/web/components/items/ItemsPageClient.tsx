@@ -17,7 +17,9 @@ import { WelcomeModal } from '@/components/dashboard/WelcomeModal'
 import { StatsBar } from '@/components/items/StatsBar'
 import { ItemsPageHeader } from '@/components/items/ItemsPageHeader'
 import { TagFilterBar } from '@/components/items/TagFilterBar'
+import { SortDropdown } from '@/components/items/SortDropdown'
 import type { ViewMode } from '@/components/items/ViewSwitcher'
+import type { SortOption } from '@/components/items/SortDropdown'
 import type { ItemSummary } from '@/lib/items'
 import type { Tier } from '@drop-note/shared'
 
@@ -35,6 +37,7 @@ interface ItemsPageClientProps {
   activeTagName?: string
   activeTagId?: string
   tags?: { id: string; name: string; count: number }[]
+  activeSort?: SortOption
   userTier?: Tier
   userId: string
   statsData?: StatsBarData
@@ -58,6 +61,7 @@ function ItemsPageClientInner({
   initialQuery = '',
   activeTagId,
   tags = [],
+  activeSort = 'newest',
   userTier = 'free',
   userId,
   statsData,
@@ -255,6 +259,7 @@ function ItemsPageClientInner({
         </div>
         <div className="flex items-center gap-2 pt-1">
           <span className="text-xs text-muted-foreground shrink-0">Updated just now</span>
+          <SortDropdown activeSort={activeSort} />
           <ViewSwitcher activeView={view} onViewChange={handleViewChange} />
         </div>
       </div>
