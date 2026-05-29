@@ -5,6 +5,7 @@ import { colorForTag } from '@/lib/design-tokens'
 import type { Tier, SourceType } from '@drop-note/shared'
 import type { ItemSummary } from '@/lib/items'
 import type { SortOption } from '@/components/items/SortDropdown'
+import type { SourceFilter } from '@/components/items/FiltersButton'
 
 export const metadata = { title: 'Items — drop-note' }
 
@@ -16,6 +17,7 @@ interface ItemsPageProps {
     month?: string
     q?: string
     sort?: string
+    source?: string
   }
 }
 
@@ -42,6 +44,11 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   )
     ? (params.sort as SortOption)
     : 'newest'
+  const activeSource: SourceFilter = (['email', 'url', 'youtube'] as SourceFilter[]).includes(
+    params.source as SourceFilter,
+  )
+    ? (params.source as SourceFilter)
+    : 'all'
 
   // Avatar derived from Google OAuth user metadata
   const avatarUrl = (user.user_metadata?.avatar_url as string | undefined) ?? null
@@ -115,6 +122,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
         activeTagId={tagId}
         tags={tags}
         activeSort={activeSort}
+        activeSource={activeSource}
         userTier={userTier}
         userId={user.id}
         statsData={{
@@ -146,6 +154,13 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     query = query.in('id', tagFilterIds)
   }
 
+  // Source filter — legacy rows (null source_type) are treated as email
+  if (activeSource === 'email') {
+    query = query.or('source_type.eq.email,source_type.is.null')
+  } else if (activeSource !== 'all') {
+    query = query.eq('source_type', activeSource)
+  }
+
   if (year && month) {
     const y = parseInt(year, 10)
     const m = parseInt(month, 10)
@@ -173,6 +188,8 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       activeTagName={activeTagName}
       activeTagId={tagId}
       tags={tags}
+      activeSort={activeSort}
+      activeSource={activeSource}
       userTier={userTier}
       userId={user.id}
       statsData={{

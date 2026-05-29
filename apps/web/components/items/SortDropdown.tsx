@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowUpDown, Check } from 'lucide-react'
+import { ArrowUpDown, Check, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
@@ -40,9 +40,15 @@ export function SortDropdown({ activeSort }: SortDropdownProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
-          <ArrowUpDown size={13} />
-          {SORT_LABELS[activeSort]}
+        <Button
+          variant="outline"
+          className="h-9 w-[150px] justify-between gap-2 rounded-full border-border px-3.5 text-sm font-normal"
+        >
+          <span className="flex items-center gap-2">
+            <ArrowUpDown size={14} className="text-muted-foreground" />
+            {SORT_LABELS[activeSort]}
+          </span>
+          <ChevronDown size={14} className="text-muted-foreground" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-40 p-1" align="end">

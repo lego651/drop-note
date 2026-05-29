@@ -18,8 +18,10 @@ import { StatsBar } from '@/components/items/StatsBar'
 import { ItemsPageHeader } from '@/components/items/ItemsPageHeader'
 import { TagFilterBar } from '@/components/items/TagFilterBar'
 import { SortDropdown } from '@/components/items/SortDropdown'
+import { FiltersButton } from '@/components/items/FiltersButton'
 import type { ViewMode } from '@/components/items/ViewSwitcher'
 import type { SortOption } from '@/components/items/SortDropdown'
+import type { SourceFilter } from '@/components/items/FiltersButton'
 import type { ItemSummary } from '@/lib/items'
 import type { Tier } from '@drop-note/shared'
 
@@ -38,6 +40,7 @@ interface ItemsPageClientProps {
   activeTagId?: string
   tags?: { id: string; name: string; count: number }[]
   activeSort?: SortOption
+  activeSource?: SourceFilter
   userTier?: Tier
   userId: string
   statsData?: StatsBarData
@@ -62,6 +65,7 @@ function ItemsPageClientInner({
   activeTagId,
   tags = [],
   activeSort = 'newest',
+  activeSource = 'all',
   userTier = 'free',
   userId,
   statsData,
@@ -75,7 +79,7 @@ function ItemsPageClientInner({
 
   const { isBulkMode, selectedIds, toggle, selectAll, deselectAll } = useBulkSelect()
 
-  const [view, setView] = useState<ViewMode>('list')
+  const [view, setView] = useState<ViewMode>('card')
   const [searchQuery, setSearchQuery] = useState(initialQuery)
   const [searchResults, setSearchResults] = useState<ItemSummary[] | null>(null)
   const [isSearching, setIsSearching] = useState(false)
@@ -257,11 +261,7 @@ function ItemsPageClientInner({
           <h1 className="text-2xl font-bold text-foreground">Your inbox</h1>
           <p className="text-sm text-muted-foreground">Everything you&apos;ve saved, organized by AI</p>
         </div>
-        <div className="flex items-center gap-2 pt-1">
-          <span className="text-xs text-muted-foreground shrink-0">Updated just now</span>
-          <SortDropdown activeSort={activeSort} />
-          <ViewSwitcher activeView={view} onViewChange={handleViewChange} />
-        </div>
+        <span className="text-xs text-muted-foreground shrink-0 pt-1">Updated just now</span>
       </div>
 
       {/* Stats cards */}
@@ -272,28 +272,29 @@ function ItemsPageClientInner({
         topTag={statsData?.topTag ?? null}
       />
 
+      {/* Search bar + Filters */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search
+            size={18}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+          />
+          <Input
+            type="search"
+            placeholder="Search items, summaries, tags…"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="h-11 rounded-full pl-11 pr-4 text-sm"
+            aria-label="Search items"
+          />
+        </div>
+        <FiltersButton activeSource={activeSource} />
+      </div>
+
       {/* Tag filter bar */}
       {tags.length > 0 && (
         <TagFilterBar tags={tags} totalCount={totalCount} activeTagId={activeTagId} />
       )}
-
-      {/* Search bar */}
-      <div className="flex items-center gap-2">
-        <div className="relative max-w-sm">
-          <Search
-            size={15}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-          />
-          <Input
-            type="search"
-            placeholder="Search items…"
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="pl-8 h-8 text-sm"
-            aria-label="Search items"
-          />
-        </div>
-      </div>
 
       {/* Bulk action toolbar */}
       {isBulkMode && (
@@ -308,13 +309,26 @@ function ItemsPageClientInner({
         />
       )}
 
-      {/* Search result count */}
-      {isSearchMode && !isSearching && searchResults !== null && (
-        <p className="text-xs text-muted-foreground">
-          {searchResults.length === 0
-            ? 'No results found.'
-            : `${searchResults.length} result${searchResults.length === 1 ? '' : 's'}`}
-        </p>
+      {/* List header: item count (left) + sort + view controls (right) */}
+      {!isEmpty && (
+        <div className="flex items-center justify-between gap-4 pt-1">
+          <p className="text-sm text-muted-foreground">
+            {isSearchMode && searchResults !== null ? (
+              <>
+                <span className="font-semibold text-foreground">{searchResults.length}</span>{' '}
+                result{searchResults.length === 1 ? '' : 's'}
+              </>
+            ) : (
+              <>
+                <span className="font-semibold text-foreground">{displayItems.length}</span> saved items
+              </>
+            )}
+          </p>
+          <div className="flex items-center gap-2">
+            <SortDropdown activeSort={activeSort} />
+            <ViewSwitcher activeView={view} onViewChange={handleViewChange} />
+          </div>
+        </div>
       )}
 
       {/* Empty state */}

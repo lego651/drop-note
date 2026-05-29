@@ -1,7 +1,7 @@
 'use client'
 
-import { LayoutList, LayoutGrid, AlignLeft } from 'lucide-react'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { LayoutGrid, LayoutList, Rows3 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export type ViewMode = 'list' | 'card' | 'timeline'
 
@@ -12,25 +12,40 @@ interface ViewSwitcherProps {
   onViewChange: (view: ViewMode) => void
 }
 
+// Order matches the design: Gallery (grid) → List → Compact
+const VIEWS: { value: ViewMode; label: string; Icon: typeof LayoutGrid }[] = [
+  { value: 'card', label: 'Gallery view', Icon: LayoutGrid },
+  { value: 'list', label: 'List view', Icon: LayoutList },
+  { value: 'timeline', label: 'Compact view', Icon: Rows3 },
+]
+
 export function ViewSwitcher({ activeView, onViewChange }: ViewSwitcherProps) {
   return (
-    <ToggleGroup
-      type="single"
-      value={activeView}
-      onValueChange={(value) => {
-        if (value) onViewChange(value as ViewMode)
-      }}
+    <div
+      role="group"
       aria-label="View mode"
+      className="inline-flex h-9 items-center gap-1 rounded-lg border border-border bg-background p-1"
     >
-      <ToggleGroupItem value="list" aria-label="List view" size="sm">
-        <LayoutList size={15} />
-      </ToggleGroupItem>
-      <ToggleGroupItem value="card" aria-label="Card (grid) view" size="sm">
-        <LayoutGrid size={15} />
-      </ToggleGroupItem>
-      <ToggleGroupItem value="timeline" aria-label="Timeline view" size="sm">
-        <AlignLeft size={15} />
-      </ToggleGroupItem>
-    </ToggleGroup>
+      {VIEWS.map(({ value, label, Icon }) => {
+        const active = activeView === value
+        return (
+          <button
+            key={value}
+            type="button"
+            aria-label={label}
+            aria-pressed={active}
+            onClick={() => onViewChange(value)}
+            className={cn(
+              'flex h-7 w-9 items-center justify-center rounded-md transition-colors',
+              active
+                ? 'bg-foreground text-background'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+            )}
+          >
+            <Icon size={15} />
+          </button>
+        )
+      })}
+    </div>
   )
 }
