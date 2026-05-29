@@ -13,6 +13,7 @@ import {
   Monitor,
   CreditCard,
   Trash2,
+  Archive,
   Tag,
   CalendarDays,
 } from 'lucide-react'
@@ -20,6 +21,7 @@ import { useTheme } from 'next-themes'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { colorForTagHsl } from '@/lib/design-tokens'
 import {
   Accordion,
   AccordionContent,
@@ -43,6 +45,7 @@ export interface SidebarProps {
   tags?: TagWithCount[]
   monthCounts?: MonthCount[]
   trashCount?: number
+  archiveCount?: number
 }
 
 function SidebarLink({
@@ -76,6 +79,7 @@ export function SidebarNav({
   tags = [],
   monthCounts = [],
   trashCount = 0,
+  archiveCount = 0,
 }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -159,6 +163,15 @@ export function SidebarNav({
               </Badge>
             )}
           </SidebarLink>
+          <SidebarLink href="/archive" isActive={pathname === '/archive'}>
+            <Archive size={16} />
+            <span className="flex-1">Archive</span>
+            {archiveCount > 0 && (
+              <Badge variant="secondary" className="text-xs py-0 px-1.5 ml-auto">
+                {archiveCount}
+              </Badge>
+            )}
+          </SidebarLink>
         </div>
 
         {/* Tags section */}
@@ -192,14 +205,19 @@ export function SidebarNav({
                   key={tag.id}
                   href={`/items?tag=${tag.id}`}
                   className={cn(
-                    'flex items-center justify-between gap-2 rounded-md px-3 py-1 text-sm transition-colors',
+                    'flex items-center gap-2 rounded-md px-3 py-1 text-sm transition-colors',
                     'hover:bg-accent hover:text-accent-foreground',
                     activeTag === tag.id
                       ? 'bg-accent text-accent-foreground font-medium'
                       : 'text-muted-foreground',
                   )}
                 >
-                  <span className="truncate">{tag.name}</span>
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: `hsl(${colorForTagHsl(tag.name)})` }}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate flex-1">{tag.name}</span>
                   <span className="shrink-0 text-xs opacity-60">
                     {tag.item_count}
                   </span>

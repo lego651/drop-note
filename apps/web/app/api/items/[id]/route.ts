@@ -19,13 +19,14 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
 
-    const { ai_summary, notes, tags, pinned } = body as {
+    const { ai_summary, notes, tags, pinned, archived } = body as {
       ai_summary?: string
       notes?: string
       tags?: string[]
       pinned?: boolean
+      archived?: boolean
     }
-    // deleted_at is NOT accepted
+    // deleted_at is NOT accepted via PATCH
 
     // Verify ownership first
     const { data: existing } = await supabase
@@ -42,6 +43,7 @@ export async function PATCH(
     if (ai_summary !== undefined) updates.ai_summary = ai_summary
     if (notes !== undefined) updates.notes = notes
     if (pinned !== undefined) updates.pinned = pinned
+    if (archived !== undefined) updates.archived_at = archived ? new Date().toISOString() : null
 
     if (Object.keys(updates).length > 0) {
       await supabase

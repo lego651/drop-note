@@ -22,6 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     { data: tagsData },
     { data: monthData },
     { count: trashCount },
+    { count: archiveCount },
   ] = await Promise.all([
     supabase.from('users').select('tier').eq('id', user.id).single(),
     supabase
@@ -36,6 +37,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .not('deleted_at', 'is', null),
+    supabase
+      .from('items')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .not('archived_at', 'is', null),
   ])
 
   const tier = (userData?.tier ?? 'free') as Tier
@@ -54,6 +61,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         tags={tagsData ?? []}
         monthCounts={monthData ?? []}
         trashCount={trashCount ?? 0}
+        archiveCount={archiveCount ?? 0}
       />
       <div className="flex flex-col flex-1 min-w-0">
         {/* Mobile top bar */}
@@ -63,6 +71,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             tags={tagsData ?? []}
             monthCounts={monthData ?? []}
             trashCount={trashCount ?? 0}
+            archiveCount={archiveCount ?? 0}
           />
           <span className="text-sm font-semibold">drop-note</span>
         </header>

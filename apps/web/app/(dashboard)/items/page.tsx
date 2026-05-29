@@ -66,12 +66,14 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .is('deleted_at', null)
+      .is('archived_at', null)
       .gte('created_at', sevenDaysAgo),
     supabase
       .from('items')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .is('deleted_at', null)
+      .is('archived_at', null)
       .in('status', ['pending', 'processing']),
     supabase.rpc('get_tags_with_counts'),
   ])
@@ -135,6 +137,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     )
     .eq('user_id', user.id)
     .is('deleted_at', null)
+    .is('archived_at', null)
     .eq('type', 'email_body')
     .order('pinned', { ascending: false })
     .order('created_at', { ascending: activeSort === 'oldest' })
