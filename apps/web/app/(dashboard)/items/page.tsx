@@ -75,6 +75,13 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       ? { name: topTagData[0].name as string, count: topTagData[0].item_count as number }
       : null
 
+  // Build tags list for TagFilterBar (reuse RPC result already fetched above)
+  const tags = (topTagData ?? []).map((t) => ({
+    id: t.id,
+    name: t.name,
+    count: t.item_count,
+  }))
+
   // Handle tag filter — get matching item IDs first
   let tagFilterIds: string[] | null = null
   let activeTagName: string | undefined
@@ -96,6 +103,8 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
         page={page}
         initialQuery={q ?? ''}
         activeTagName={activeTagName}
+        activeTagId={tagId}
+        tags={tags}
         userTier={userTier}
         userId={user.id}
         statsData={{
@@ -151,6 +160,8 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       page={page}
       initialQuery={q ?? ''}
       activeTagName={activeTagName}
+      activeTagId={tagId}
+      tags={tags}
       userTier={userTier}
       userId={user.id}
       statsData={{

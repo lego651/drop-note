@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRealtimeItems } from '@/hooks/useRealtimeItems'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Search, Copy, Check, X, Mail } from 'lucide-react'
+import { Search, Copy, Check, Mail } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ItemsListLayout } from '@/components/items/ItemsListLayout'
@@ -16,6 +16,7 @@ import { BulkActionToolbar } from '@/components/items/BulkActionToolbar'
 import { WelcomeModal } from '@/components/dashboard/WelcomeModal'
 import { StatsBar } from '@/components/items/StatsBar'
 import { ItemsPageHeader } from '@/components/items/ItemsPageHeader'
+import { TagFilterBar } from '@/components/items/TagFilterBar'
 import type { ViewMode } from '@/components/items/ViewSwitcher'
 import type { ItemSummary } from '@/lib/items'
 import type { Tier } from '@drop-note/shared'
@@ -32,6 +33,8 @@ interface ItemsPageClientProps {
   page: number
   initialQuery?: string
   activeTagName?: string
+  activeTagId?: string
+  tags?: { id: string; name: string; count: number }[]
   userTier?: Tier
   userId: string
   statsData?: StatsBarData
@@ -53,7 +56,8 @@ function ItemsPageClientInner({
   totalCount,
   page,
   initialQuery = '',
-  activeTagName,
+  activeTagId,
+  tags = [],
   userTier = 'free',
   userId,
   statsData,
@@ -263,7 +267,12 @@ function ItemsPageClientInner({
         topTag={statsData?.topTag ?? null}
       />
 
-      {/* Search bar + active tag pill */}
+      {/* Tag filter bar */}
+      {tags.length > 0 && (
+        <TagFilterBar tags={tags} totalCount={totalCount} activeTagId={activeTagId} />
+      )}
+
+      {/* Search bar */}
       <div className="flex items-center gap-2">
         <div className="relative max-w-sm">
           <Search
@@ -279,16 +288,6 @@ function ItemsPageClientInner({
             aria-label="Search items"
           />
         </div>
-        {activeTagName && (
-          <Link
-            href="/items"
-            className="flex items-center gap-1 rounded-full border border-border bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground hover:bg-accent/70 transition-colors shrink-0"
-            aria-label={`Clear tag filter: ${activeTagName}`}
-          >
-            {activeTagName}
-            <X size={11} className="opacity-60" />
-          </Link>
-        )}
       </div>
 
       {/* Bulk action toolbar */}
