@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ItemsPageClient } from '@/components/items/ItemsPageClient'
+import { colorForTag } from '@/lib/design-tokens'
 import type { Tier, SourceType } from '@drop-note/shared'
 import type { ItemSummary } from '@/lib/items'
 
@@ -28,19 +29,51 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
 
   const params = searchParams ?? {}
 
-  const { data: userData } = await supabase
-    .from('users')
-    .select('tier')
-    .eq('id', user.id)
-    .single()
-  const userTier = (userData?.tier ?? 'free') as Tier
-
   const tagId = params.tag
   const year = params.year
   const month = params.month
   const q = params.q
   const page = Math.max(1, parseInt(params.page ?? '1') || 1)
   const offset = (page - 1) * 25
+
+  // Avatar derived from Google OAuth user metadata
+  const avatarUrl = (user.user_metadata?.avatar_url as string | undefined) ?? null
+  const displayName = (user.user_metadata?.full_name as string | undefined) ?? user.email ?? ''
+  const userInitials = displayName.includes(' ')
+    ? displayName.split(' ').slice(0, 2).map((p: string) => p[0]?.toUpperCase() ?? '').join('')
+    : (displayName[0]?.toUpperCase() ?? 'U')
+  const avatarColor = colorForTag(user.email ?? displayName)
+
+  // Stats queries — run in parallel with tier + tag filter
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+  const [
+    { data: userData },
+    { count: thisWeekCount },
+    { count: processingCount },
+    { data: topTagData },
+  ] = await Promise.all([
+    supabase.from('users').select('tier').eq('id', user.id).single(),
+    supabase
+      .from('items')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .gte('created_at', sevenDaysAgo),
+    supabase
+      .from('items')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .in('status', ['pending', 'processing']),
+    supabase.rpc('get_tags_with_counts'),
+  ])
+
+  const userTier = (userData?.tier ?? 'free') as Tier
+  const topTag =
+    topTagData && topTagData.length > 0
+      ? { name: topTagData[0].name as string, count: topTagData[0].item_count as number }
+      : null
 
   // Handle tag filter — get matching item IDs first
   let tagFilterIds: string[] | null = null
@@ -65,6 +98,14 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
         activeTagName={activeTagName}
         userTier={userTier}
         userId={user.id}
+        statsData={{
+          thisWeekCount: thisWeekCount ?? 0,
+          processingCount: processingCount ?? 0,
+          topTag,
+        }}
+        avatarUrl={avatarUrl}
+        userInitials={userInitials}
+        avatarColor={avatarColor}
       />
     )
   }
@@ -112,6 +153,14 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       activeTagName={activeTagName}
       userTier={userTier}
       userId={user.id}
+      statsData={{
+        thisWeekCount: thisWeekCount ?? 0,
+        processingCount: processingCount ?? 0,
+        topTag,
+      }}
+      avatarUrl={avatarUrl}
+      userInitials={userInitials}
+      avatarColor={avatarColor}
     />
   )
 }

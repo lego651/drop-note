@@ -14,9 +14,17 @@ import { ViewSwitcher, VIEW_STORAGE_KEY } from '@/components/items/ViewSwitcher'
 import { BulkSelectProvider, useBulkSelect } from '@/components/items/BulkSelectProvider'
 import { BulkActionToolbar } from '@/components/items/BulkActionToolbar'
 import { WelcomeModal } from '@/components/dashboard/WelcomeModal'
+import { StatsBar } from '@/components/items/StatsBar'
+import { ItemsPageHeader } from '@/components/items/ItemsPageHeader'
 import type { ViewMode } from '@/components/items/ViewSwitcher'
 import type { ItemSummary } from '@/lib/items'
 import type { Tier } from '@drop-note/shared'
+
+interface StatsBarData {
+  thisWeekCount: number
+  processingCount: number
+  topTag: { name: string; count: number } | null
+}
 
 interface ItemsPageClientProps {
   items: ItemSummary[]
@@ -26,6 +34,10 @@ interface ItemsPageClientProps {
   activeTagName?: string
   userTier?: Tier
   userId: string
+  statsData?: StatsBarData
+  avatarUrl?: string | null
+  userInitials?: string
+  avatarColor?: string
 }
 
 export function ItemsPageClient(props: ItemsPageClientProps) {
@@ -44,6 +56,10 @@ function ItemsPageClientInner({
   activeTagName,
   userTier = 'free',
   userId,
+  statsData,
+  avatarUrl = null,
+  userInitials = 'U',
+  avatarColor = '215 16% 55%',
 }: ItemsPageClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -219,15 +235,33 @@ function ItemsPageClientInner({
   const isEmpty = displayItems.length === 0 && !isSearching
 
   return (
-    <div className="p-6 space-y-4">
+    <div>
+      <ItemsPageHeader
+        avatarUrl={avatarUrl}
+        userInitials={userInitials}
+        avatarColor={avatarColor}
+      />
+      <div className="p-6 space-y-4">
       <WelcomeModal />
-      {/* Header row */}
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-lg font-semibold">Items</h1>
-        <div className="flex items-center gap-2">
+      {/* Page title row */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Your inbox</h1>
+          <p className="text-sm text-muted-foreground">Everything you&apos;ve saved, organized by AI</p>
+        </div>
+        <div className="flex items-center gap-2 pt-1">
+          <span className="text-xs text-muted-foreground shrink-0">Updated just now</span>
           <ViewSwitcher activeView={view} onViewChange={handleViewChange} />
         </div>
       </div>
+
+      {/* Stats cards */}
+      <StatsBar
+        totalCount={totalCount}
+        thisWeekCount={statsData?.thisWeekCount ?? 0}
+        processingCount={statsData?.processingCount ?? 0}
+        topTag={statsData?.topTag ?? null}
+      />
 
       {/* Search bar + active tag pill */}
       <div className="flex items-center gap-2">
@@ -382,6 +416,7 @@ function ItemsPageClientInner({
           </Button>
         </nav>
       )}
+      </div>{/* end p-6 */}
     </div>
   )
 }

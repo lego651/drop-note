@@ -25,6 +25,34 @@
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
     --color-success: 142 71% 45%;
+
+    /* Tag color palette */
+    --color-tag-blue: 214 89% 52%;
+    --color-tag-purple: 270 60% 55%;
+    --color-tag-pink: 330 70% 55%;
+    --color-tag-green: 142 55% 42%;
+    --color-tag-yellow: 45 90% 45%;
+    --color-tag-orange: 25 85% 50%;
+    --color-tag-teal: 180 55% 40%;
+    --color-tag-indigo: 245 65% 52%;
+
+    /* Source type dots */
+    --color-source-email: 214 89% 52%;
+    --color-source-youtube: 0 85% 52%;
+    --color-source-article: 142 55% 42%;
+    --color-source-note: 270 60% 55%;
+    --color-source-default: 215 16% 55%;
+
+    /* Status dots */
+    --color-status-done: 142 71% 45%;
+    --color-status-processing: 45 90% 45%;
+    --color-status-failed: 0 84% 60%;
+
+    /* Stat card accents */
+    --color-stat-total: 214 89% 52%;
+    --color-stat-week: 142 55% 42%;
+    --color-stat-processing: 45 90% 45%;
+    --color-stat-tag: 270 60% 55%;
   }
 
   .dark {
@@ -48,6 +76,34 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
     --color-success: 142 76% 36%;
+
+    /* Tag color palette — dark mode (lighter, less saturated) */
+    --color-tag-blue: 214 79% 62%;
+    --color-tag-purple: 270 50% 65%;
+    --color-tag-pink: 330 60% 65%;
+    --color-tag-green: 142 45% 52%;
+    --color-tag-yellow: 45 80% 55%;
+    --color-tag-orange: 25 75% 60%;
+    --color-tag-teal: 180 45% 50%;
+    --color-tag-indigo: 245 55% 62%;
+
+    /* Source type dots — dark mode */
+    --color-source-email: 214 79% 62%;
+    --color-source-youtube: 0 75% 62%;
+    --color-source-article: 142 45% 52%;
+    --color-source-note: 270 50% 65%;
+    --color-source-default: 215 16% 65%;
+
+    /* Status dots — dark mode */
+    --color-status-done: 142 61% 55%;
+    --color-status-processing: 45 80% 55%;
+    --color-status-failed: 0 74% 70%;
+
+    /* Stat card accents — dark mode */
+    --color-stat-total: 214 79% 62%;
+    --color-stat-week: 142 45% 52%;
+    --color-stat-processing: 45 80% 55%;
+    --color-stat-tag: 270 50% 65%;
   }
 
   * {
