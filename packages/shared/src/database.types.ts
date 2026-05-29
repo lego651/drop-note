@@ -113,6 +113,7 @@ export type Database = {
       items: {
         Row: {
           ai_summary: string | null
+          archived_at: string | null
           created_at: string
           deleted_at: string | null
           error_message: string | null
@@ -134,6 +135,7 @@ export type Database = {
         }
         Insert: {
           ai_summary?: string | null
+          archived_at?: string | null
           created_at?: string
           deleted_at?: string | null
           error_message?: string | null
@@ -155,6 +157,7 @@ export type Database = {
         }
         Update: {
           ai_summary?: string | null
+          archived_at?: string | null
           created_at?: string
           deleted_at?: string | null
           error_message?: string | null
