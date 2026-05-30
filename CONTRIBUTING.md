@@ -61,7 +61,7 @@ cp .env.example .env
 docker compose up
 ```
 
-Services started: `web` (Next.js on port 3000), `worker` (BullMQ), Redis.
+Services started: `web` (Next.js on port 3000) and `redis` (local rate-limit store). AI processing runs synchronously inside `web`'s `/api/ingest` route — there is no separate worker service (the BullMQ worker was removed in D11, 2026-05-26).
 
 ---
 
@@ -97,14 +97,14 @@ All three must pass — Vercel runs them on every push and a failure blocks the 
 ```
 drop-note/
 ├── apps/
-│   ├── web/       # Next.js 14 App Router dashboard — deployed to Vercel
-│   └── worker/    # BullMQ AI processing worker — deployed to Railway
+│   └── web/       # Next.js 14 App Router dashboard — deployed to Vercel
+│                  # AI processing runs synchronously in /api/ingest (no separate worker)
 ├── packages/
 │   └── shared/    # Shared TypeScript types, helpers, and AI prompts
 ├── supabase/
-│   └── migrations/ # SQL migration files — applied with supabase db push
+│   └── migrations/ # SQL migration files — applied via Supabase MCP / management API
 ├── e2e/           # Playwright end-to-end smoke tests
-└── docs/          # Sprint plans, tickets, design guide, v1 scope
+└── docs/          # Living references; alpha history frozen in docs/archive/alpha/
 ```
 
 ---
@@ -207,7 +207,7 @@ For self-hosted deployments you can swap the AI provider via the `AI_PROVIDER` e
 | `anthropic` | Anthropic Claude | Requires `ANTHROPIC_API_KEY` |
 | `gemini` | Google Gemini | Requires `GEMINI_API_KEY` |
 
-Set the corresponding API key env var alongside `AI_PROVIDER`. The worker reads these inside its job handler — never at module load time.
+Set the corresponding API key env var alongside `AI_PROVIDER`. The `/api/ingest` route reads these inside the request handler via a lazy initializer — never at module load time.
 
 ---
 

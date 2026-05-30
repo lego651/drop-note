@@ -1,7 +1,5 @@
 # drop-note
 
-> **[Next Plan: Market Analysis & Launch Strategy](docs/next-plan.md)** — competitive research, pricing decisions, and minimal launch plan.
-
 **Save anything from anywhere. Find it later.**
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)

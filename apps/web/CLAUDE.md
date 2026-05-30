@@ -7,7 +7,7 @@
 
 ## What this project is
 
-drop-note is an email-to-dashboard content saver. Users email anything to `drop@inbound.dropnote.me`
+drop-note is an email-to-dashboard content saver. Users email anything to `drop@dropnote.me`
 from their registered address. **AI processing happens synchronously inside the `/api/ingest` Vercel
 function** (D11, 2026-05-26) — there is no separate worker process or queue layer.
 

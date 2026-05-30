@@ -5,8 +5,8 @@
 drop-note is an email-to-dashboard content saver. Users email anything to `drop@dropnote.me` from their registered address. An AI pipeline summarizes and tags each item. Users browse, search, and manage everything from a clean web dashboard.
 
 - **License:** AGPL-3.0
-- **Model:** Free tier + paid SaaS (Pro $9.99/mo, Power $49.99/mo) + self-hosted option
-- **Status:** Sprint 1 complete, building toward v1 launch
+- **Model:** Free hosted (`dropnote.me`) + self-hosted option. **Paid tiers are disabled** — the $9.99/$49.99 Pro/Power tiers were killed; a single $4.99/mo hosted tier is reactivated only at 100 active users. Don't reintroduce pricing copy before then.
+- **Status:** **Alpha complete (2026-05-30).** All planned functionality shipped (S0–S8). Now in **beta** — inviting a small group of friends to test for stability. **Not prod-ready yet**; production hardening begins once beta is stable.
 
 ---
 
@@ -21,7 +21,8 @@ drop-note/
 ├── supabase/
 │   └── migrations/   # SQL migration files — applied via supabase db push
 ├── e2e/              # Playwright end-to-end tests
-└── docs/             # Sprint plans, tickets, design guide, v1 scope
+└── docs/             # Living references only (style guide, OAuth setup, architecture).
+                      # Alpha planning/tickets/reviews are frozen in docs/archive/alpha/ — see § Docs.
 ```
 
 ## Tech stack
@@ -71,7 +72,7 @@ Never commit `.env.local`. Never commit `supabase/.temp/`.
 RLS is enabled on all 8 tables.
 A Postgres trigger `on_auth_user_created` auto-creates a `public.users` row with a `drop_token` UUID on every new sign-up.
 
-Migrations live in `supabase/migrations/`. Apply with `npx supabase db push --linked`.
+Migrations live in `supabase/migrations/`. **Apply via the Supabase MCP `apply_migration` tool** (project_id `fywrywzmksxqggvwfstn`) — it authenticates with a Personal Access Token, so **no DB password is ever needed**. The `npx supabase db push --linked` CLI path is NOT usable here (the CLI cannot obtain the DB password). Never ask Jason for a DB password.
 
 ---
 
@@ -85,9 +86,9 @@ pnpm turbo typecheck                  # typecheck all packages
 pnpm test                             # run Vitest unit tests
 pnpm test:coverage                    # run with coverage report
 pnpm e2e                              # run Playwright smoke tests
-pnpm gen:types                        # regenerate Supabase TypeScript types
-npx supabase db push --linked         # apply migrations to remote DB
-npx supabase migration list --linked  # check migration status
+pnpm gen:types                        # regenerate Supabase TypeScript types (run after every migration)
+# Apply migrations: use Supabase MCP apply_migration (project_id fywrywzmksxqggvwfstn) — NOT the CLI, no DB password
+# Check status:     use Supabase MCP list_migrations / execute_sql against information_schema
 ```
 
 > **Before pushing to Vercel:** run `pnpm turbo lint && pnpm turbo typecheck && pnpm --filter @drop-note/web build` locally. Vercel runs all three and a build failure blocks the deployment.
@@ -121,18 +122,38 @@ npx supabase migration list --linked  # check migration status
 
 ---
 
-## Sprint overview
+## Sprint overview — alpha complete
+
+All planned sprints (S0–S8) shipped. **Alpha is closed as of 2026-05-30.**
 
 | Sprint | Theme | Status |
 |---|---|---|
-| S1 | Foundation & Schema | ✅ Complete |
-| S2 | Email Ingestion & AI Pipeline | 🔨 Next |
-| S3 | Payments & Tier Enforcement | Pending |
-| S4 | Dashboard & Item Management UI | Pending |
-| S5 | Real-time, Admin & Polish | Pending |
-| S6 | Testing, OSS & Launch | Pending |
+| S0–S1 | Foundation, schema, auth | ✅ Complete |
+| S2 | Email ingestion & AI pipeline (synchronous, D11) | ✅ Complete |
+| S3 | Payments scaffolding & tier enforcement | ✅ Complete (paid tiers disabled) |
+| S4 | Dashboard & item management UI | ✅ Complete |
+| S5 | Real-time, admin & polish | ✅ Complete |
+| S6 | Testing, OSS & launch prep | ✅ Complete |
+| S7–S8 | Relaunch, positioning pivot, full UI redesign | ✅ Complete |
 
-Full ticket breakdowns in `docs/s1-tickets.md` and `docs/sprint-plan.md`.
+**Now: beta.** No new feature sprints planned — the goal is stability via friend testing, then production hardening. Resist scope creep.
+
+Historical ticket breakdowns and sprint reviews are frozen in `docs/archive/alpha/` (see § Docs).
+
+---
+
+## Docs
+
+`docs/` holds **living references only**:
+
+| File | Purpose |
+|---|---|
+| `docs/STYLE_GUIDE.md` | UI styling standard — read before any UI work |
+| `docs/google-oauth-setup.md` | One-time Google OAuth + Supabase setup runbook |
+| `docs/architecture/email-pipeline.md` | Current email → ingest → AI → DB data flow |
+| `docs/.mic-state.md` | drop-mic agent's persistent working memory |
+
+`docs/archive/alpha/` holds **frozen alpha history** — sprint plans, tickets, reviews, redesign specs, Jose briefs, launch checklists, and shipped-task reports. **Do not edit or reference these for current work** — they are a point-in-time snapshot. Read them only when investigating *why* a past decision was made. Nothing in the archive is kept up to date by design.
 
 ---
 

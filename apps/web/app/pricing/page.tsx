@@ -3,7 +3,7 @@ import Link from 'next/link'
 // D1 (2026-04-02): Killed $9.99/mo Pro and $49.99/mo Power tiers.
 // drop-note launches 100% free. $4.99/mo hosted tier only if 100+ active users.
 // Stripe code stays in the repo (null-checked, ready for 1-PR reactivation) — just not shown here.
-// See docs/next-plan.md § 3 for the decision record.
+// See docs/archive/alpha/next-plan.md § 3 for the decision record.
 
 export default function PricingPage() {
   return (

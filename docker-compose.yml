@@ -9,14 +9,8 @@ services:
       redis:
         condition: service_healthy
 
-  worker:
-    build:
-      context: .
-      dockerfile: apps/worker/Dockerfile
-    env_file: .env
-    depends_on:
-      redis:
-        condition: service_healthy
+  # NOTE: the separate BullMQ worker was removed in D11 (2026-05-26).
+  # AI processing now runs synchronously inside the web app's /api/ingest route.
 
   redis:
     image: redis:7-alpine
