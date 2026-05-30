@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowUpDown, Check, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,7 @@ export function SortDropdown({ activeSort }: SortDropdownProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   function handleSort(sort: SortOption) {
     const params = new URLSearchParams(searchParams.toString())
@@ -33,7 +34,7 @@ export function SortDropdown({ activeSort }: SortDropdownProps) {
       params.set('sort', sort)
     }
     const qs = params.toString()
-    router.push(`/items${qs ? `?${qs}` : ''}`)
+    startTransition(() => router.push(`/items${qs ? `?${qs}` : ''}`))
     setOpen(false)
   }
 
@@ -42,7 +43,11 @@ export function SortDropdown({ activeSort }: SortDropdownProps) {
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="h-9 w-[150px] justify-between gap-2 rounded-full border-border px-3.5 text-sm font-normal"
+          disabled={isPending}
+          className={cn(
+            'h-9 w-[150px] justify-between gap-2 rounded-full border-border px-3.5 text-sm font-normal',
+            isPending && 'opacity-50',
+          )}
         >
           <span className="flex items-center gap-2">
             <ArrowUpDown size={14} className="text-muted-foreground" />

@@ -1,5 +1,6 @@
 'use client'
 
+import { useTransition } from 'react'
 import type { CSSProperties } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -13,6 +14,7 @@ interface TagFilterBarProps {
 export function TagFilterBar({ tags, totalCount, activeTagId }: TagFilterBarProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [isPending, startTransition] = useTransition()
 
   function handleTagClick(tagId: string | null) {
     const params = new URLSearchParams(searchParams.toString())
@@ -23,14 +25,17 @@ export function TagFilterBar({ tags, totalCount, activeTagId }: TagFilterBarProp
       params.set('tag', tagId)
     }
     const qs = params.toString()
-    router.push(`/items${qs ? `?${qs}` : ''}`)
+    startTransition(() => router.push(`/items${qs ? `?${qs}` : ''}`))
   }
 
   const isAllActive = !activeTagId
 
   return (
     <div
-      className="flex gap-2 overflow-x-auto pb-1"
+      className={cn(
+        'flex gap-2 overflow-x-auto pb-1',
+        isPending && 'pointer-events-none opacity-60',
+      )}
       style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as CSSProperties}
     >
       {/* All pill */}
