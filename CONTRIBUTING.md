@@ -1,6 +1,6 @@
 # Contributing to drop-note
 
-drop-note is open source under AGPL-3.0. Contributions are welcome — bug fixes, features, tests, and documentation all help.
+Internal contribution guide for the drop-note team — dev setup, conventions, and the PR process.
 
 ---
 
@@ -10,7 +10,6 @@ drop-note is open source under AGPL-3.0. Contributions are welcome — bug fixes
 |---|---|---|
 | Node.js | 20.x | [nodejs.org](https://nodejs.org) or `nvm install 20` |
 | pnpm | 9.x | `npm install -g pnpm@9` |
-| Docker Desktop | latest | [docker.com](https://www.docker.com/products/docker-desktop/) |
 | Supabase CLI | latest | `npm install -g supabase` |
 
 ---
@@ -40,28 +39,7 @@ pnpm --filter @drop-note/web dev
 
 The app will be available at `http://localhost:3000` (falls back to 3001 if the port is taken).
 
-> You will need a Supabase project (free tier works). Create one at supabase.com, run `npx supabase db push --linked` to apply migrations, then copy the URL and keys into `.env.local`.
-
----
-
-## Local Development — Docker path
-
-Use this if you prefer a fully self-contained environment.
-
-```bash
-# 1. Clone the repo
-git clone https://github.com/TODO-ORG/drop-note.git
-cd drop-note
-
-# 2. Copy and fill in the env file
-cp .env.example .env
-# Edit .env — set all required vars (Supabase, Redis, etc.)
-
-# 3. Start everything
-docker compose up
-```
-
-Services started: `web` (Next.js on port 3000) and `redis` (local rate-limit store). AI processing runs synchronously inside `web`'s `/api/ingest` route — there is no separate worker service (the BullMQ worker was removed in D11, 2026-05-26).
+> You will need a Supabase project (free tier works). Create one at supabase.com, apply migrations via the Supabase MCP / management API, then copy the URL and keys into `.env.local`.
 
 ---
 
@@ -199,7 +177,7 @@ Examples:
 
 ## AI Provider Configuration
 
-For self-hosted deployments you can swap the AI provider via the `AI_PROVIDER` environment variable.
+The AI provider is configurable via the `AI_PROVIDER` environment variable.
 
 | Value | Provider | Notes |
 |---|---|---|

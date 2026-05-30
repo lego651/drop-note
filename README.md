@@ -40,7 +40,7 @@ Everything below is **done and live at [dropnote.me](https://dropnote.me)**.
 ### 3. Email ingestion & AI pipeline ✅
 - SendGrid Inbound Parse → `/api/ingest`
 - **Synchronous** AI processing inside the route (D11 — no worker/queue)
-- OpenAI GPT-4o-mini summarize + auto-tag; provider-configurable for self-host
+- OpenAI GPT-4o-mini summarize + auto-tag; provider configurable via `AI_PROVIDER` env
 - Retry + error handling; structured per-request logging (`total_handling_ms` / `ai_processing_ms`)
 
 ### 4. Dashboard & item management ✅
