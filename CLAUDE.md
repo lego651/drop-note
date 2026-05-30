@@ -98,6 +98,7 @@ npx supabase migration list --linked  # check migration status
 
 ## Code conventions
 
+- **UI style guide (read before any UI work):** [`docs/STYLE_GUIDE.md`](docs/STYLE_GUIDE.md) — token-driven styling, card/pill/loading/optimistic conventions, full color-token list. All new UI must follow it. Theme changes happen in `globals.css` only.
 - **No passwords** — Google OAuth only (no magic links)
 - **No raw Tailwind color classes** — always use semantic tokens (`bg-background`, `text-muted-foreground`, etc.). All color decisions go through CSS variables in `globals.css`.
 - **No `dark:` variants in components** — only in `globals.css`
