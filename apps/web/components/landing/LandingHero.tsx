@@ -8,9 +8,15 @@ const serifItalic: React.CSSProperties = {
   fontStyle: 'italic',
 }
 
+const heroGradient: React.CSSProperties = {
+  background:
+    'radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--hero-gradient-rose) / 0.07) 0%, transparent 60%), ' +
+    'radial-gradient(ellipse 60% 40% at 80% 20%, hsl(var(--hero-gradient-violet) / 0.05) 0%, transparent 55%)',
+}
+
 export function LandingHero() {
   return (
-    <section className="mx-auto max-w-5xl px-4 py-20 text-center">
+    <section className="mx-auto max-w-5xl px-4 py-20 text-center" style={heroGradient}>
       {/* Powered-by pill */}
       <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs text-muted-foreground">
         <span className="h-1.5 w-1.5 rounded-full bg-green-500 inline-block" />

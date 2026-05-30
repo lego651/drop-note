@@ -58,6 +58,10 @@
     --color-stat-week: 142 55% 42%;
     --color-stat-processing: 45 90% 45%;
     --color-stat-tag: 270 60% 55%;
+
+    /* Hero section — very subtle multi-hue gradient wash (light bg only) */
+    --hero-gradient-rose: 346 77% 60%;
+    --hero-gradient-violet: 270 60% 55%;
   }
 
   .dark {
@@ -114,6 +118,10 @@
     --color-stat-week: 142 45% 52%;
     --color-stat-processing: 45 80% 55%;
     --color-stat-tag: 270 50% 65%;
+
+    /* Hero section — dark mode equivalents (same hue, dark bg adapts naturally) */
+    --hero-gradient-rose: 346 70% 62%;
+    --hero-gradient-violet: 270 50% 65%;
   }
 
   * {

@@ -8,6 +8,8 @@ interface Testimonial {
   name: string
   role: string
   quote: string
+  avatarColor: string
+  avatarBg: string
 }
 
 const TESTIMONIALS: Testimonial[] = [
@@ -17,6 +19,8 @@ const TESTIMONIALS: Testimonial[] = [
     role: 'Staff Engineer, Stripe',
     quote:
       "I've tried Instapaper, Pocket, Readwise — nothing stuck. With drop-note I just forward the email and forget it. The AI tags are surprisingly accurate.",
+    avatarColor: 'hsl(var(--color-pin))',
+    avatarBg: 'hsl(var(--color-pin) / 0.12)',
   },
   {
     initials: 'PN',
@@ -24,6 +28,8 @@ const TESTIMONIALS: Testimonial[] = [
     role: 'Independent Developer, Bangalore',
     quote:
       'The self-host option sold me. I have everything running on my own VPS, full control over my data, and it took less than 20 minutes to set up.',
+    avatarColor: 'hsl(var(--color-tag-teal))',
+    avatarBg: 'hsl(var(--color-tag-teal) / 0.12)',
   },
   {
     initials: 'MC',
@@ -31,6 +37,8 @@ const TESTIMONIALS: Testimonial[] = [
     role: 'UX Researcher, Figma',
     quote:
       'My research workflow is completely different now. I email papers and YouTube talks all day, and by the time I sit down to review them they\'re already summarized.',
+    avatarColor: 'hsl(var(--color-tag-indigo))',
+    avatarBg: 'hsl(var(--color-tag-indigo) / 0.12)',
   },
 ]
 
@@ -58,7 +66,10 @@ export function Testimonials() {
                 &ldquo;{t.quote}&rdquo;
               </p>
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-background text-sm font-bold flex-shrink-0">
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold flex-shrink-0"
+                  style={{ backgroundColor: t.avatarBg, color: t.avatarColor }}
+                >
                   {t.initials}
                 </div>
                 <div>

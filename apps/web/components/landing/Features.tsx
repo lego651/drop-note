@@ -10,6 +10,8 @@ interface Feature {
   icon: LucideIcon
   title: string
   body: string
+  iconColor: string
+  iconBg: string
 }
 
 const FEATURES: Feature[] = [
@@ -17,31 +19,43 @@ const FEATURES: Feature[] = [
     icon: PenLine,
     title: 'AI summaries',
     body: 'Every item gets a crisp 2-sentence summary written by GPT-4o-mini so you know what you saved without re-reading.',
+    iconColor: 'hsl(var(--color-pin))',
+    iconBg: 'hsl(var(--color-pin) / 0.1)',
   },
   {
     icon: Tag,
     title: 'Auto-tagging',
     body: 'Topics, domains, and content types are detected automatically. Tags appear instantly — no manual categorization.',
+    iconColor: 'hsl(var(--color-tag-orange))',
+    iconBg: 'hsl(var(--color-tag-orange) / 0.1)',
   },
   {
     icon: Search,
     title: 'Full-text search',
     body: 'Search across titles, summaries, and original content. Find that article from 6 months ago in under a second.',
+    iconColor: 'hsl(var(--color-tag-purple))',
+    iconBg: 'hsl(var(--color-tag-purple) / 0.1)',
   },
   {
     icon: Calendar,
     title: 'Browse by date',
     body: 'Collapsible year/month accordion in the sidebar. Your reading history organized exactly how you\'d expect.',
+    iconColor: 'hsl(var(--color-tag-teal))',
+    iconBg: 'hsl(var(--color-tag-teal) / 0.1)',
   },
   {
     icon: Upload,
     title: 'Any content type',
     body: 'Articles, YouTube links, PDFs, raw URLs, or plain-text notes. If you can email it, drop-note can save it.',
+    iconColor: 'hsl(var(--color-tag-blue))',
+    iconBg: 'hsl(var(--color-tag-blue) / 0.1)',
   },
   {
     icon: CreditCard,
     title: 'Self-host option',
     body: 'Full source on GitHub. Run it on your own infrastructure, keep your data on your servers, no vendor lock-in.',
+    iconColor: 'hsl(var(--color-tag-indigo))',
+    iconBg: 'hsl(var(--color-tag-indigo) / 0.1)',
   },
 ]
 
@@ -70,8 +84,11 @@ export function Features() {
           const Icon = feature.icon
           return (
             <div key={feature.title} className="rounded-xl border border-border bg-card p-6">
-              <div className="mb-4 inline-flex rounded-lg bg-muted p-2">
-                <Icon className="h-5 w-5 text-muted-foreground" />
+              <div
+                className="mb-4 inline-flex rounded-lg p-2"
+                style={{ backgroundColor: feature.iconBg }}
+              >
+                <Icon className="h-5 w-5" style={{ color: feature.iconColor }} />
               </div>
               <h3 className="font-semibold text-foreground mb-2">{feature.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{feature.body}</p>

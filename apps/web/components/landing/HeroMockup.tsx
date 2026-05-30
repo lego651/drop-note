@@ -1,4 +1,38 @@
 // Static browser window mockup — no interactivity needed
+
+// Tag color mapping using the global CSS token palette
+const TAG_COLORS: Record<string, { color: string; bg: string }> = {
+  research: {
+    color: 'hsl(var(--color-tag-blue))',
+    bg: 'hsl(var(--color-tag-blue) / 0.1)',
+  },
+  academia: {
+    color: 'hsl(var(--color-tag-indigo))',
+    bg: 'hsl(var(--color-tag-indigo) / 0.1)',
+  },
+  design: {
+    color: 'hsl(var(--color-tag-purple))',
+    bg: 'hsl(var(--color-tag-purple) / 0.1)',
+  },
+  saas: {
+    color: 'hsl(var(--color-tag-teal))',
+    bg: 'hsl(var(--color-tag-teal) / 0.1)',
+  },
+  dev: {
+    color: 'hsl(var(--color-tag-orange))',
+    bg: 'hsl(var(--color-tag-orange) / 0.1)',
+  },
+  reading: {
+    color: 'hsl(var(--color-tag-green))',
+    bg: 'hsl(var(--color-tag-green) / 0.1)',
+  },
+}
+
+const DEFAULT_TAG_COLOR = {
+  color: 'hsl(var(--color-source-default))',
+  bg: 'hsl(var(--color-source-default) / 0.1)',
+}
+
 const SAMPLE_ITEMS = [
   {
     title: 'The Illustrated Guide to a Ph.D.',
@@ -78,14 +112,18 @@ export function HeroMockup() {
                 {item.summary}
               </div>
               <div className="flex gap-1">
-                {item.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-block rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
-                  >
-                    {tag}
-                  </span>
-                ))}
+                {item.tags.map((tag) => {
+                  const tc = TAG_COLORS[tag] ?? DEFAULT_TAG_COLOR
+                  return (
+                    <span
+                      key={tag}
+                      className="inline-block rounded-full px-2 py-0.5 text-[10px] font-medium"
+                      style={{ backgroundColor: tc.bg, color: tc.color }}
+                    >
+                      {tag}
+                    </span>
+                  )
+                })}
               </div>
             </div>
           ))}
