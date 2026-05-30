@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ItemsPageClient } from '@/components/items/ItemsPageClient'
 import { colorForTag } from '@/lib/design-tokens'
+import { applySortOrder } from './sort-helpers'
 import type { Tier, SourceType } from '@drop-note/shared'
 import type { ItemSummary } from '@/lib/items'
 import type { SortOption } from '@/components/items/SortDropdown'
@@ -163,8 +164,8 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     .is('deleted_at', null)
     .is('archived_at', null)
     .eq('type', 'email_body')
-    .order('pinned', { ascending: false })
-    .order('created_at', { ascending: activeSort === 'oldest' })
+
+  query = applySortOrder(query, activeSort)
 
   if (tagFilterIds !== null) {
     query = query.in('id', tagFilterIds)
@@ -208,10 +209,13 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       activeSource={activeSource}
       userTier={userTier}
       userId={user.id}
+      userEmail={user.email ?? ''}
+      userName={displayName}
       statsData={{
         thisWeekCount: thisWeekCount ?? 0,
         processingCount: processingCount ?? 0,
         topTag,
+        weekDelta,
       }}
       avatarUrl={avatarUrl}
       userInitials={userInitials}
