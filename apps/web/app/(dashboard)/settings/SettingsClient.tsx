@@ -521,7 +521,7 @@ export function SettingsClient({
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Plan</p>
-              <p className="text-sm font-medium text-foreground">Free · Open source</p>
+              <p className="text-sm font-medium text-foreground">Free</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Storage used</p>

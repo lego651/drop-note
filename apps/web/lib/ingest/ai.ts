@@ -2,9 +2,8 @@
  * AI processing helpers for the synchronous ingest pipeline (D11, 2026-05-26).
  *
  * Lifted from apps/worker/src/lib/openai.ts. Uses `createAIProvider` from
- * @drop-note/shared so the provider (OpenAI / Anthropic / Gemini) is still
- * controlled by the AI_PROVIDER + AI_MODEL env vars — no change to self-hosted
- * behaviour.
+ * @drop-note/shared so the provider (OpenAI / Anthropic / Gemini) is
+ * controlled by the AI_PROVIDER + AI_MODEL env vars.
  *
  * Keeping this in a separate module (not inlined in route.ts) so a future
  * QStash async pivot can wrap it without rewriting the logic.

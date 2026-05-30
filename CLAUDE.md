@@ -4,8 +4,8 @@
 
 drop-note is an email-to-dashboard content saver. Users email anything to `drop@dropnote.me` from their registered address. An AI pipeline summarizes and tags each item. Users browse, search, and manage everything from a clean web dashboard.
 
-- **License:** AGPL-3.0
-- **Model:** Free hosted (`dropnote.me`) + self-hosted option. **Paid tiers are disabled** — the $9.99/$49.99 Pro/Power tiers were killed; a single $4.99/mo hosted tier is reactivated only at 100 active users. Don't reintroduce pricing copy before then.
+- **License:** Proprietary / private. (Was AGPL-3.0 during alpha — open-source + self-host positioning was killed 2026-05-30; repo is going private.)
+- **Model:** Free hosted (`dropnote.me`) only — no self-host, no open-source. **Paid tiers are disabled** — the $9.99/$49.99 Pro/Power tiers were killed; a single $4.99/mo hosted tier is reactivated only at 100 active users. Don't reintroduce pricing or open-source/self-host copy.
 - **Status:** **Alpha complete (2026-05-30).** All planned functionality shipped (S0–S8). Now in **beta** — inviting a small group of friends to test for stability. **Not prod-ready yet**; production hardening begins once beta is stable.
 
 ---
@@ -35,7 +35,7 @@ drop-note/
 | File Storage | Supabase Storage |
 | Email Inbound | SendGrid Inbound Parse → `/api/ingest` |
 | Queue | None — AI runs synchronously in `/api/ingest` (D11); Upstash Redis for rate limiting |
-| AI | OpenAI GPT-4o-mini (SaaS fixed); `.env` configurable self-hosted |
+| AI | OpenAI GPT-4o-mini; provider/model configurable via `AI_PROVIDER` / `AI_MODEL` env |
 | Email Sending | Resend |
 | Payments | Stripe (Sprint 3) |
 | Error Monitoring | Sentry (Sprint 5) |
