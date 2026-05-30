@@ -260,7 +260,7 @@ function ItemsPageClientInner({
         userEmail={userEmail}
         userName={userName}
       />
-      <div className="px-8 py-6 space-y-5">
+      <div className="mx-auto max-w-6xl px-8 py-6 space-y-5">
       <WelcomeModal />
       {/* Page title row */}
       <div className="flex items-start justify-between gap-4">
