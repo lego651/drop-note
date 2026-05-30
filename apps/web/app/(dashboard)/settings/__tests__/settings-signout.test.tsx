@@ -21,6 +21,10 @@ vi.mock('@/lib/supabase/client', () => ({
   }),
 }))
 
+vi.mock('next-themes', () => ({
+  useTheme: () => ({ theme: 'light', setTheme: vi.fn() }),
+}))
+
 // Radix components need matchMedia in jsdom
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -46,9 +50,11 @@ function renderSettings() {
   render(
     <SettingsClient
       email="test@example.com"
-      tier="free"
+      name="Test User"
       memberSince="Jan 2026"
       digestEnabled={true}
+      itemsCount={42}
+      avatarColor="var(--color-tag-blue)"
     />,
   )
 }
@@ -56,14 +62,19 @@ function renderSettings() {
 // ---------- tests ----------
 
 describe('SettingsClient sign-out', () => {
-  it('renders a Sign out button', () => {
+  it('renders a Sign out button on the Account tab', () => {
     renderSettings()
+    // Sign out is on Account tab — switch to it first
+    fireEvent.click(screen.getByRole('button', { name: /account/i }))
     expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument()
   })
 
   it('redirects to / (landing page) after successful sign-out', async () => {
     mockSignOut.mockResolvedValue({ error: null })
     renderSettings()
+
+    // Navigate to Account tab first
+    fireEvent.click(screen.getByRole('button', { name: /account/i }))
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /sign out/i }))
@@ -79,6 +90,9 @@ describe('SettingsClient sign-out', () => {
   it('does NOT redirect when sign-out fails', async () => {
     mockSignOut.mockResolvedValue({ error: new Error('network error') })
     renderSettings()
+
+    // Navigate to Account tab first
+    fireEvent.click(screen.getByRole('button', { name: /account/i }))
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /sign out/i }))
