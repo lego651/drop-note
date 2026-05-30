@@ -11,7 +11,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 describe('FiltersButton', () => {
-  it('renders the Filters trigger button', () => {
+  it('renders the Filters trigger button when no filter active', () => {
     render(<FiltersButton activeSource="all" />)
     expect(screen.getByRole('button', { name: /Filters/i })).toBeInTheDocument()
   })
@@ -33,9 +33,36 @@ describe('FiltersButton', () => {
   })
 
   it('selecting All sources removes the source param (clean URL)', () => {
+    // When activeSource="youtube", button label is now "Videos" (Fix 4a)
     render(<FiltersButton activeSource="youtube" />)
-    fireEvent.click(screen.getByRole('button', { name: /Filters/i }))
+    // Click the trigger button — now shows "Videos"
+    fireEvent.click(screen.getByRole('button', { name: /Videos/i }))
     fireEvent.click(screen.getByText('All sources'))
     expect(mockPush).toHaveBeenCalledWith('/items')
+  })
+
+  // Fix 4a: active state tests
+  it('shows source label (not "Filters") when a source filter is active', () => {
+    render(<FiltersButton activeSource="youtube" />)
+    // The trigger button text should be "Videos", not "Filters"
+    expect(screen.getByRole('button', { name: /Videos/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Filters$/i })).not.toBeInTheDocument()
+  })
+
+  it('shows "Email" label when email filter is active', () => {
+    render(<FiltersButton activeSource="email" />)
+    expect(screen.getByRole('button', { name: /Email/i })).toBeInTheDocument()
+  })
+
+  it('trigger button has bg-foreground class when a filter is active', () => {
+    render(<FiltersButton activeSource="youtube" />)
+    const btn = screen.getByRole('button', { name: /Videos/i })
+    expect(btn.className).toContain('bg-foreground')
+  })
+
+  it('trigger button does NOT have bg-foreground class when no filter active', () => {
+    render(<FiltersButton activeSource="all" />)
+    const btn = screen.getByRole('button', { name: /Filters/i })
+    expect(btn.className).not.toContain('bg-foreground')
   })
 })

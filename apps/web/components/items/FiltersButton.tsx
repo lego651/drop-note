@@ -1,15 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { SlidersHorizontal, Check } from 'lucide-react'
+import { SlidersHorizontal, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
 export type SourceFilter = 'all' | 'email' | 'url' | 'youtube'
 
-const SOURCE_LABELS: Record<SourceFilter, string> = {
+export const SOURCE_LABELS: Record<SourceFilter, string> = {
   all: 'All sources',
   email: 'Email',
   url: 'Articles & links',
@@ -24,6 +24,7 @@ export function FiltersButton({ activeSource }: FiltersButtonProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   function handleSelect(source: SourceFilter) {
     const params = new URLSearchParams(searchParams.toString())
@@ -34,7 +35,7 @@ export function FiltersButton({ activeSource }: FiltersButtonProps) {
       params.set('source', source)
     }
     const qs = params.toString()
-    router.push(`/items${qs ? `?${qs}` : ''}`)
+    startTransition(() => router.push(`/items${qs ? `?${qs}` : ''}`))
     setOpen(false)
   }
 
@@ -45,13 +46,28 @@ export function FiltersButton({ activeSource }: FiltersButtonProps) {
       <PopoverTrigger asChild>
         <Button
           variant="outline"
+          disabled={isPending}
           className={cn(
             'h-11 shrink-0 gap-2 rounded-full border-border px-5 text-sm font-normal',
-            isActive && 'border-foreground',
+            isActive && 'bg-foreground text-background border-foreground',
+            isPending && 'opacity-50',
           )}
         >
-          <SlidersHorizontal size={15} className="text-muted-foreground" />
-          Filters
+          <SlidersHorizontal
+            size={15}
+            className={cn(isActive ? 'text-background' : 'text-muted-foreground')}
+          />
+          {isActive ? SOURCE_LABELS[activeSource] : 'Filters'}
+          {isActive && (
+            <X
+              size={14}
+              className="text-background/70 hover:text-background"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleSelect('all')
+              }}
+            />
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-48 p-1" align="end">

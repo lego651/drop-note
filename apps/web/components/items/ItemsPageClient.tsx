@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRealtimeItems } from '@/hooks/useRealtimeItems'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Search, Copy, Check, Mail } from 'lucide-react'
+import { Search, Copy, Check, Mail, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ItemsListLayout } from '@/components/items/ItemsListLayout'
@@ -18,7 +18,7 @@ import { StatsBar } from '@/components/items/StatsBar'
 import { ItemsPageHeader } from '@/components/items/ItemsPageHeader'
 import { TagFilterBar } from '@/components/items/TagFilterBar'
 import { SortDropdown } from '@/components/items/SortDropdown'
-import { FiltersButton } from '@/components/items/FiltersButton'
+import { FiltersButton, SOURCE_LABELS } from '@/components/items/FiltersButton'
 import type { ViewMode } from '@/components/items/ViewSwitcher'
 import type { SortOption } from '@/components/items/SortDropdown'
 import type { SourceFilter } from '@/components/items/FiltersButton'
@@ -196,14 +196,26 @@ function ItemsPageClientInner({
   }, [])
 
   const handlePinChange = useCallback(async (id: string, pinned: boolean) => {
-    await fetch(`/api/items/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pinned }),
-    })
+    // 1. Optimistic update — immediate visual feedback
     setOptimisticItems(prev => prev.map(item =>
       item.id === id ? { ...item, pinned } : item,
     ))
+
+    // 2. Background PATCH
+    try {
+      const res = await fetch(`/api/items/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pinned }),
+      })
+      if (!res.ok) throw new Error(`PATCH failed: ${res.status}`)
+    } catch (err) {
+      // 3. Roll back on failure
+      setOptimisticItems(prev => prev.map(item =>
+        item.id === id ? { ...item, pinned: !pinned } : item,
+      ))
+      console.error('[pin] Failed to update pin state:', err instanceof Error ? err.message : err)
+    }
   }, [])
 
   const handleDelete = useCallback(async (id: string) => {
@@ -302,6 +314,29 @@ function ItemsPageClientInner({
       {/* Tag filter bar */}
       {tags.length > 0 && (
         <TagFilterBar tags={tags} totalCount={totalCount} activeTagId={activeTagId} />
+      )}
+
+      {/* Active source filter chip — visible indicator of what's filtered */}
+      {activeSource !== 'all' && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Filtered:</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground/10 px-3 py-1 text-xs font-medium text-foreground">
+            {SOURCE_LABELS[activeSource]}
+            <button
+              type="button"
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString())
+                params.delete('source')
+                params.delete('page')
+                router.push(`/items${params.toString() ? `?${params.toString()}` : ''}`)
+              }}
+              className="ml-0.5 rounded-full hover:bg-foreground/10 p-0.5"
+              aria-label="Clear source filter"
+            >
+              <X size={11} />
+            </button>
+          </span>
+        </div>
       )}
 
       {/* Bulk action toolbar */}
