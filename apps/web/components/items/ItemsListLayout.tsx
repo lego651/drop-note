@@ -1,4 +1,4 @@
-import { ItemCard } from '@/components/ItemCard'
+import { ListCard } from '@/components/items/ListCard'
 import type { ItemSummary } from '@/lib/items'
 
 interface ItemsListLayoutProps {
@@ -19,13 +19,12 @@ export function ItemsListLayout({
   onDelete,
 }: ItemsListLayoutProps) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       {items.map((item) => (
-        <ItemCard
+        <ListCard
           key={item.id}
           item={item}
           isBulkMode={isBulkMode}
-          isListView
           isSelected={selectedIds?.has(item.id) ?? false}
           onSelectChange={onSelectChange}
           onPinChange={onPinChange}

@@ -1,45 +1,42 @@
-import Image from 'next/image'
 import { Bell } from 'lucide-react'
+import { UserMenu } from '@/components/items/UserMenu'
 
 interface ItemsPageHeaderProps {
   avatarUrl: string | null
   userInitials: string
   avatarColor: string // HSL value string from colorForTag(email), e.g. "214 89% 52%"
+  userEmail?: string
+  userName?: string
 }
 
 export function ItemsPageHeader({
   avatarUrl,
   userInitials,
   avatarColor,
+  userEmail,
+  userName,
 }: ItemsPageHeaderProps) {
   return (
-    <div className="flex items-center justify-between px-6 py-3 border-b border-border bg-background">
+    // h-16 matches the sidebar's logo header height exactly so the two top bars align
+    <div className="flex h-16 items-center justify-between border-b border-border bg-background px-8">
       <span className="text-sm font-semibold text-foreground">drop-note</span>
-      <div className="flex items-center gap-3">
-        {/* Bell — decorative only, no backend wired at launch */}
-        <Bell
-          size={18}
-          className="text-muted-foreground"
-          aria-label="Notifications"
-        />
-        {/* Avatar */}
-        {avatarUrl ? (
-          <Image
-            src={avatarUrl}
-            alt={userInitials}
-            width={32}
-            height={32}
-            className="rounded-full"
+      <div className="flex items-center gap-4">
+        {/* Bell — decorative, with unread indicator dot */}
+        <span className="relative inline-flex" aria-label="Notifications">
+          <Bell size={18} className="text-muted-foreground" />
+          <span
+            className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-destructive"
+            aria-hidden="true"
           />
-        ) : (
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
-            style={{ backgroundColor: `hsl(${avatarColor})` }}
-            aria-label={`User avatar: ${userInitials}`}
-          >
-            {userInitials}
-          </div>
-        )}
+        </span>
+        {/* Avatar + name — opens account menu (Settings / Sign out) */}
+        <UserMenu
+          avatarUrl={avatarUrl}
+          userInitials={userInitials}
+          avatarColor={avatarColor}
+          userEmail={userEmail}
+          userName={userName}
+        />
       </div>
     </div>
   )

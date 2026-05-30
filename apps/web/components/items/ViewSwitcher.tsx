@@ -5,7 +5,9 @@ import { cn } from '@/lib/utils'
 
 export type ViewMode = 'list' | 'card' | 'timeline'
 
-export const VIEW_STORAGE_KEY = 'drop-note:items-view'
+// v2: bumped so stale 'list' preferences are discarded and everyone gets the
+// new Gallery default (the redesign changed the default view to card/gallery).
+export const VIEW_STORAGE_KEY = 'drop-note:items-view-v2'
 
 interface ViewSwitcherProps {
   activeView: ViewMode

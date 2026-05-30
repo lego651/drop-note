@@ -1,4 +1,4 @@
-import { ItemCard } from '@/components/ItemCard'
+import { GalleryCard } from '@/components/items/GalleryCard'
 import type { ItemSummary } from '@/lib/items'
 
 interface ItemsGridLayoutProps {
@@ -19,9 +19,9 @@ export function ItemsGridLayout({
   onDelete,
 }: ItemsGridLayoutProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item) => (
-        <ItemCard
+        <GalleryCard
           key={item.id}
           item={item}
           isBulkMode={isBulkMode}

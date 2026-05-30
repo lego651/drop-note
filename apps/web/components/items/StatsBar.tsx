@@ -6,6 +6,34 @@ interface StatsBarProps {
   thisWeekCount: number
   processingCount: number
   topTag: { name: string; count: number } | null
+  weekDelta?: number
+}
+
+interface StatCardProps {
+  label: string
+  value: string
+  sub: string
+  accent: string // HSL channel var reference, e.g. 'var(--color-stat-total)'
+  Icon: typeof Inbox
+}
+
+function StatCard({ label, value, sub, accent, Icon }: StatCardProps) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-5">
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-sm font-medium text-muted-foreground">{label}</span>
+        <span
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+          style={{ backgroundColor: `hsl(${accent} / 0.12)` }}
+          aria-hidden="true"
+        >
+          <Icon size={16} style={{ color: `hsl(${accent})` }} />
+        </span>
+      </div>
+      <p className="mt-5 text-[26px] font-bold leading-none text-foreground">{value}</p>
+      <p className="mt-2 text-xs text-muted-foreground">{sub}</p>
+    </div>
+  )
 }
 
 export function StatsBar({
@@ -13,72 +41,43 @@ export function StatsBar({
   thisWeekCount,
   processingCount,
   topTag,
+  weekDelta,
 }: StatsBarProps) {
+  const weekSub =
+    weekDelta === undefined
+      ? 'this week'
+      : `${weekDelta >= 0 ? '+' : ''}${weekDelta} vs last week`
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {/* Total saved */}
-      <div className="relative border border-border rounded-xl bg-card p-4">
-        <div className="flex items-start justify-between gap-2">
-          <span className="text-sm text-muted-foreground font-medium">Total saved</span>
-          <Inbox
-            size={18}
-            style={{ color: `hsl(${STAT_CARD_ACCENT.totalSaved})` }}
-            aria-hidden="true"
-            className="shrink-0 mt-0.5"
-          />
-        </div>
-        <p className="text-3xl font-bold text-foreground mt-2">{totalCount}</p>
-        <p className="text-xs text-muted-foreground mt-1">all time</p>
-      </div>
-
-      {/* This week */}
-      <div className="relative border border-border rounded-xl bg-card p-4">
-        <div className="flex items-start justify-between gap-2">
-          <span className="text-sm text-muted-foreground font-medium">This week</span>
-          <TrendingUp
-            size={18}
-            style={{ color: `hsl(${STAT_CARD_ACCENT.thisWeek})` }}
-            aria-hidden="true"
-            className="shrink-0 mt-0.5"
-          />
-        </div>
-        <p className="text-3xl font-bold text-foreground mt-2">{thisWeekCount}</p>
-        <p className="text-xs text-muted-foreground mt-1">this week</p>
-      </div>
-
-      {/* Processing */}
-      <div className="relative border border-border rounded-xl bg-card p-4">
-        <div className="flex items-start justify-between gap-2">
-          <span className="text-sm text-muted-foreground font-medium">Processing</span>
-          <Clock
-            size={18}
-            style={{ color: `hsl(${STAT_CARD_ACCENT.processing})` }}
-            aria-hidden="true"
-            className="shrink-0 mt-0.5"
-          />
-        </div>
-        <p className="text-3xl font-bold text-foreground mt-2">{processingCount}</p>
-        <p className="text-xs text-muted-foreground mt-1">arriving now</p>
-      </div>
-
-      {/* Top tag */}
-      <div className="relative border border-border rounded-xl bg-card p-4">
-        <div className="flex items-start justify-between gap-2">
-          <span className="text-sm text-muted-foreground font-medium">Top tag</span>
-          <Tag
-            size={18}
-            style={{ color: `hsl(${STAT_CARD_ACCENT.topTag})` }}
-            aria-hidden="true"
-            className="shrink-0 mt-0.5"
-          />
-        </div>
-        <p className="text-3xl font-bold text-foreground mt-2">
-          {topTag ? `#${topTag.name}` : '#—'}
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          {topTag ? `${topTag.count} items` : 'no tags yet'}
-        </p>
-      </div>
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <StatCard
+        label="Total saved"
+        value={String(totalCount)}
+        sub="all time"
+        accent={STAT_CARD_ACCENT.totalSaved}
+        Icon={Inbox}
+      />
+      <StatCard
+        label="This week"
+        value={String(thisWeekCount)}
+        sub={weekSub}
+        accent={STAT_CARD_ACCENT.thisWeek}
+        Icon={TrendingUp}
+      />
+      <StatCard
+        label="Processing"
+        value={String(processingCount)}
+        sub="arriving now"
+        accent={STAT_CARD_ACCENT.processing}
+        Icon={Clock}
+      />
+      <StatCard
+        label="Top tag"
+        value={topTag ? `#${topTag.name}` : '#—'}
+        sub={topTag ? `${topTag.count} items` : 'no tags yet'}
+        accent={STAT_CARD_ACCENT.topTag}
+        Icon={Tag}
+      />
     </div>
   )
 }

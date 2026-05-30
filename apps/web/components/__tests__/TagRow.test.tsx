@@ -13,9 +13,9 @@ const tags = [
 describe('TagRow', () => {
   it('renders all tag names', () => {
     const { getByText } = render(<TagRow tags={tags} />)
-    expect(getByText('ai')).toBeInTheDocument()
-    expect(getByText('research')).toBeInTheDocument()
-    expect(getByText('tools')).toBeInTheDocument()
+    expect(getByText('#ai')).toBeInTheDocument()
+    expect(getByText('#research')).toBeInTheDocument()
+    expect(getByText('#tools')).toBeInTheDocument()
   })
 
   it('returns empty flex spacer when tags array is empty', () => {

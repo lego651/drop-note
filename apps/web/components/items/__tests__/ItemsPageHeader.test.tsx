@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { ItemsPageHeader } from '../ItemsPageHeader'
 
@@ -11,6 +11,32 @@ vi.mock('next/image', () => ({
     <img src={src} alt={alt} {...rest} />
   ),
 }))
+
+// UserMenu (rendered for the avatar) uses the router + supabase client
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}))
+
+vi.mock('@/lib/supabase/client', () => ({
+  createClient: () => ({ auth: { signOut: vi.fn() } }),
+}))
+
+// Radix Popover needs matchMedia in jsdom
+beforeEach(() => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  })
+})
 
 describe('ItemsPageHeader', () => {
   it('renders the drop-note wordmark', () => {

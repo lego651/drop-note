@@ -60,10 +60,12 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
 
   // Stats queries — run in parallel with tier + tag filter
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
 
   const [
     { data: userData },
     { count: thisWeekCount },
+    { count: priorWeekCount },
     { count: processingCount },
     { data: topTagData },
   ] = await Promise.all([
@@ -75,6 +77,15 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       .is('deleted_at', null)
       .is('archived_at', null)
       .gte('created_at', sevenDaysAgo),
+    // Prior week (8–14 days ago) — for the "vs last week" delta
+    supabase
+      .from('items')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .is('archived_at', null)
+      .gte('created_at', fourteenDaysAgo)
+      .lt('created_at', sevenDaysAgo),
     supabase
       .from('items')
       .select('*', { count: 'exact', head: true })
@@ -84,6 +95,8 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       .in('status', ['pending', 'processing']),
     supabase.rpc('get_tags_with_counts'),
   ])
+
+  const weekDelta = (thisWeekCount ?? 0) - (priorWeekCount ?? 0)
 
   const userTier = (userData?.tier ?? 'free') as Tier
   const topTag =
@@ -125,10 +138,13 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
         activeSource={activeSource}
         userTier={userTier}
         userId={user.id}
+        userEmail={user.email ?? ''}
+        userName={displayName}
         statsData={{
           thisWeekCount: thisWeekCount ?? 0,
           processingCount: processingCount ?? 0,
           topTag,
+          weekDelta,
         }}
         avatarUrl={avatarUrl}
         userInitials={userInitials}

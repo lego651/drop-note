@@ -46,9 +46,11 @@ describe('SOURCE_DOT', () => {
     expect(SOURCE_DOT).toHaveProperty('default')
   })
 
-  it('all values are CSS variable strings', () => {
+  it('all values are hsl(var(--…)) color strings', () => {
+    // SOURCE_DOT wraps the CSS var in hsl() so it resolves to a usable color
+    // for inline backgroundColor (the vars hold raw HSL channels).
     for (const val of Object.values(SOURCE_DOT)) {
-      expect(val).toMatch(/^var\(--/)
+      expect(val).toMatch(/^hsl\(var\(--/)
     }
   })
 })

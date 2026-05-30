@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ItemsListLayout } from '@/components/items/ItemsListLayout'
 import { ItemsGridLayout } from '@/components/items/ItemsGridLayout'
-import { TimelineSpine } from '@/components/items/TimelineSpine'
+import { CompactListLayout } from '@/components/items/CompactListLayout'
 import { ViewSwitcher, VIEW_STORAGE_KEY } from '@/components/items/ViewSwitcher'
 import { BulkSelectProvider, useBulkSelect } from '@/components/items/BulkSelectProvider'
 import { BulkActionToolbar } from '@/components/items/BulkActionToolbar'
@@ -29,6 +29,7 @@ interface StatsBarData {
   thisWeekCount: number
   processingCount: number
   topTag: { name: string; count: number } | null
+  weekDelta?: number
 }
 
 interface ItemsPageClientProps {
@@ -43,6 +44,8 @@ interface ItemsPageClientProps {
   activeSource?: SourceFilter
   userTier?: Tier
   userId: string
+  userEmail?: string
+  userName?: string
   statsData?: StatsBarData
   avatarUrl?: string | null
   userInitials?: string
@@ -68,6 +71,8 @@ function ItemsPageClientInner({
   activeSource = 'all',
   userTier = 'free',
   userId,
+  userEmail,
+  userName,
   statsData,
   avatarUrl = null,
   userInitials = 'U',
@@ -240,7 +245,7 @@ function ItemsPageClientInner({
 
   function renderLayout() {
     if (view === 'card') return <ItemsGridLayout items={displayItems} {...bulkProps} />
-    if (view === 'timeline') return <TimelineSpine items={displayItems} {...bulkProps} />
+    if (view === 'timeline') return <CompactListLayout items={displayItems} {...bulkProps} />
     return <ItemsListLayout items={displayItems} {...bulkProps} />
   }
 
@@ -252,8 +257,10 @@ function ItemsPageClientInner({
         avatarUrl={avatarUrl}
         userInitials={userInitials}
         avatarColor={avatarColor}
+        userEmail={userEmail}
+        userName={userName}
       />
-      <div className="p-6 space-y-4">
+      <div className="px-8 py-6 space-y-5">
       <WelcomeModal />
       {/* Page title row */}
       <div className="flex items-start justify-between gap-4">
@@ -270,6 +277,7 @@ function ItemsPageClientInner({
         thisWeekCount={statsData?.thisWeekCount ?? 0}
         processingCount={statsData?.processingCount ?? 0}
         topTag={statsData?.topTag ?? null}
+        weekDelta={statsData?.weekDelta}
       />
 
       {/* Search bar + Filters */}
@@ -284,7 +292,7 @@ function ItemsPageClientInner({
             placeholder="Search items, summaries, tags…"
             value={searchQuery}
             onChange={handleSearchChange}
-            className="h-11 rounded-full pl-11 pr-4 text-sm"
+            className="h-11 rounded-full border-border bg-card pl-11 pr-4 text-sm"
             aria-label="Search items"
           />
         </div>

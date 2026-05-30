@@ -98,7 +98,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           />
           <span className="text-sm font-semibold">drop-note</span>
         </header>
-        <main id="main" className="flex-1 min-w-0 overflow-y-auto">
+        <main id="main" className="flex-1 min-w-0 overflow-y-auto bg-canvas">
           {isOverCap && <OverCapBanner itemCount={itemCount ?? 0} tier={tier} />}
           {children}
         </main>

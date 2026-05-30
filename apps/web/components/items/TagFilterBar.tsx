@@ -38,10 +38,10 @@ export function TagFilterBar({ tags, totalCount, activeTagId }: TagFilterBarProp
         type="button"
         onClick={() => handleTagClick(null)}
         className={cn(
-          'shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors border',
+          'shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
           isAllActive
             ? 'bg-foreground text-background border-foreground'
-            : 'bg-transparent text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground',
+            : 'bg-card text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground',
         )}
       >
         All <span className="opacity-70">{totalCount}</span>
@@ -55,10 +55,10 @@ export function TagFilterBar({ tags, totalCount, activeTagId }: TagFilterBarProp
             type="button"
             onClick={() => handleTagClick(tag.id)}
             className={cn(
-              'shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors border',
+              'shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
               isActive
                 ? 'bg-foreground text-background border-foreground'
-                : 'bg-transparent text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground',
+                : 'bg-card text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground',
             )}
           >
             # {tag.name} <span className="opacity-70">{tag.count}</span>

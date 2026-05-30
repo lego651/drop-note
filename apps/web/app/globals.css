@@ -6,6 +6,8 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+    /* App content canvas — rgb(247,247,247) = #f7f7f7 */
+    --content-bg: 0 0% 96.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
@@ -43,13 +45,16 @@
     --color-source-note: 270 60% 55%;
     --color-source-default: 215 16% 55%;
 
+    /* Pinned accent (rose) */
+    --color-pin: 346 77% 60%;
+
     /* Status dots */
     --color-status-done: 142 71% 45%;
     --color-status-processing: 45 90% 45%;
     --color-status-failed: 0 84% 60%;
 
     /* Stat card accents */
-    --color-stat-total: 214 89% 52%;
+    --color-stat-total: 220 9% 40%;
     --color-stat-week: 142 55% 42%;
     --color-stat-processing: 45 90% 45%;
     --color-stat-tag: 270 60% 55%;
@@ -58,6 +63,8 @@
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
+    /* App content canvas — dark equivalent */
+    --content-bg: 222.2 84% 6.5%;
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
@@ -94,13 +101,16 @@
     --color-source-note: 270 50% 65%;
     --color-source-default: 215 16% 65%;
 
+    /* Pinned accent (rose) — dark mode */
+    --color-pin: 346 70% 62%;
+
     /* Status dots — dark mode */
     --color-status-done: 142 61% 55%;
     --color-status-processing: 45 80% 55%;
     --color-status-failed: 0 74% 70%;
 
     /* Stat card accents — dark mode */
-    --color-stat-total: 214 79% 62%;
+    --color-stat-total: 220 9% 60%;
     --color-stat-week: 142 45% 52%;
     --color-stat-processing: 45 80% 55%;
     --color-stat-tag: 270 50% 65%;

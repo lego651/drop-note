@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>drop-note — Items Redesign Ship Report (2026-05-29)</title>
+  <style>
+    :root {
+      --bg: #fafaf8;
+      --surface: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --border: #e5e7eb;
+      --done: #059669;
+      --progress: #d97706;
+      --blocked: #dc2626;
+      --killed: #6b7280;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    h1 { font-size: 32px; margin-bottom: 4px; letter-spacing: -0.02em; }
+    h2 { font-size: 22px; margin: 28px 0 14px; letter-spacing: -0.01em; }
+    h3 { font-size: 16px; margin: 16px 0 8px; }
+    h4 { font-size: 14px; margin: 12px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .meta { color: var(--muted); font-size: 14px; margin-top: 8px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .badge-draft { background: #fef3c7; color: #92400e; }
+    .badge-done { background: #d1fae5; color: #065f46; }
+    .badge-progress { background: #fed7aa; color: #9a3412; }
+    .badge-blocked { background: #fee2e2; color: #991b1b; }
+    .badge-killed { background: #e5e7eb; color: #4b5563; }
+    .badge-unknown { background: #ddd6fe; color: #5b21b6; }
+    .north-star {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 1px solid #bae6fd;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 16px 0;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 12px 0;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { background: #f9fafb; font-weight: 600; font-size: 13px; }
+    .phase {
+      border-left: 4px solid var(--accent);
+      padding: 4px 0 4px 20px;
+      margin: 24px 0;
+    }
+    .phase-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+    .phase-title { font-size: 18px; font-weight: 600; }
+    .phase-meta { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+    .scope-list {
+      list-style: none;
+      padding: 0;
+      margin: 8px 0;
+    }
+    .scope-list li {
+      padding: 5px 0 5px 26px;
+      position: relative;
+      font-size: 14px;
+    }
+    .scope-list li::before {
+      position: absolute;
+      left: 0;
+      top: 5px;
+      font-weight: 700;
+    }
+    .scope-in li::before { content: "✓"; color: var(--done); }
+    .scope-out li::before { content: "✗"; color: var(--killed); }
+    .question {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      padding: 14px 18px;
+      margin: 12px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .question-q { font-weight: 600; margin-bottom: 6px; font-size: 15px; }
+    .question-rec { color: #4b5563; font-size: 13px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 13px;
+    }
+    .warn-box {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #fee2e2;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      margin-top: 32px;
+      padding: 20px;
+    }
+    @media (max-width: 720px) {
+      body { padding: 16px 8px; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge badge-done">SHIPPED TO MAIN — 已全部上线 production</span>
+      <h1 style="margin-top: 14px;">drop-note · Items Redesign 收尾报告</h1>
+      <div style="color: var(--muted); font-size: 18px; margin-top: 2px;">Session 23 — 2026-05-29（电脑重启后续接 + 全量 ship）</div>
+      <div class="meta">
+        Owner: <code>drop-mic</code>（Jason → <code>@mic</code>）· Code: <code>techlead-jose</code> · 本次合并收尾 + DB + 类型由主 session 执行
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>🎯 一句话总结</h2>
+      <div class="north-star">
+        电脑重启没丢任何东西。Items Redesign 的 <strong>P1–P5</strong> + <strong>Task J（剥 Omnivore）</strong>
+        全部合并到 <code>main</code> 并部署上线；<strong>Task K（OG / logout / onboarding / README / roadmap）</strong>
+        早在 Session 20 就已在 main；<strong>archived_at DB 迁移</strong>已通过 Supabase MCP 上线 production 并 regen 类型。
+        顺带修掉一个潜伏 bug：<code>/archive</code> 页之前会显示全部条目而非仅归档项。
+        <strong>dropnote.me 现在 HTTP 200,健康。</strong>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>✅ 本次 session 做了什么</h2>
+      <table>
+        <tr><th style="width:26%">动作</th><th>结果</th><th style="width:16%">证据 / Commit</th></tr>
+        <tr>
+          <td><span class="badge badge-done">DONE</span> Task J — 剥 Omnivore</td>
+          <td>blog meta / OG / twitter / body / 测试 / roadmap label 全部换成 "Save anything from anywhere"。grep 零命中(仅 URL path 残留)。Jose 执行,282 测试通过。</td>
+          <td><code>36b0a75</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-done">DONE</span> DB migration</td>
+          <td><code>items.archived_at</code>(timestamptz, nullable)+ 稀疏索引 <code>items_archived_at_idx</code>,直连 production DB 应用并验证。</td>
+          <td>Supabase MCP <code>apply_migration</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-done">DONE</span> 类型 regen</td>
+          <td><code>database.types.ts</code> 通过 MCP 重新生成,加入 <code>archived_at</code>(此前是 cast 绕过)。</td>
+          <td><code>d67a153</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-done">FIX</span> /archive 潜伏 bug</td>
+          <td>原 "runtime filter" 从未真正实现,导致归档页显示<strong>全部</strong>未删条目。改成 <code>.not('archived_at','is',null)</code> 正经查询。</td>
+          <td><code>d67a153</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-done">DONE</span> 合并 + 部署</td>
+          <td>6 个 commit 经 fast-forward 合并进 main,推送触发 Vercel 生产部署。lint + typecheck + build 三道闸全绿后才推。</td>
+          <td><code>25e7f52 → d67a153</code></td>
+        </tr>
+      </table>
+      <div class="warn-box" style="background:#d1fae5;color:#065f46;">
+        <strong>✓ 验证:</strong> <code>pnpm turbo lint typecheck</code> PASS · <code>pnpm --filter @drop-note/web build</code> PASS ·
+        <code>curl dropnote.me</code> → 200 · <code>curl dropnote.me/roadmap</code> → 200
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>🗺 Items Redesign 全景(整个 S8 redesign 线)</h2>
+      <table>
+        <tr><th>阶段</th><th>内容</th><th style="width:14%">状态</th><th style="width:14%">Commit</th></tr>
+        <tr><td>P1</td><td>Design tokens + Stats cards + 页面 Header 重构</td><td><span class="badge badge-done">已上线</span></td><td><code>8770cdc</code></td></tr>
+        <tr><td>P2</td><td>可横向滚动的 Tag filter bar</td><td><span class="badge badge-done">已上线</span></td><td><code>2200f06</code></td></tr>
+        <tr><td>P3</td><td>Source dot、Favicon、彩色 tag pills、阅读时长</td><td><span class="badge badge-done">已上线</span></td><td><code>6ebea90</code></td></tr>
+        <tr><td>P4</td><td>Archive 列 + <code>/archive</code> 页 + sidebar 导航</td><td><span class="badge badge-done">已上线</span></td><td><code>4e965a9</code></td></tr>
+        <tr><td>P5</td><td>Sort 下拉(newest / oldest / pinned)</td><td><span class="badge badge-done">已上线</span></td><td><code>88e86a4</code></td></tr>
+        <tr><td>Task J</td><td>Positioning pivot — 全面剥离 Omnivore</td><td><span class="badge badge-done">已上线</span></td><td><code>36b0a75</code></td></tr>
+        <tr><td>Login redesign</td><td>登录页品牌块 + 卡片布局 + 法务微文案</td><td><span class="badge badge-done">已上线</span></td><td><code>f92a9c5</code></td></tr>
+        <tr><td>Task K · #6</td><td>README self-host 完整指南</td><td><span class="badge badge-done">已上线</span></td><td><code>41efef1</code></td></tr>
+        <tr><td>Task K · #7</td><td>OG meta tags + logout → landing 跳转</td><td><span class="badge badge-done">已上线</span></td><td><code>8bde2b3</code></td></tr>
+        <tr><td>Task K · #8</td><td>Onboarding 文案 — universal capture 定位</td><td><span class="badge badge-done">已上线</span></td><td><code>6b537ee</code></td></tr>
+        <tr><td>Task K · #9</td><td>公开 <code>/roadmap</code> 页</td><td><span class="badge badge-done">已上线</span></td><td><code>a04e33a</code></td></tr>
+      </table>
+      <p style="color:var(--muted);font-size:13px;margin-top:8px;">
+        Task K 的 4 个 phase 其实早在 Session 20 就已 merge 到 main —— 所以本次没有重建,只确认状态。Task K 原 brief 里让 Jose 重新加 Omnivore OG tags 的部分是过期内容,已被 Task J 正确覆盖。
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>🔭 后续 PLAN</h2>
+      <p style="color: var(--muted); margin-bottom: 8px;">Items Redesign 这条线已经收口。下面是 drop-note 往前走的路线,按优先级分三档。</p>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="badge badge-progress">需要你拍板 / 动手</span>
+          <span class="phase-title">短期 — 离公开 launch 只差这几步</span>
+        </div>
+        <h4>Scope IN</h4>
+        <ul class="scope-list scope-in">
+          <li><strong>Task H — 邮件送达 QA</strong>:runbook 已就绪在 <code>docs/task-h-deliverability-qa.html</code>,你亲测约 20 分钟(Gmail / Outlook / ProtonMail 各发一封,确认不进垃圾箱)。</li>
+          <li><strong>本机过一遍 redesign</strong>:<code>pnpm --filter @drop-note/web dev</code>,用 <code>jasonusca@gmail.com</code>(有 12 条数据)看 P1–P5 + archive 实际效果。</li>
+          <li><strong>公开 launch 决策</strong>:app 已 ~production-ready。下一个大动作是 HN / r/selfhosted 发布 —— 这是 strategy 级,等你定时间窗。</li>
+        </ul>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="badge badge-draft">Coming next</span>
+          <span class="phase-title">中期 — 产品迭代(无需等用户)</span>
+        </div>
+        <h4>Scope IN</h4>
+        <ul class="scope-list scope-in">
+          <li><strong>Mobile-responsive polish</strong> — dashboard 手机端能用,但需要打磨。</li>
+          <li><strong>RLS 安全收尾</strong> — <code>block_list</code> / <code>invite_codes</code> / <code>usage_log</code> 三张表 RLS 未开(Supabase advisory)。都是 admin/系统表、不走客户端 anon key,非紧急,但建议排一个 <code>[bug]</code> 补 policy。</li>
+        </ul>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="badge badge-killed">门槛触发</span>
+          <span class="phase-title">长期 — 等规模到了再做</span>
+        </div>
+        <h4>Scope IN(触发条件)</h4>
+        <ul class="scope-list scope-in">
+          <li><strong>Per-user email 路由 v2</strong>(<code>drop+[token]@dropnote.me</code>)— schema 已留好,规模上来再开。</li>
+          <li><strong>$4.99/mo hosted tier + Stripe 重启</strong> — 仅当 ≥100 活跃用户(D1 / D7,一个 PR 就能开)。</li>
+          <li><strong>异步 AI 队列(QStash)</strong> — 仅当 <code>/api/ingest</code> p95 逼近 30s 或出现超时(D11 触发条件)。</li>
+        </ul>
+        <h4>明确不做(已决策)</h4>
+        <ul class="scope-list scope-out">
+          <li>浏览器插件 — email-first 才是 wedge,插件复杂度不值。</li>
+          <li>移动 App — 用手机原生 share sheet → email,不需要 App。</li>
+          <li>对标 Readwise 的功能 — 正面打不赢,self-host 才是护城河。</li>
+          <li>Product Hunt 发布 — 推迟到 launch 后 60 天,先 HN + r/selfhosted。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>📌 需要你做的(2 件,都不急)</h2>
+      <table>
+        <tr><th style="width:30%">事项</th><th>说明</th></tr>
+        <tr><td>① Task H 邮件送达 QA</td><td>打开 <code>docs/task-h-deliverability-qa.html</code> 按步骤发几封测试邮件,确认送达不进垃圾箱(~20 min)。launch 前做。</td></tr>
+        <tr><td>② 本机看一眼 redesign</td><td><code>pnpm --filter @drop-note/web dev</code> → 登录 → 看 items 页 + <code>/archive</code>。满意就可以排 launch。</td></tr>
+      </table>
+      <p style="color:var(--muted);font-size:13px;margin-top:10px;">
+        DB / 类型 / 部署都不用你管了 —— Supabase MCP OAuth 已授权留存,以后 schema 变更我直接搞,不用再找 DB password。
+      </p>
+    </section>
+
+    <footer>
+      Generated 2026-05-29 by <code>@mic</code>(drop-note PO)· main tip <code>d67a153</code> · 生产 <code>https://dropnote.me</code> HTTP 200 · 全程证据见 commit 历史
+    </footer>
+  </div>
+</body>
+</html>

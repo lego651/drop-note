@@ -20,14 +20,13 @@ export function TagRow({ tags }: TagRowProps) {
         return (
           <span
             key={tag.id}
-            className="shrink-0 rounded-md text-xs py-0 px-1.5 leading-5 font-medium"
+            className="shrink-0 rounded-md text-[11px] py-0.5 px-1.5 leading-none font-medium"
             style={{
               backgroundColor: `hsl(${hsl} / 0.12)`,
               color: `hsl(${hsl})`,
-              border: `1px solid hsl(${hsl} / 0.3)`,
             }}
           >
-            {tag.name}
+            #{tag.name}
           </span>
         )
       })}

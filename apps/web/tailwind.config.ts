@@ -43,7 +43,8 @@ const config: Config = {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
-  			success: 'hsl(var(--color-success))'
+  			success: 'hsl(var(--color-success))',
+  			canvas: 'hsl(var(--content-bg))'
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
