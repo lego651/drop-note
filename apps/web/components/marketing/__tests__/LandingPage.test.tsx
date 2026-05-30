@@ -20,18 +20,6 @@ describe('LandingPage', () => {
     expect(links[0]).toHaveAttribute('href', '/login')
   })
 
-  it('renders a GitHub link pointing to the repo', () => {
-    render(<LandingPage />)
-    const githubLinks = screen.getAllByRole('link', {
-      name: /self-host on github|view on github|github/i,
-    })
-    expect(githubLinks.length).toBeGreaterThan(0)
-    const repoLink = githubLinks.find(
-      (l) => l.getAttribute('href') === 'https://github.com/lego651/drop-note',
-    )
-    expect(repoLink).toBeDefined()
-  })
-
   it('renders the 3-step how-it-works section', () => {
     render(<LandingPage />)
     // Use getAllByText since "Email it" heading may match feature body text as well
@@ -53,7 +41,7 @@ describe('LandingPage', () => {
     expect(screen.getByText('Full-text search')).toBeInTheDocument()
     expect(screen.getByText('Browse by date')).toBeInTheDocument()
     expect(screen.getByText('Any content type')).toBeInTheDocument()
-    expect(screen.getByText('Self-host option')).toBeInTheDocument()
+    expect(screen.getByText('Privacy first')).toBeInTheDocument()
   })
 
   it('renders testimonials with all three names', () => {
@@ -69,11 +57,11 @@ describe('LandingPage', () => {
     expect(screen.getByRole('link', { name: /privacy/i })).toHaveAttribute('href', '/privacy')
   })
 
-  it('renders blog link in the nav', () => {
+  it('renders roadmap link in the nav', () => {
     render(<LandingPage />)
-    const blogLinks = screen.getAllByRole('link', { name: /blog/i })
-    expect(blogLinks.length).toBeGreaterThan(0)
-    expect(blogLinks[0]).toHaveAttribute('href', '/blog/open-source-omnivore-alternative')
+    const roadmapLinks = screen.getAllByRole('link', { name: /roadmap/i })
+    expect(roadmapLinks.length).toBeGreaterThan(0)
+    expect(roadmapLinks[0]).toHaveAttribute('href', '/roadmap')
   })
 
   it('renders the HOW IT WORKS and FEATURES section pills', () => {
@@ -89,7 +77,8 @@ describe('LandingPage', () => {
 
   it('renders the roadmap link in the footer', () => {
     render(<LandingPage />)
-    const roadmapLink = screen.getByRole('link', { name: /roadmap/i })
-    expect(roadmapLink).toHaveAttribute('href', '/roadmap')
+    const roadmapLinks = screen.getAllByRole('link', { name: /roadmap/i })
+    expect(roadmapLinks.length).toBeGreaterThan(0)
+    expect(roadmapLinks[0]).toHaveAttribute('href', '/roadmap')
   })
 })

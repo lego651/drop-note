@@ -27,7 +27,7 @@ const TESTIMONIALS: Testimonial[] = [
     name: 'Priya Nair',
     role: 'Independent Developer, Bangalore',
     quote:
-      'The self-host option sold me. I have everything running on my own VPS, full control over my data, and it took less than 20 minutes to set up.',
+      'drop-note replaced three different tools I was using. Now I just email everything to one address and the AI does the rest. It actually works.',
     avatarColor: 'hsl(var(--color-tag-teal))',
     avatarBg: 'hsl(var(--color-tag-teal) / 0.12)',
   },

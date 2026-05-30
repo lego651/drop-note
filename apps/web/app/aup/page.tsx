@@ -70,16 +70,7 @@ export default function AupPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">4. Self-Hosted Instances</h2>
-          <p>
-            If you self-host drop-note under the AGPL-3.0 licence, you are responsible for
-            enforcing an equivalent acceptable use policy for your users. The restrictions
-            above represent a minimum baseline.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold mb-3">5. Reporting Violations</h2>
+          <h2 className="text-lg font-semibold mb-3">4. Reporting Violations</h2>
           <p>
             If you believe someone is using drop-note in violation of this policy, please
             report it to{' '}
@@ -92,7 +83,7 @@ export default function AupPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">6. Contact</h2>
+          <h2 className="text-lg font-semibold mb-3">5. Contact</h2>
           <p>
             Questions about this policy? Contact{' '}
             <a href="mailto:legal@dropnote.me" className="underline text-muted-foreground">

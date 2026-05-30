@@ -39,7 +39,7 @@ export default function TermsPage() {
             <li>Attempt to circumvent tier limits, rate limits, or any other access controls</li>
             <li>Use automated scripts or bots to send email in excess of normal personal use</li>
             <li>Reverse engineer, decompile, or attempt to extract the source code of the
-              hosted SaaS service (self-hosted users: see Section 7)</li>
+              hosted SaaS service</li>
           </ul>
           <p className="mt-3">
             We reserve the right to suspend or terminate accounts that violate these terms
@@ -105,39 +105,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">7. Self-Hosted Users — AGPL-3.0 Licence</h2>
-          <p className="mb-3">
-            drop-note&apos;s source code is released under the{' '}
-            <strong>GNU Affero General Public License v3.0 (AGPL-3.0)</strong>. If you
-            self-host drop-note, your use is governed by that licence rather than the SaaS
-            payment terms in Section 4.
-          </p>
-          <p className="mb-3">
-            Key AGPL-3.0 obligations for self-hosters:
-          </p>
-          <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-            <li>You must make the complete corresponding source code available to users of
-              your hosted instance, including any modifications you have made.</li>
-            <li>You must preserve all copyright and licence notices.</li>
-            <li>Any derivative work you distribute or offer as a network service must also
-              be released under AGPL-3.0.</li>
-          </ul>
-          <p className="mt-3">
-            The full licence text is available in the repository at{' '}
-            <a
-              href="https://github.com/lego651/drop-note/blob/main/LICENSE"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline text-muted-foreground"
-            >
-              github.com/lego651/drop-note
-            </a>
-            .
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold mb-3">8. Termination</h2>
+          <h2 className="text-lg font-semibold mb-3">7. Termination</h2>
           <p>
             Either party may terminate the agreement at any time. You may close your account
             via <strong>Settings &gt; Delete Account</strong>. We may suspend or terminate
@@ -151,7 +119,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">9. Changes to These Terms</h2>
+          <h2 className="text-lg font-semibold mb-3">8. Changes to These Terms</h2>
           <p>
             We may update these terms from time to time. We will notify you by email at
             least 14 days before material changes take effect. Continued use of the service
@@ -160,7 +128,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">10. Contact</h2>
+          <h2 className="text-lg font-semibold mb-3">9. Contact</h2>
           <p className="mb-3">
             drop-note is operated by <strong>Jason Gao</strong> (individual). Questions about
             these terms or DMCA notices? Contact{' '}

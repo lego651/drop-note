@@ -32,10 +32,10 @@ describe('PricingPage — D1 compliance (free-only)', () => {
     expect(screen.queryByRole('heading', { name: /^power$/i })).toBeNull()
   })
 
-  it('renders a GitHub self-host link', () => {
+  it('does NOT render a self-host link', () => {
     render(<PricingPage />)
-    const githubLink = screen.getByRole('link', { name: /view on github/i })
-    expect(githubLink).toHaveAttribute('href', 'https://github.com/lego651/drop-note')
+    expect(screen.queryByRole('link', { name: /view on github/i })).toBeNull()
+    expect(screen.queryByText(/self.host|docker|agpl/i)).toBeNull()
   })
 
   it('renders a "Get started free" CTA', () => {

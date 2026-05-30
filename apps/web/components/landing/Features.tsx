@@ -52,8 +52,8 @@ const FEATURES: Feature[] = [
   },
   {
     icon: CreditCard,
-    title: 'Self-host option',
-    body: 'Full source on GitHub. Run it on your own infrastructure, keep your data on your servers, no vendor lock-in.',
+    title: 'Privacy first',
+    body: 'Your content is never sold or shared. Items are processed by OpenAI for summarisation only — nothing else touches your data.',
     iconColor: 'hsl(var(--color-tag-indigo))',
     iconBg: 'hsl(var(--color-tag-indigo) / 0.1)',
   },

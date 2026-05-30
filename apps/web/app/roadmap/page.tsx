@@ -47,11 +47,6 @@ const SHIPPED = [
     label: 'Admin panel',
     detail: 'User management, blocklist, invite codes, stats',
   },
-  {
-    label: 'Docker self-host stack',
-    detail: "docker compose up and you're running",
-  },
-  { label: 'AGPL-3.0 open source', detail: 'Full source on GitHub' },
   { label: 'Sentry error monitoring', detail: 'Production error tracking' },
   {
     label: 'Legal pages (Terms, Privacy, AUP)',
@@ -101,7 +96,7 @@ const DEFERRED = [
   },
   {
     label: 'Readwise-competitive features',
-    detail: "Head-to-head is unwinnable. Self-host is our moat.",
+    detail: "Head-to-head is unwinnable. Focus remains on email-first simplicity.",
   },
   {
     label: 'Product Hunt launch',
@@ -123,8 +118,7 @@ export default function RoadmapPage() {
 
       <h1 className="text-3xl font-bold tracking-tight mb-2">Roadmap</h1>
       <p className="text-muted-foreground mb-12">
-        drop-note is open source (AGPL-3.0). This is what we&apos;ve built, what&apos;s
-        coming, and what we&apos;ve intentionally left out.
+        This is what we&apos;ve built, what&apos;s coming, and what we&apos;ve intentionally left out.
       </p>
 
       {/* SHIPPED */}
@@ -187,25 +181,14 @@ export default function RoadmapPage() {
       {/* Footer CTA */}
       <div className="border border-border rounded-lg p-6 text-center">
         <p className="text-sm text-muted-foreground mb-4">
-          drop-note is AGPL-3.0. Read the code, run your own instance, or use the free
-          hosted version.
+          drop-note is free to use. No credit card required.
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <a
-            href="https://github.com/lego651/drop-note"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-medium underline underline-offset-4 hover:text-muted-foreground transition-colors"
-          >
-            View on GitHub
-          </a>
-          <Link
-            href="/login"
-            className="text-sm font-medium underline underline-offset-4 hover:text-muted-foreground transition-colors"
-          >
-            Get started free
-          </Link>
-        </div>
+        <Link
+          href="/login"
+          className="text-sm font-medium underline underline-offset-4 hover:text-muted-foreground transition-colors"
+        >
+          Get started free
+        </Link>
       </div>
     </div>
   )

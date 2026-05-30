@@ -14,17 +14,6 @@ export function LandingFooter() {
             <Mail className="h-4 w-4" />
             <span>drop-note</span>
           </Link>
-          <Link href="/blog/open-source-omnivore-alternative" className="hover:text-foreground transition-colors">
-            Blog
-          </Link>
-          <a
-            href="https://github.com/lego651/drop-note"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors"
-          >
-            GitHub
-          </a>
           <Link href="/login" className="hover:text-foreground transition-colors">
             Get started
           </Link>

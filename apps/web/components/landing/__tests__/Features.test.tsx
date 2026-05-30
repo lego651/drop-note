@@ -35,8 +35,13 @@ describe('Features', () => {
     expect(screen.getByText('Any content type')).toBeInTheDocument()
   })
 
-  it('renders Self-host option card', () => {
+  it('renders Privacy first card', () => {
     render(<Features />)
-    expect(screen.getByText('Self-host option')).toBeInTheDocument()
+    expect(screen.getByText('Privacy first')).toBeInTheDocument()
+  })
+
+  it('does NOT render Self-host option card', () => {
+    render(<Features />)
+    expect(screen.queryByText('Self-host option')).toBeNull()
   })
 })

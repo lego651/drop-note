@@ -45,7 +45,7 @@ export function GET() {
             marginTop: 'auto',
           }}
         >
-          dropnote.me · Free · Open source (AGPL-3.0)
+          dropnote.me · Free · No setup needed
         </div>
       </div>
     ),

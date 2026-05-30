@@ -27,15 +27,6 @@ export function LandingCTA() {
           <Button asChild size="lg">
             <Link href="/login">Get started free</Link>
           </Button>
-          <Button asChild variant="outline" size="lg">
-            <a
-              href="https://github.com/lego651/drop-note"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View on GitHub
-            </a>
-          </Button>
         </div>
 
         {/* Address pill */}

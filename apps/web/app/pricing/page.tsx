@@ -63,22 +63,6 @@ export default function PricingPage() {
         </Link>
       </div>
 
-      {/* Self-host note */}
-      <div className="mt-12 rounded-lg border border-border bg-muted/40 p-6 text-center">
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Want more? Self-host drop-note for free with Docker.{' '}
-          <span className="text-foreground font-medium">AGPL-3.0 open source</span> — no limits
-          on your own instance.
-        </p>
-        <a
-          href="https://github.com/lego651/drop-note"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
-        >
-          View on GitHub →
-        </a>
-      </div>
     </div>
   )
 }

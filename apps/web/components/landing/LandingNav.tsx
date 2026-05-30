@@ -15,19 +15,11 @@ export function LandingNav() {
         {/* Right: nav links */}
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <Link
-            href="/blog/open-source-omnivore-alternative"
+            href="/roadmap"
             className="hover:text-foreground transition-colors"
           >
-            Blog
+            Roadmap
           </Link>
-          <a
-            href="https://github.com/lego651/drop-note"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors"
-          >
-            GitHub
-          </a>
           <Button asChild size="sm">
             <Link href="/login">Get started free</Link>
           </Button>

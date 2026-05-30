@@ -40,15 +40,6 @@ export function LandingHero() {
         <Button asChild size="lg">
           <Link href="/login">Get started free</Link>
         </Button>
-        <Button asChild variant="outline" size="lg">
-          <a
-            href="https://github.com/lego651/drop-note"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Self-host on GitHub
-          </a>
-        </Button>
       </div>
 
       {/* Copy address pill */}

@@ -9,17 +9,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.8,
     },
-    {
-      url: `${baseUrl}/blog`,
-      lastModified: new Date('2026-05-28'),
-      changeFrequency: 'monthly' as const,
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/blog/open-source-omnivore-alternative`,
-      lastModified: new Date('2026-05-28'),
-      changeFrequency: 'monthly' as const,
-      priority: 0.9,
-    },
   ]
 }
