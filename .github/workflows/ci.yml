@@ -59,6 +59,45 @@ jobs:
       - name: Unit tests + coverage
         run: pnpm test:coverage
 
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm turbo build
+        # `next build` prerenders public pages, which transitively load modules
+        # that call requireEnv(...) at import time (e.g. the Supabase admin client,
+        # Stripe, Resend, Upstash). With NO env, prerender throws
+        # "Missing required environment variable: ..." and the build fails on every
+        # PR — a false-red that would defeat this gate. Prerender does NO network
+        # I/O, so it only needs the vars to be NON-EMPTY, not valid. These are
+        # deliberately fake placeholders — NOT secrets, and the build does NOT
+        # validate connectivity. Do not replace them with real credentials.
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://dummy-build-only.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-build-only
+          SUPABASE_SERVICE_ROLE_KEY: dummy-build-only
+          NEXT_PUBLIC_APP_URL: https://dummy-build-only.example.com
+          STRIPE_SECRET_KEY: dummy-build-only
+          STRIPE_WEBHOOK_SECRET: dummy-build-only
+          STRIPE_PRO_PRICE_ID: price_dummy_build_only
+          STRIPE_POWER_PRICE_ID: price_dummy_build_only
+          RESEND_API_KEY: dummy-build-only
+          RESEND_FROM_ADDRESS: build-only@example.com
+          UPSTASH_REDIS_REST_URL: https://dummy-build-only.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: dummy-build-only
+          SENDGRID_INGEST_SECRET: dummy-build-only
+          CRON_SECRET: dummy-build-only
+
   e2e:
     name: E2E tests
     needs: [lint, typecheck, test]
