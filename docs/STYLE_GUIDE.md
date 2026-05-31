@@ -92,6 +92,10 @@ Use as Tailwind tokens (`bg-x`, `text-x`) where wired in `tailwind.config.ts`, o
 ### Loading & mutations
 - Navigation that re-renders the server page (sort / filter / tag via `router.push`) must be wrapped in `useTransition`; show pending (dim/disable controls) + a skeleton. Route-level `loading.tsx` covers hard loads.
 - Data mutations (pin, toggles) are **optimistic**: update local state immediately, fire the request, roll back on error. No "click → wait 2s → UI changes".
+- **Every route under `app/(dashboard)` and `app/(admin)` that does async server work has a `loading.tsx`** whose skeleton mirrors that page's real layout (see `items/loading.tsx`). Skeletons use the shared `animate-pulse … bg-muted` shapes — never a one-off spinner.
+- **Async client searches** (e.g. the inbox search box) show a results-area skeleton (`ResultsSkeleton` in `ItemsPageClient`) + a "Searching…" count while the request is in flight — never a blank/stale gap.
+- **Async action buttons** (sign-out, unarchive, payment redirect, delete account, add tag) show a disabled + label-change pending state (`Signing out…`, `Unarchiving…`, `Loading…`, `Deleting…`) to prevent dead clicks and double-submits.
+- **Synchronous saves** (e.g. "Save appearance" writing to `localStorage`) show a brief inline confirmation (`Saved` + check) so the click isn't dead.
 
 ### Toggles, dialogs, avatars
 - Switches: `components/ui/switch.tsx`. Destructive confirms: shadcn `AlertDialog`. Avatars: initials on `hsl(${colorForTagHsl(email)} / …)`.

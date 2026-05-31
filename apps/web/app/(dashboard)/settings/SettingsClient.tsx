@@ -85,7 +85,10 @@ export function SettingsClient({
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
   const [signOutError, setSignOutError] = useState('')
+  const [signingOut, setSigningOut] = useState(false)
   const [digestEnabled, setDigestEnabled] = useState(initialDigestEnabled)
+  const [digestSaving, setDigestSaving] = useState(false)
+  const [appearanceSaved, setAppearanceSaved] = useState(false)
   const [selectedTheme, setSelectedTheme] = useState(currentTheme ?? 'light')
   const [selectedDensity, setSelectedDensity] = useState<'comfortable' | 'compact'>(() => {
     if (typeof window !== 'undefined') {
@@ -103,10 +106,13 @@ export function SettingsClient({
   // -----------------------------------------------------------------------
 
   async function handleSignOut() {
+    setSigningOut(true)
+    setSignOutError('')
     const supabase = createClient()
     const { error } = await supabase.auth.signOut()
     if (error) {
       setSignOutError('Sign out failed. Please try again.')
+      setSigningOut(false)
       return
     }
     router.refresh()
@@ -141,6 +147,7 @@ export function SettingsClient({
 
   async function handleDigestToggle(next: boolean) {
     setDigestEnabled(next)
+    setDigestSaving(true)
     const supabase = createClient()
     const { error } = await supabase
       .from('users')
@@ -150,6 +157,7 @@ export function SettingsClient({
       setDigestEnabled(!next)
       console.error('[settings] Failed to update digest_enabled:', error.message)
     }
+    setDigestSaving(false)
   }
 
   function handleSaveAppearance() {
@@ -158,6 +166,9 @@ export function SettingsClient({
       localStorage.setItem('drop-note:theme', selectedTheme)
       localStorage.setItem('drop-note:density', selectedDensity)
     }
+    // Synchronous save — show a brief confirmation so the click isn't dead.
+    setAppearanceSaved(true)
+    setTimeout(() => setAppearanceSaved(false), 2000)
   }
 
   // -----------------------------------------------------------------------
@@ -336,6 +347,7 @@ export function SettingsClient({
               label="Weekly digest"
               description="A summary email every Monday of what you saved last week. Includes your most-used tags and a reading list."
               checked={digestEnabled}
+              busy={digestSaving}
               onCheckedChange={handleDigestToggle}
             />
 
@@ -469,9 +481,11 @@ export function SettingsClient({
           <Button
             size="sm"
             onClick={handleSaveAppearance}
+            className="gap-1.5"
             style={{ backgroundColor: 'hsl(var(--color-pin))', color: '#fff' }}
           >
-            Save appearance
+            {appearanceSaved ? <Check size={13} /> : null}
+            {appearanceSaved ? 'Saved' : 'Save appearance'}
           </Button>
         </div>
       </div>
@@ -584,9 +598,15 @@ export function SettingsClient({
             </p>
           </div>
           {signOutError && <p className="text-xs text-destructive">{signOutError}</p>}
-          <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="gap-1.5"
+          >
             <LogOut size={13} />
-            Sign out
+            {signingOut ? 'Signing out…' : 'Sign out'}
           </Button>
         </div>
       </div>
@@ -804,6 +824,8 @@ interface NotificationRowProps {
   description: string
   checked: boolean
   disabled?: boolean
+  /** Transient in-flight flag: disables the Switch while a save is pending without muting the label. */
+  busy?: boolean
   onCheckedChange?: (next: boolean) => void
 }
 
@@ -813,6 +835,7 @@ function NotificationRow({
   description,
   checked,
   disabled = false,
+  busy = false,
   onCheckedChange,
 }: NotificationRowProps) {
   return (
@@ -830,7 +853,7 @@ function NotificationRow({
         id={id}
         checked={checked}
         onCheckedChange={onCheckedChange ?? (() => undefined)}
-        disabled={disabled}
+        disabled={disabled || busy}
         aria-label={label}
       />
     </div>

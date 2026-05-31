@@ -356,7 +356,9 @@ function ItemsPageClientInner({
       {!isEmpty && (
         <div className="flex items-center justify-between gap-4 pt-1">
           <p className="text-sm text-muted-foreground">
-            {isSearchMode && searchResults !== null ? (
+            {isSearching ? (
+              <span aria-live="polite">Searching…</span>
+            ) : isSearchMode && searchResults !== null ? (
               <>
                 <span className="font-semibold text-foreground">{searchResults.length}</span>{' '}
                 result{searchResults.length === 1 ? '' : 's'}
@@ -440,8 +442,11 @@ function ItemsPageClientInner({
         </p>
       )}
 
+      {/* Searching: results skeleton (avoids a blank/stale gap while the query is in flight) */}
+      {isSearching && <ResultsSkeleton view={view} />}
+
       {/* Items layout */}
-      {!isEmpty && renderLayout()}
+      {!isEmpty && !isSearching && renderLayout()}
 
       {/* Pagination */}
       {showPagination && (
@@ -478,6 +483,40 @@ function ItemsPageClientInner({
         </nav>
       )}
       </div>{/* end p-6 */}
+    </div>
+  )
+}
+
+// Loading placeholder for the results area while a search query is in flight.
+// Mirrors the active view's shape and reuses the same animate-pulse/bg-muted
+// language as the route-level loading.tsx skeletons.
+function ResultsSkeleton({ view }: { view: ViewMode }) {
+  if (view === 'card') {
+    return (
+      <div
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        aria-hidden="true"
+      >
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-40 animate-pulse rounded-xl bg-muted" />
+        ))}
+      </div>
+    )
+  }
+  if (view === 'timeline') {
+    return (
+      <div className="flex flex-col gap-2" aria-hidden="true">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="h-12 animate-pulse rounded-lg bg-muted" />
+        ))}
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-3" aria-hidden="true">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="h-20 animate-pulse rounded-xl bg-muted" />
+      ))}
     </div>
   )
 }

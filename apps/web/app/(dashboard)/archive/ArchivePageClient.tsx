@@ -33,15 +33,27 @@ function compactAge(dateStr: string): string {
 
 export function ArchivePageClient({ items: initialItems }: ArchivePageClientProps) {
   const [items, setItems] = useState(initialItems)
+  const [unarchivingId, setUnarchivingId] = useState<string | null>(null)
 
-  const handleUnarchive = useCallback(async (id: string) => {
-    await fetch(`/api/items/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ archived: false }),
-    })
-    setItems((prev) => prev.filter((item) => item.id !== id))
-  }, [])
+  const handleUnarchive = useCallback(
+    async (id: string) => {
+      setUnarchivingId(id)
+      try {
+        const res = await fetch(`/api/items/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ archived: false }),
+        })
+        if (!res.ok) throw new Error(`PATCH failed: ${res.status}`)
+        setItems((prev) => prev.filter((item) => item.id !== id))
+      } catch (err) {
+        console.error('[archive] Failed to unarchive item:', err instanceof Error ? err.message : err)
+      } finally {
+        setUnarchivingId(null)
+      }
+    },
+    [],
+  )
 
   return (
     <div className="p-6 max-w-4xl">
@@ -89,9 +101,10 @@ export function ArchivePageClient({ items: initialItems }: ArchivePageClientProp
                 size="sm"
                 className="shrink-0 gap-1.5 h-7 text-xs"
                 onClick={() => handleUnarchive(item.id)}
+                disabled={unarchivingId === item.id}
               >
                 <RotateCcw size={12} />
-                Unarchive
+                {unarchivingId === item.id ? 'Unarchiving…' : 'Unarchive'}
               </Button>
             </li>
           ))}
