@@ -43,6 +43,29 @@ jobs:
       - name: Typecheck
         run: pnpm turbo typecheck
 
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm --filter @drop-note/web build
+        env:
+          # Next.js prerenders pages at build time; their module graph reads these
+          # (e.g. /register pulls in the admin client → SUPABASE_SERVICE_ROLE_KEY).
+          # Wired from the same secrets the e2e job uses — values just need to be present.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
+
   test:
     name: Unit tests + coverage
     runs-on: ubuntu-latest
