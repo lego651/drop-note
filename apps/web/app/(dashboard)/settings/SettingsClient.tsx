@@ -394,7 +394,7 @@ export function SettingsClient({
             <h3 className="text-sm font-semibold text-foreground">Theme</h3>
             <p className="text-xs text-muted-foreground mt-0.5">Choose your preferred color scheme.</p>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               { value: 'light', label: 'Light', desc: 'Clean off-white background', Icon: Sun },
               { value: 'dark', label: 'Dark', desc: 'Easy on the eyes at night', Icon: Moon },
@@ -434,7 +434,7 @@ export function SettingsClient({
               Control how many items fit on screen at once.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               { value: 'comfortable', label: 'Comfortable', desc: 'More space between items', Icon: LayoutGrid },
               { value: 'compact', label: 'Compact', desc: 'Fit more items on screen', Icon: List },
@@ -510,7 +510,7 @@ export function SettingsClient({
 
           <div className="border-t border-border" />
 
-          <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 text-sm">
             <div>
               <p className="text-xs text-muted-foreground">Member since</p>
               <p className="text-sm font-medium text-foreground">{memberSince}</p>
@@ -754,9 +754,9 @@ export function SettingsClient({
       </div>
 
       {/* Layout: left nav + right panel */}
-      <div className="flex gap-6">
+      <div className="flex flex-col md:flex-row gap-6">
         {/* Left tab nav */}
-        <nav className="flex flex-col gap-0.5 w-48 shrink-0" aria-label="Settings sections">
+        <nav className="flex flex-col gap-0.5 w-full md:w-48 md:shrink-0" aria-label="Settings sections">
           {TABS.map(({ id, label, Icon }) => {
             const isActive = activeTab === id
             const isDangerZone = id === 'danger-zone'
