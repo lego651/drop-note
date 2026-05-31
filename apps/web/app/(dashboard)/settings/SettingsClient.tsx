@@ -86,6 +86,7 @@ export function SettingsClient({
   const [deleteError, setDeleteError] = useState('')
   const [signOutError, setSignOutError] = useState('')
   const [digestEnabled, setDigestEnabled] = useState(initialDigestEnabled)
+  const [appearanceSaved, setAppearanceSaved] = useState(false)
   const [selectedTheme, setSelectedTheme] = useState(currentTheme ?? 'light')
   const [selectedDensity, setSelectedDensity] = useState<'comfortable' | 'compact'>(() => {
     if (typeof window !== 'undefined') {
@@ -158,6 +159,8 @@ export function SettingsClient({
       localStorage.setItem('drop-note:theme', selectedTheme)
       localStorage.setItem('drop-note:density', selectedDensity)
     }
+    setAppearanceSaved(true)
+    setTimeout(() => setAppearanceSaved(false), 2000)
   }
 
   // -----------------------------------------------------------------------
@@ -469,9 +472,12 @@ export function SettingsClient({
           <Button
             size="sm"
             onClick={handleSaveAppearance}
+            disabled={appearanceSaved}
+            className="gap-1.5"
             style={{ backgroundColor: 'hsl(var(--color-pin))', color: '#fff' }}
           >
-            Save appearance
+            {appearanceSaved ? <Check size={13} /> : null}
+            {appearanceSaved ? 'Saved' : 'Save appearance'}
           </Button>
         </div>
       </div>
