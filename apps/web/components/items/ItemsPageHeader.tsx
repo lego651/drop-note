@@ -18,7 +18,7 @@ export function ItemsPageHeader({
 }: ItemsPageHeaderProps) {
   return (
     // h-16 matches the sidebar's logo header height exactly so the two top bars align
-    <div className="flex h-16 items-center justify-between border-b border-border bg-background px-8">
+    <div className="flex h-16 items-center justify-between border-b border-border bg-background px-3 sm:px-6 lg:px-8">
       <span className="text-sm font-semibold text-foreground">drop-note</span>
       <div className="flex items-center gap-4">
         {/* Bell — decorative, with unread indicator dot */}

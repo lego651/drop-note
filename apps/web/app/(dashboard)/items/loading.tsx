@@ -1,6 +1,6 @@
 export default function ItemsLoading() {
   return (
-    <div className="mx-auto max-w-6xl px-8 py-6 space-y-5">
+    <div className="mx-auto max-w-6xl px-3 sm:px-6 lg:px-8 py-6 space-y-5">
       {/* Title row skeleton */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
