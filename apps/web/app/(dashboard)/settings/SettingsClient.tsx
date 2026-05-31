@@ -510,7 +510,7 @@ export function SettingsClient({
 
           <div className="border-t border-border" />
 
-          <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 text-sm">
             <div>
               <p className="text-xs text-muted-foreground">Member since</p>
               <p className="text-sm font-medium text-foreground">{memberSince}</p>
