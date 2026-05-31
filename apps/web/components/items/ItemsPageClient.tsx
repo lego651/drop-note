@@ -356,7 +356,9 @@ function ItemsPageClientInner({
       {!isEmpty && (
         <div className="flex items-center justify-between gap-4 pt-1">
           <p className="text-sm text-muted-foreground">
-            {isSearchMode && searchResults !== null ? (
+            {isSearching ? (
+              'Searching…'
+            ) : isSearchMode && searchResults !== null ? (
               <>
                 <span className="font-semibold text-foreground">{searchResults.length}</span>{' '}
                 result{searchResults.length === 1 ? '' : 's'}
@@ -440,8 +442,21 @@ function ItemsPageClientInner({
         </p>
       )}
 
+      {/* Search loading — skeleton placeholder while a query is in flight */}
+      {isSearching && (
+        <div
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          aria-busy="true"
+          aria-label="Searching items"
+        >
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-40 animate-pulse rounded-xl bg-muted" />
+          ))}
+        </div>
+      )}
+
       {/* Items layout */}
-      {!isEmpty && renderLayout()}
+      {!isSearching && !isEmpty && renderLayout()}
 
       {/* Pagination */}
       {showPagination && (
