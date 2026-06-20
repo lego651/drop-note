@@ -10,6 +10,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { VideoModal } from '@/components/VideoModal'
 import { ItemFavicon } from '@/components/ItemFavicon'
 import { TagRow } from '@/components/TagRow'
+import { FolderPills } from '@/components/FolderPills'
+import { AddToFolderMenu } from '@/components/AddToFolderMenu'
 import { cn } from '@/lib/utils'
 import { colorForTagHsl } from '@/lib/design-tokens'
 import type { ItemSummary } from '@/lib/items'
@@ -22,6 +24,8 @@ interface GalleryCardProps {
   onSelectChange?: (id: string, checked: boolean) => void
   onPinChange?: (id: string, pinned: boolean) => void
   onDelete?: (id: string) => void
+  folders?: { id: string; name: string }[]
+  onFolderToggle?: (itemId: string, folderId: string, nextInFolder: boolean) => void
 }
 
 const PIN = 'hsl(var(--color-pin))'
@@ -57,6 +61,8 @@ export function GalleryCard({
   onSelectChange,
   onPinChange,
   onDelete,
+  folders = [],
+  onFolderToggle,
 }: GalleryCardProps) {
   const [videoOpen, setVideoOpen] = useState(false)
 
@@ -64,6 +70,12 @@ export function GalleryCard({
     item.item_tags
       ?.map((it) => it.tags)
       .filter((t): t is { id: string; name: string } => t !== null) ?? []
+
+  const itemFolders =
+    item.item_folders
+      ?.map((f) => f.folders)
+      .filter((f): f is { id: string; name: string } => f !== null) ?? []
+  const folderIdSet = new Set(itemFolders.map((f) => f.id))
 
   const isFailed = item.status === 'failed'
   const isProcessing = item.status === 'processing' || item.status === 'pending'
@@ -136,9 +148,16 @@ export function GalleryCard({
         </span>
       )}
 
-      {/* Hover actions — pin / delete */}
+      {/* Hover actions — folder / pin / delete */}
       {!isBulkMode && (
         <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          {onFolderToggle && (
+            <AddToFolderMenu
+              folders={folders}
+              selectedIds={folderIdSet}
+              onToggle={(folderId, next) => onFolderToggle(item.id, folderId, next)}
+            />
+          )}
           <button
             type="button"
             aria-label={item.pinned ? 'Unpin item' : 'Pin item'}
@@ -208,6 +227,12 @@ export function GalleryCard({
       {/* Tags */}
       {tags.length > 0 && <TagRow tags={tags} />}
 
+      {/* Folder pills */}
+      <FolderPills
+        folders={itemFolders}
+        onRemove={onFolderToggle ? (folderId) => onFolderToggle(item.id, folderId, false) : undefined}
+      />
+
       {/* Divider + full date */}
       <div className="mt-auto border-t border-border pt-3">
         <time dateTime={item.created_at} className="text-xs text-muted-foreground">
@@ -219,6 +244,11 @@ export function GalleryCard({
 
   const card = (
     <article
+      draggable={Boolean(onFolderToggle)}
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', item.id)
+        e.dataTransfer.effectAllowed = 'copy'
+      }}
       className={cn(
         'group relative flex h-full flex-col overflow-hidden rounded-2xl bg-card shadow-sm transition-shadow hover:shadow-md',
         isSelected && 'ring-2 ring-ring',

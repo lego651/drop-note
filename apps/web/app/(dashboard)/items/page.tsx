@@ -14,6 +14,7 @@ interface ItemsPageProps {
   searchParams?: {
     page?: string
     tag?: string
+    folder?: string
     year?: string
     month?: string
     q?: string
@@ -35,6 +36,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   const params = searchParams ?? {}
 
   const tagId = params.tag
+  const folderId = params.folder
   const year = params.year
   const month = params.month
   const q = params.q
@@ -69,6 +71,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     { count: priorWeekCount },
     { count: processingCount },
     { data: topTagData },
+    { data: foldersData },
   ] = await Promise.all([
     supabase.from('users').select('tier').eq('id', user.id).single(),
     supabase
@@ -95,6 +98,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       .is('archived_at', null)
       .in('status', ['pending', 'processing']),
     supabase.rpc('get_tags_with_counts'),
+    supabase.rpc('get_folders_with_counts'),
   ])
 
   const weekDelta = (thisWeekCount ?? 0) - (priorWeekCount ?? 0)
@@ -112,6 +116,9 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     count: t.item_count,
   }))
 
+  // Folders list (for card "Add to folder" menu)
+  const folders = (foldersData ?? []).map((f) => ({ id: f.id, name: f.name }))
+
   // Handle tag filter — get matching item IDs first
   let tagFilterIds: string[] | null = null
   let activeTagName: string | undefined
@@ -124,8 +131,29 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     activeTagName = tagRow?.name ?? undefined
   }
 
-  // If tag filter returned no items, short-circuit
-  if (tagFilterIds !== null && tagFilterIds.length === 0) {
+  // Handle folder filter — get matching item IDs first
+  let folderFilterIds: string[] | null = null
+  let activeFolderName: string | undefined
+  if (folderId) {
+    const [{ data: inFolder }, { data: folderRow }] = await Promise.all([
+      supabase.from('item_folders').select('item_id').eq('folder_id', folderId),
+      supabase.from('folders').select('name').eq('id', folderId).single(),
+    ])
+    folderFilterIds = inFolder?.map((r) => r.item_id) ?? []
+    activeFolderName = folderRow?.name ?? undefined
+  }
+
+  // Combine tag + folder filters (intersection when both present)
+  let combinedIds: string[] | null
+  if (tagFilterIds !== null && folderFilterIds !== null) {
+    const inFolderSet = new Set(folderFilterIds)
+    combinedIds = tagFilterIds.filter((id) => inFolderSet.has(id))
+  } else {
+    combinedIds = tagFilterIds ?? folderFilterIds
+  }
+
+  // If a filter is active but matched no items, short-circuit
+  if (combinedIds !== null && combinedIds.length === 0) {
     return (
       <ItemsPageClient
         items={[]}
@@ -135,6 +163,9 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
         activeTagName={activeTagName}
         activeTagId={tagId}
         tags={tags}
+        folders={folders}
+        activeFolderId={folderId}
+        activeFolderName={activeFolderName}
         activeSort={activeSort}
         activeSource={activeSource}
         userTier={userTier}
@@ -157,7 +188,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   let query = supabase
     .from('items')
     .select(
-      'id, subject, sender_email, ai_summary, status, error_message, pinned, created_at, source_type, source_url, thumbnail_url, item_tags(tags(id, name))',
+      'id, subject, sender_email, ai_summary, status, error_message, pinned, created_at, source_type, source_url, thumbnail_url, item_tags(tags(id, name)), item_folders(folders(id, name))',
       { count: 'exact' },
     )
     .eq('user_id', user.id)
@@ -167,8 +198,8 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
 
   query = applySortOrder(query, activeSort)
 
-  if (tagFilterIds !== null) {
-    query = query.in('id', tagFilterIds)
+  if (combinedIds !== null) {
+    query = query.in('id', combinedIds)
   }
 
   // Source filter — legacy rows (null source_type) are treated as email

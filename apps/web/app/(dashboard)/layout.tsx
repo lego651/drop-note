@@ -25,6 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     { count: archiveCount },
     { count: allItemsCount },
     { count: pinnedCount },
+    { data: foldersData },
   ] = await Promise.all([
     supabase.from('users').select('tier').eq('id', user.id).single(),
     supabase
@@ -62,6 +63,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       .is('archived_at', null)
       .eq('type', 'email_body')
       .eq('pinned', true),
+    supabase.rpc('get_folders_with_counts'),
   ])
 
   const tier = (userData?.tier ?? 'free') as Tier
@@ -78,6 +80,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <Sidebar
         userEmail={user.email ?? ''}
         tags={tagsData ?? []}
+        folders={foldersData ?? []}
         monthCounts={monthData ?? []}
         trashCount={trashCount ?? 0}
         archiveCount={archiveCount ?? 0}
@@ -90,6 +93,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <MobileSidebar
             userEmail={user.email ?? ''}
             tags={tagsData ?? []}
+            folders={foldersData ?? []}
             monthCounts={monthData ?? []}
             trashCount={trashCount ?? 0}
             archiveCount={archiveCount ?? 0}

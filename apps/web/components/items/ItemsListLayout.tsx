@@ -8,6 +8,8 @@ interface ItemsListLayoutProps {
   onSelectChange?: (id: string, checked: boolean) => void
   onPinChange?: (id: string, pinned: boolean) => void
   onDelete?: (id: string) => void
+  folders?: { id: string; name: string }[]
+  onFolderToggle?: (itemId: string, folderId: string, nextInFolder: boolean) => void
 }
 
 export function ItemsListLayout({
@@ -17,6 +19,8 @@ export function ItemsListLayout({
   onSelectChange,
   onPinChange,
   onDelete,
+  folders,
+  onFolderToggle,
 }: ItemsListLayoutProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -29,6 +33,8 @@ export function ItemsListLayout({
           onSelectChange={onSelectChange}
           onPinChange={onPinChange}
           onDelete={onDelete}
+          folders={folders}
+          onFolderToggle={onFolderToggle}
         />
       ))}
     </div>

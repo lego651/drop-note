@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { VideoModal } from '@/components/VideoModal'
 import { TagRow } from '@/components/TagRow'
+import { FolderPills } from '@/components/FolderPills'
+import { AddToFolderMenu } from '@/components/AddToFolderMenu'
 import { cn } from '@/lib/utils'
 import { colorForTagHsl, SOURCE_DOT } from '@/lib/design-tokens'
 import type { ItemSummary } from '@/lib/items'
@@ -21,6 +23,8 @@ interface ListCardProps {
   onSelectChange?: (id: string, checked: boolean) => void
   onPinChange?: (id: string, pinned: boolean) => void
   onDelete?: (id: string) => void
+  folders?: { id: string; name: string }[]
+  onFolderToggle?: (itemId: string, folderId: string, nextInFolder: boolean) => void
 }
 
 const PIN = 'hsl(var(--color-pin))'
@@ -56,6 +60,8 @@ export function ListCard({
   onSelectChange,
   onPinChange,
   onDelete,
+  folders = [],
+  onFolderToggle,
 }: ListCardProps) {
   const [videoOpen, setVideoOpen] = useState(false)
 
@@ -63,6 +69,12 @@ export function ListCard({
     item.item_tags
       ?.map((it) => it.tags)
       .filter((t): t is { id: string; name: string } => t !== null) ?? []
+
+  const itemFolders =
+    item.item_folders
+      ?.map((f) => f.folders)
+      .filter((f): f is { id: string; name: string } => f !== null) ?? []
+  const folderIdSet = new Set(itemFolders.map((f) => f.id))
 
   const isFailed = item.status === 'failed'
   const isProcessing = item.status === 'processing' || item.status === 'pending'
@@ -160,11 +172,22 @@ export function ListCard({
 
       {/* Tags */}
       {tags.length > 0 && <TagRow tags={tags} />}
+
+      {/* Folder pills */}
+      <FolderPills
+        folders={itemFolders}
+        onRemove={onFolderToggle ? (folderId) => onFolderToggle(item.id, folderId, false) : undefined}
+      />
     </div>
   )
 
   const card = (
     <article
+      draggable={Boolean(onFolderToggle)}
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', item.id)
+        e.dataTransfer.effectAllowed = 'copy'
+      }}
       className={cn(
         'group relative flex items-start gap-5 rounded-2xl bg-card p-4 shadow-sm transition-shadow hover:shadow-md',
         isSelected && 'ring-2 ring-ring',
@@ -184,9 +207,16 @@ export function ListCard({
       {media}
       {body}
 
-      {/* Hover actions — pin / delete */}
+      {/* Hover actions — folder / pin / delete */}
       {!isBulkMode && (
         <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          {onFolderToggle && (
+            <AddToFolderMenu
+              folders={folders}
+              selectedIds={folderIdSet}
+              onToggle={(folderId, next) => onFolderToggle(item.id, folderId, next)}
+            />
+          )}
           <button
             type="button"
             aria-label={item.pinned ? 'Unpin item' : 'Pin item'}

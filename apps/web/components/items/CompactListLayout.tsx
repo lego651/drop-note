@@ -15,6 +15,8 @@ interface CompactListLayoutProps {
   onSelectChange?: (id: string, checked: boolean) => void
   onPinChange?: (id: string, pinned: boolean) => void
   onDelete?: (id: string) => void
+  folders?: { id: string; name: string }[]
+  onFolderToggle?: (itemId: string, folderId: string, nextInFolder: boolean) => void
 }
 
 const PIN = 'hsl(var(--color-pin))'
@@ -36,11 +38,13 @@ function CompactRow({
   isBulkMode,
   isSelected,
   onSelectChange,
+  draggable = false,
 }: {
   item: ItemSummary
   isBulkMode: boolean
   isSelected: boolean
   onSelectChange?: (id: string, checked: boolean) => void
+  draggable?: boolean
 }) {
   const isDone = item.status === 'done'
   const tags =
@@ -59,6 +63,15 @@ function CompactRow({
 
   const row = (
     <article
+      draggable={draggable}
+      onDragStart={
+        draggable
+          ? (e) => {
+              e.dataTransfer.setData('text/plain', item.id)
+              e.dataTransfer.effectAllowed = 'copy'
+            }
+          : undefined
+      }
       className={cn(
         'group flex items-center gap-3 rounded-2xl bg-card px-3 py-3.5 shadow-sm transition-shadow hover:shadow-md',
         isSelected && 'ring-2 ring-ring',
@@ -155,6 +168,7 @@ export function CompactListLayout({
   isBulkMode = false,
   selectedIds,
   onSelectChange,
+  onFolderToggle,
 }: CompactListLayoutProps) {
   return (
     <div className="flex flex-col gap-2.5">
@@ -165,6 +179,7 @@ export function CompactListLayout({
           isBulkMode={isBulkMode}
           isSelected={selectedIds?.has(item.id) ?? false}
           onSelectChange={onSelectChange}
+          draggable={Boolean(onFolderToggle)}
         />
       ))}
     </div>

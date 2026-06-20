@@ -8,6 +8,8 @@ interface ItemsGridLayoutProps {
   onSelectChange?: (id: string, checked: boolean) => void
   onPinChange?: (id: string, pinned: boolean) => void
   onDelete?: (id: string) => void
+  folders?: { id: string; name: string }[]
+  onFolderToggle?: (itemId: string, folderId: string, nextInFolder: boolean) => void
 }
 
 export function ItemsGridLayout({
@@ -17,6 +19,8 @@ export function ItemsGridLayout({
   onSelectChange,
   onPinChange,
   onDelete,
+  folders,
+  onFolderToggle,
 }: ItemsGridLayoutProps) {
   return (
     <div className="grid grid-cols-1 gap-x-5 gap-y-7 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -29,6 +33,8 @@ export function ItemsGridLayout({
           onSelectChange={onSelectChange}
           onPinChange={onPinChange}
           onDelete={onDelete}
+          folders={folders}
+          onFolderToggle={onFolderToggle}
         />
       ))}
     </div>

@@ -16,6 +16,7 @@ export type ItemSummary = {
   source_url: string | null
   thumbnail_url: string | null
   item_tags?: { tags: { id: string; name: string } | null }[] | null
+  item_folders?: { folders: { id: string; name: string } | null }[] | null
 }
 
 export type ItemGroup = {

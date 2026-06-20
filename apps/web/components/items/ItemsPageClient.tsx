@@ -40,6 +40,9 @@ interface ItemsPageClientProps {
   activeTagName?: string
   activeTagId?: string
   tags?: { id: string; name: string; count: number }[]
+  folders?: { id: string; name: string }[]
+  activeFolderId?: string
+  activeFolderName?: string
   activeSort?: SortOption
   activeSource?: SourceFilter
   userTier?: Tier
@@ -67,6 +70,9 @@ function ItemsPageClientInner({
   initialQuery = '',
   activeTagId,
   tags = [],
+  folders = [],
+  activeFolderId,
+  activeFolderName,
   activeSort = 'newest',
   activeSource = 'all',
   userTier = 'free',
@@ -218,6 +224,40 @@ function ItemsPageClientInner({
     }
   }, [])
 
+  const handleFolderToggle = useCallback(async (itemId: string, folderId: string, nextInFolder: boolean) => {
+    const folder = folders.find((f) => f.id === folderId)
+    if (!folder) return
+    // 1. Optimistic update of this item's folder membership
+    setOptimisticItems(prev => prev.map(item => {
+      if (item.id !== itemId) return item
+      const current = item.item_folders ?? []
+      const next = nextInFolder
+        ? [...current.filter(f => f.folders?.id !== folderId), { folders: { id: folder.id, name: folder.name } }]
+        : current.filter(f => f.folders?.id !== folderId)
+      return { ...item, item_folders: next }
+    }))
+    // 2. Persist
+    try {
+      const res = await fetch(`/api/items/${itemId}/folders`, {
+        method: nextInFolder ? 'POST' : 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderId }),
+      })
+      if (!res.ok) throw new Error(String(res.status))
+    } catch (err) {
+      // 3. Roll back on failure
+      setOptimisticItems(prev => prev.map(item => {
+        if (item.id !== itemId) return item
+        const current = item.item_folders ?? []
+        const reverted = nextInFolder
+          ? current.filter(f => f.folders?.id !== folderId)
+          : [...current.filter(f => f.folders?.id !== folderId), { folders: { id: folder.id, name: folder.name } }]
+        return { ...item, item_folders: reverted }
+      }))
+      console.error('[folder] toggle failed:', err instanceof Error ? err.message : err)
+    }
+  }, [folders])
+
   const handleDelete = useCallback(async (id: string) => {
     const confirmed = window.confirm('Delete this item?')
     if (!confirmed) return
@@ -253,6 +293,8 @@ function ItemsPageClientInner({
     onSelectChange: toggle,
     onPinChange: handlePinChange,
     onDelete: handleDelete,
+    folders,
+    onFolderToggle: handleFolderToggle,
   }
 
   function renderLayout() {
@@ -314,6 +356,29 @@ function ItemsPageClientInner({
       {/* Tag filter bar */}
       {tags.length > 0 && (
         <TagFilterBar tags={tags} totalCount={totalCount} activeTagId={activeTagId} />
+      )}
+
+      {/* Active folder filter chip */}
+      {activeFolderId && activeFolderName && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Folder:</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground/10 px-3 py-1 text-xs font-medium text-foreground">
+            {activeFolderName}
+            <button
+              type="button"
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString())
+                params.delete('folder')
+                params.delete('page')
+                router.push(`/items${params.toString() ? `?${params.toString()}` : ''}`)
+              }}
+              className="ml-0.5 rounded-full hover:bg-foreground/10 p-0.5"
+              aria-label="Clear folder filter"
+            >
+              <X size={11} />
+            </button>
+          </span>
+        </div>
       )}
 
       {/* Active source filter chip — visible indicator of what's filtered */}
