@@ -80,6 +80,71 @@ export type Database = {
           },
         ]
       }
+      folders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "folders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_folders: {
+        Row: {
+          created_at: string
+          folder_id: string
+          item_id: string
+        }
+        Insert: {
+          created_at?: string
+          folder_id: string
+          item_id: string
+        }
+        Update: {
+          created_at?: string
+          folder_id?: string
+          item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_folders_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_folders_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       item_tags: {
         Row: {
           item_id: string
@@ -304,6 +369,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_folders_with_counts: {
+        Args: never
+        Returns: {
+          id: string
+          item_count: number
+          name: string
+          position: number
+        }[]
+      }
       get_month_counts: {
         Args: never
         Returns: {
