@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>drop-note — Folders 功能头脑风暴结论 (2026-06-19)</title>
+  <style>
+    :root {
+      --bg: #fafaf8;
+      --surface: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --border: #e5e7eb;
+      --done: #059669;
+      --progress: #d97706;
+      --blocked: #dc2626;
+      --killed: #6b7280;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    h1 { font-size: 32px; margin-bottom: 4px; letter-spacing: -0.02em; }
+    h2 { font-size: 22px; margin: 28px 0 14px; letter-spacing: -0.01em; }
+    h3 { font-size: 16px; margin: 16px 0 8px; }
+    h4 { font-size: 14px; margin: 12px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .meta { color: var(--muted); font-size: 14px; margin-top: 8px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .badge-draft { background: #fef3c7; color: #92400e; }
+    .badge-done { background: #d1fae5; color: #065f46; }
+    .badge-progress { background: #fed7aa; color: #9a3412; }
+    .badge-blocked { background: #fee2e2; color: #991b1b; }
+    .badge-killed { background: #e5e7eb; color: #4b5563; }
+    .badge-unknown { background: #ddd6fe; color: #5b21b6; }
+    .north-star {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 1px solid #bae6fd;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 16px 0;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 12px 0;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { background: #f9fafb; font-weight: 600; font-size: 13px; }
+    .phase {
+      border-left: 4px solid var(--accent);
+      padding: 4px 0 4px 20px;
+      margin: 24px 0;
+    }
+    .phase-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+    .phase-title { font-size: 18px; font-weight: 600; }
+    .phase-meta { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+    .scope-list {
+      list-style: none;
+      padding: 0;
+      margin: 8px 0;
+    }
+    .scope-list li {
+      padding: 5px 0 5px 26px;
+      position: relative;
+      font-size: 14px;
+    }
+    .scope-list li::before {
+      position: absolute;
+      left: 0;
+      top: 5px;
+      font-weight: 700;
+    }
+    .scope-in li::before { content: "✓"; color: var(--done); }
+    .scope-out li::before { content: "✗"; color: var(--killed); }
+    .question {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      padding: 14px 18px;
+      margin: 12px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .question-q { font-weight: 600; margin-bottom: 6px; font-size: 15px; }
+    .question-rec { color: #4b5563; font-size: 13px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 13px;
+    }
+    pre {
+      background: #f3f4f6;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 12px 0;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    pre code { background: none; padding: 0; }
+    .warn-box {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #fee2e2;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      margin-top: 32px;
+      padding: 20px;
+    }
+    @media (max-width: 720px) {
+      body { padding: 16px 8px; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge badge-done">AGREED — 三方一致结论，待 Jason 拍板 3 个问题</span>
+      <h1 style="margin-top: 14px;">drop-note — Folders 分类功能</h1>
+      <div style="color: var(--muted); font-size: 18px; margin-top: 2px;">头脑风暴会议结论 · 2026-06-19</div>
+      <div class="meta">
+        主持：主 Claude · 参会：<code>product-manager</code> + <code>manager-mathieu</code> (Product &amp; Eng VP) · 阶段：仅头脑风暴，未写任何代码 · 产品归属：<code>drop-mic</code> / 代码执行：<code>techlead-jose</code>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>🎯 一句话结论</h2>
+      <div class="north-star">
+        给 drop-note 加一层 <strong>Folders（文件夹/容器）</strong>：每个 item <strong>单归属</strong>一个 folder（move 语义，像邮件文件夹）。
+        左侧导航的 <strong>Tags section 整体换成 Folders</strong>，顶部 tags 过滤器保留——彻底消除你说的"左边和顶部 tags 重复"。
+        指派方式两通道：<strong>kebab 菜单</strong>（移动端一等公民）+ <strong>桌面端原生拖拽</strong>（你点名要的交互，已确认可低成本实现）。
+        没选 folder = 虚拟的 <strong>All Items</strong> 视图，<strong>不</strong>建真实的 ALL 文件夹。
+      </div>
+      <p style="color: var(--muted); font-size: 14px;">
+        三方一致。预想的几个分歧（单/多归属、是否做拖拽、排期）经两轮挑战后全部收敛。下方"🟡 需要你拍板"列出仅剩的 3 个真正决策。
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>🧭 核心心智模型 — Folder vs Tag 分工</h2>
+      <p style="color: var(--muted); margin-bottom: 8px;">这是整个设计的地基：两条信息轴彻底分开，不再重叠。和 Bear / Notion / Linear 的做法一致。</p>
+      <table>
+        <tr><th style="width:22%">维度</th><th>Folder（新增）</th><th>Tag（保留）</th></tr>
+        <tr><td>语义</td><td><strong>它住在哪里</strong>（容器）</td><td><strong>它是什么</strong>（属性标签）</td></tr>
+        <tr><td>归属数量</td><td>一个 item 只能在 <strong>1 个</strong> folder</td><td>一个 item 可有 <strong>多个</strong> tags</td></tr>
+        <tr><td>谁来赋值</td><td>只有用户手动</td><td>AI auto-tag + 用户手动</td></tr>
+        <tr><td>导航入口</td><td><strong>只在左侧导航</strong></td><td><strong>只在顶部过滤条</strong></td></tr>
+        <tr><td>典型例子</td><td><code>Sports</code> · <code>Next week</code> · <code>Work</code></td><td><code>#article</code> · <code>#video</code> · <code>#urgent</code></td></tr>
+      </table>
+      <p style="font-size: 14px; margin-top: 6px;">
+        👉 "一篇文章既想放 Sports 又想放 To-read" 怎么办？<strong>用 tag 解决</strong>——folder 是唯一主容器，tag 是横切标签。这条规则需要在 UI 上对用户讲清楚。
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>🗄 数据模型草案</h2>
+      <p style="color: var(--muted); margin-bottom: 4px;">改动极小：新增 1 张表 + items 加 1 个 nullable 外键。<strong>现有 <code>tags</code> / <code>item_tags</code> 零改动，AI pipeline 零感知，存量数据零迁移。</strong></p>
+      <pre><code>-- 新建 folders 表
+folders
+├── id          uuid  PK
+├── user_id     uuid  FK → auth.users
+├── name        text  NOT NULL
+├── position    int   DEFAULT 0          -- 支持手动排序
+├── created_at  timestamptz
+└── UNIQUE(user_id, lower(name))         -- per-user 唯一、大小写不敏感（与 tags 表一致）
+
+-- items 表加一列
+items.folder_id  uuid  FK → folders(id) ON DELETE SET NULL
+                                          -- NULL = 未分类 → 归入虚拟 All Items
+-- 复合索引 (user_id, folder_id)</code></pre>
+      <div class="warn-box">
+        <strong>⚠️ 安全高发区（Jose 必须处理）：</strong>RLS。<code>folders</code> 表加 <code>user_id = auth.uid()</code> policy；同时 <code>items.folder_id</code> 的 insert/update policy 要加 <code>exists</code> 子查询，**禁止把 item 指派到别人的 folder**。这是最容易漏的跨用户漏洞。
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>🖱 交互设计（UX）</h2>
+      <div class="grid-2">
+        <div>
+          <h3>① 给单个 card 指派 folder</h3>
+          <ul class="scope-list scope-in">
+            <li>主交互：card 右上角 <code>...</code> kebab 菜单 → "Move to folder" → inline 下拉选择</li>
+            <li>移动端：tap kebab 触发，功能<strong>完全等价</strong>，无残缺</li>
+            <li>批量：多选后顶部 action bar 出 "Move to" 按钮</li>
+          </ul>
+          <p style="font-size:13px; color:var(--muted);">❌ 不用右键 context menu（移动端不可用）</p>
+        </div>
+        <div>
+          <h3>② 桌面端拖拽（你点名要的）</h3>
+          <ul class="scope-list scope-in">
+            <li>用浏览器<strong>原生 HTML5 DnD</strong>，<strong>不引第三方库</strong></li>
+            <li>拖起 item → 左侧 folder 高亮成 drop zone</li>
+            <li>放下 → move 进去 + toast "Moved to Sports" + 乐观更新计数</li>
+            <li>复用和 kebab 菜单<strong>同一个</strong> <code>PATCH /api/items/:id</code></li>
+          </ul>
+        </div>
+      </div>
+      <h3>③ 移动端 fallback</h3>
+      <p style="font-size:14px;">原生 HTML5 拖拽在触屏上天然不触发 → 移动端自动走 kebab 菜单，<strong>无需维护两套逻辑</strong>。左侧导航在移动端是抽屉，tap folder 进入该视图。</p>
+      <div class="warn-box" style="background:#d1fae5; color:#065f46;">
+        <strong>✅ 关键技术确认（Mathieu 二轮诚实下修）：</strong>"拖拽 = 要引 <code>@dnd-kit</code>（+20-30KB、包整个布局的 context、hydration 风险）"这个前提<strong>是错的</strong>。原生 HTML5 DnD 零 bundle、零 context、不改 hydration 边界。成本从原估 +1.5~2d <strong>下修到 +0.5~1d</strong>。所以拖拽进 v1 是合理 scope，不是过度工程。
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>📦 v1 Scope 边界</h2>
+      <div class="grid-2">
+        <div>
+          <h4>v1 要做</h4>
+          <ul class="scope-list scope-in">
+            <li>创建 / 重命名 / 删除 folder</li>
+            <li>folder 手动排序（<code>position</code> 字段）</li>
+            <li>item 单归属指派（kebab 菜单）</li>
+            <li>桌面端原生拖拽指派</li>
+            <li>左侧导航 Tags section → 换成 Folders section</li>
+            <li>虚拟 All Items 视图（顶部固定，不可删）</li>
+            <li>顶部 tags 过滤器保留</li>
+          </ul>
+        </div>
+        <div>
+          <h4>砍到 v2 / 以后</h4>
+          <ul class="scope-list scope-out">
+            <li>嵌套 / 子文件夹</li>
+            <li>folder 颜色 / 图标</li>
+            <li>GTD 型 folder（截止日 / 提醒 / "清空清单"）</li>
+            <li>Smart folder（按 tag 规则自动归类）</li>
+            <li>folder 分享（另一套 auth + RLS）</li>
+            <li>多归属（明确不做，用 tag 替代该需求）</li>
+          </ul>
+        </div>
+      </div>
+      <p style="font-size:14px; margin-top:8px;">
+        关于 <strong>"Next week" 这类计划型 folder</strong>：v1 <strong>不</strong>区分"主题型 vs 计划型"，统一成一种灵活 folder——用户自定义语义即可。里面积压旧 item 是使用习惯问题，不是数据模型问题。未来可加 <code>type</code> 字段支持 GTD 动作，但 v1 砍掉（beta resist scope creep）。
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>📅 排期建议（三方一致）</h2>
+      <p style="color: var(--muted); margin-bottom: 8px;">代码由 <code>techlead-jose</code> 执行。下方为粗估。</p>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="badge badge-progress">建议先行</span>
+          <span class="phase-title">Sentry / 监控告警（并行接入）</span>
+        </div>
+        <div class="phase-meta">约 2~4 小时 · 可在 Folder 开发期间并行做掉</div>
+        <p style="font-size:14px;">Folder 指派是 DB 写路径，silent failure 不可接受。Mathieu 立场（二轮修正后）：<strong>不必卡 beta，但 public launch / 开放注册前必须就位</strong>。beta 是可控小圈子，出问题你能直接收到反馈。</p>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="badge badge-draft">Folder v1</span>
+          <span class="phase-title">单归属 + 菜单 + 桌面拖拽</span>
+        </div>
+        <div class="phase-meta">约 3~3.5 天（含拖拽 +0.5~1d）· 无架构债</div>
+        <table>
+          <tr><th style="width:60%">工作块</th><th>粗估</th></tr>
+          <tr><td>DB migration + <code>pnpm gen:types</code></td><td>0.5d</td></tr>
+          <tr><td><code>/api/folders</code> CRUD + <code>PATCH /api/items/:id</code></td><td>0.5d</td></tr>
+          <tr><td>sidebar：Tags section → Folders section</td><td>1d</td></tr>
+          <tr><td>ItemCard "Move to folder" 菜单 + <code>?folder=</code> 过滤</td><td>1d</td></tr>
+          <tr><td>原生 HTML5 拖拽（desktop）</td><td>0.5~1d</td></tr>
+          <tr><td>联调 + beta 级手动 QA</td><td>0.5d</td></tr>
+        </table>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="badge badge-killed">观察 / v2</span>
+          <span class="phase-title">beta 反馈后再定</span>
+        </div>
+        <div class="phase-meta">等真实朋友反馈驱动</div>
+        <p style="font-size:14px;">颜色/图标、嵌套、GTD 语义、smart folder 等，等真实用户需求出现再做。</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>⚠️ 风险清单</h2>
+      <table>
+        <tr><th style="width:26%">风险</th><th style="width:12%">严重度</th><th>说明 / 缓解</th></tr>
+        <tr><td>RLS 跨用户 folder 指派漏洞</td><td><span class="badge badge-blocked">高</span></td><td>items.folder_id 可能被 API 写成别人的 folder。policy 加归属校验。Jose 重点防。</td></tr>
+        <tr><td>左侧 Tags 移除的用户感知</td><td><span class="badge badge-progress">中</span></td><td>beta 用户已习惯左边有 tags；顶部过滤器还在，需 UI 引导说明。</td></tr>
+        <tr><td>ItemCard 可能需降级 client component</td><td><span class="badge badge-progress">中</span></td><td>拖拽需要 client。开工前 30 秒确认 ItemCard 是否已是 client（大概率是）。</td></tr>
+        <tr><td>原生 DnD 跨浏览器 + 无键盘无障碍</td><td><span class="badge badge-killed">低</span></td><td>Firefox/Safari 有小坑，beta 群体可控；键盘拖拽 v1 接受不支持（power user 场景）。</td></tr>
+        <tr><td>AI auto-tag pipeline 影响</td><td><span class="badge badge-killed">无</span></td><td>AI 只写 tags，folder 纯用户手动，完全隔离。</td></tr>
+        <tr><td>存量 items 数据迁移</td><td><span class="badge badge-killed">无</span></td><td>folder_id nullable，默认 NULL = All Items，无需迁移。</td></tr>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>🟡 需要 Jason 拍板（3 个）</h2>
+      <p style="color: var(--muted); margin-bottom: 12px;">下面是三方收敛后<strong>仍需你定</strong>的真正决策。每条给了我们的推荐。</p>
+
+      <div class="question">
+        <div class="question-q">1. 单归属 vs 多归属 —— 一个 item 只能在 1 个 folder，还是能同时在多个？</div>
+        <div class="question-rec">📌 <strong>我们一致推荐：单归属（move 语义）。</strong>更符合你"放进 sports 里去"的说法，心智清晰，和 tags 分工不重叠，工程最简。代价：想让一个 item 同时归两类，得用 tag 而不是第二个 folder。<strong>这条会约束整个数据模型，请确认你接受。</strong></div>
+      </div>
+
+      <div class="question">
+        <div class="question-q">2. 桌面端拖拽 —— v1 就做，还是先只做菜单、拖拽放 v2？</div>
+        <div class="question-rec">📌 <strong>推荐：v1 就做（原生 HTML5，desktop-only，+0.5~1d）。</strong>这是你点名要的交互，且确认了低成本无架构债。移动端走 kebab 菜单。若你想更快见到 folder 雏形，也可选择 v1 先菜单、拖拽 v2——但我们认为没必要砍。</div>
+      </div>
+
+      <div class="question">
+        <div class="question-q">3. 排期 —— Folder 现在就让 Jose 开做，还是先把 Sentry/监控并行铺好？</div>
+        <div class="question-rec">📌 <strong>推荐：Sentry 在 Folder 开发期间并行接入（2~4h），public launch 前必须就位；Folder v1 可以现在就启动，不必卡 beta。</strong>两者不冲突。</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>✅ 下一步</h2>
+      <p style="font-size:14px;">你对上面 3 个问题拍板后，我可以让 <code>drop-mic</code> 把这份结论转成一份给 <code>techlead-jose</code> 的实现 brief（含数据模型、API、UI、RLS 验收点），<strong>仍不写代码</strong>，等你说"开做"再动手。</p>
+    </section>
+
+    <footer>
+      生成于 2026-06-19 · 主持 <code>主 Claude</code> · 参会 <code>product-manager</code> + <code>manager-mathieu</code> · 仅头脑风暴，未写代码 · 待 Jason 拍板 3 个决策后转 Jose 实现 brief
+    </footer>
+  </div>
+</body>
+</html>

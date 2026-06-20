@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>drop-note — 项目进度汇报 2026-06-19</title>
+  <style>
+    :root {
+      --bg: #fafaf8;
+      --surface: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --border: #e5e7eb;
+      --done: #059669;
+      --progress: #d97706;
+      --blocked: #dc2626;
+      --killed: #6b7280;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    h1 { font-size: 32px; margin-bottom: 4px; letter-spacing: -0.02em; }
+    h2 { font-size: 22px; margin: 28px 0 14px; letter-spacing: -0.01em; }
+    h3 { font-size: 16px; margin: 16px 0 8px; }
+    h4 { font-size: 14px; margin: 12px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .meta { color: var(--muted); font-size: 14px; margin-top: 8px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .badge-draft { background: #fef3c7; color: #92400e; }
+    .badge-done { background: #d1fae5; color: #065f46; }
+    .badge-progress { background: #fed7aa; color: #9a3412; }
+    .badge-blocked { background: #fee2e2; color: #991b1b; }
+    .badge-killed { background: #e5e7eb; color: #4b5563; }
+    .badge-unknown { background: #ddd6fe; color: #5b21b6; }
+    .north-star {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 1px solid #bae6fd;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 16px 0;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 12px 0;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { background: #f9fafb; font-weight: 600; font-size: 13px; }
+    .phase {
+      border-left: 4px solid var(--accent);
+      padding: 4px 0 4px 20px;
+      margin: 24px 0;
+    }
+    .phase-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+    .phase-title { font-size: 18px; font-weight: 600; }
+    .phase-meta { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+    .scope-list {
+      list-style: none;
+      padding: 0;
+      margin: 8px 0;
+    }
+    .scope-list li {
+      padding: 5px 0 5px 26px;
+      position: relative;
+      font-size: 14px;
+    }
+    .scope-list li::before {
+      position: absolute;
+      left: 0;
+      top: 5px;
+      font-weight: 700;
+    }
+    .scope-in li::before { content: "✓"; color: var(--done); }
+    .scope-out li::before { content: "✗"; color: var(--killed); }
+    .question {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      padding: 14px 18px;
+      margin: 12px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .question-q { font-weight: 600; margin-bottom: 6px; font-size: 15px; }
+    .question-rec { color: #4b5563; font-size: 13px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 13px;
+    }
+    .warn-box {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #fee2e2;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      margin-top: 32px;
+      padding: 20px;
+    }
+    @media (max-width: 720px) {
+      body { padding: 16px 8px; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <span class="badge badge-progress">BETA — 朋友测试阶段，暂未 prod-ready</span>
+      <h1 style="margin-top: 14px;">drop-note</h1>
+      <div style="color: var(--muted); font-size: 18px; margin-top: 2px;">项目进度汇报 — 2026-06-19</div>
+      <div class="meta">
+        负责人: <code>drop-mic (Mic)</code> · URL: <code>https://dropnote.me</code> · Repo: <code>lego651/drop-note</code>（私有）<br>
+        汇报给: <code>manager-mathieu</code> (Product &amp; Engineering VP, LEDOO FORTUNE FINANCIAL INC.)
+      </div>
+    </header>
+
+    <!-- ═══ 产品北极星 ═══ -->
+    <section class="section">
+      <h2>产品定位</h2>
+      <div class="north-star">
+        <strong>drop-note — save anything from anywhere.</strong><br>
+        用户把任何东西发到 <code>drop@dropnote.me</code>，AI 自动摘要 + 打标签，可搜索的 dashboard 保存一切。<br>
+        免费托管（dropnote.me）；Stripe 代码保留但禁用——触发条件：100 active users → 单一 $4.99/mo hosted tier。<br>
+        Repo 已私有（2026-05-30 AGPL 定位终止）；无开源/自托管方向。
+      </div>
+
+      <div class="grid-2" style="margin-top: 16px;">
+        <table>
+          <tr><th colspan="2">当前关键状态</th></tr>
+          <tr><td>阶段</td><td><span class="badge badge-progress">BETA</span> 朋友测试稳定性</td></tr>
+          <tr><td>Alpha 完成日</td><td>2026-05-30（S0–S8 全部 ship）</td></tr>
+          <tr><td>Prod-ready</td><td>未 — 等 beta 稳定后进入 production hardening</td></tr>
+          <tr><td>Live URL</td><td><code>https://dropnote.me</code>（Vercel）</td></tr>
+          <tr><td>Drop 地址</td><td><code>drop@dropnote.me</code>（SendGrid Inbound Parse）</td></tr>
+          <tr><td>Auth</td><td>Google OAuth only（Supabase）</td></tr>
+        </table>
+        <table>
+          <tr><th colspan="2">技术栈快照</th></tr>
+          <tr><td>前端</td><td>Next.js 14 + shadcn/ui + Tailwind</td></tr>
+          <tr><td>数据库</td><td>Supabase (Postgres + RLS, 8 张表)</td></tr>
+          <tr><td>AI</td><td>OpenAI GPT-4o-mini（同步，D11）</td></tr>
+          <tr><td>邮件入站</td><td>SendGrid Inbound Parse → <code>/api/ingest</code></td></tr>
+          <tr><td>邮件发送</td><td>Resend（<code>hello@dropnote.me</code>）</td></tr>
+          <tr><td>部署模型</td><td>Trunk-based + 严格 PR 闸门，无 staging</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ Sprint 完成度 ═══ -->
+    <section class="section">
+      <h2>Sprint 完成度（Alpha 全部 Ship）</h2>
+      <p style="color: var(--muted); margin-bottom: 8px;">S0–S8 共 9 个 sprint，截至 2026-05-30 全部完成，Alpha 正式关闭。</p>
+      <table>
+        <tr>
+          <th>Sprint</th>
+          <th>主题</th>
+          <th>状态</th>
+          <th>关键产出</th>
+        </tr>
+        <tr>
+          <td>S0–S1</td>
+          <td>基础架构、schema、认证</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td>Supabase schema、Google OAuth、RLS 8 张表</td>
+        </tr>
+        <tr>
+          <td>S2</td>
+          <td>邮件摄取 + AI Pipeline</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td>SendGrid → <code>/api/ingest</code> → GPT-4o-mini → Supabase（D11：同步 AI）</td>
+        </tr>
+        <tr>
+          <td>S3</td>
+          <td>支付框架 + Tier 权限控制</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td>Stripe 代码在库，null-checked 禁用；D1 kill $9.99/$49.99</td>
+        </tr>
+        <tr>
+          <td>S4</td>
+          <td>Dashboard + Item 管理 UI</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td>列表/卡片/时间线三视图、搜索过滤、批量操作、Tag 系统</td>
+        </tr>
+        <tr>
+          <td>S5</td>
+          <td>实时更新、Admin、打磨</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td>Supabase Realtime、Rate limiting、Blocklist、Sentry 监控</td>
+        </tr>
+        <tr>
+          <td>S6</td>
+          <td>测试、OSS 准备（已终止）</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td>162+ 测试文件、CI/CD GitHub Actions；OSS 方向后续 kill</td>
+        </tr>
+        <tr>
+          <td>S7</td>
+          <td>重上线、定位调整、UI 重设计</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td>全新落地页（9 个 landing 组件）、Archive 功能、Tag 颜色系统、排序/过滤增强</td>
+        </tr>
+        <tr>
+          <td>S8</td>
+          <td>Onboarding、邮件、Beta 收尾</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td>WelcomeModal、Empty state 3-step、Weekly Digest cron、Settings 5-tab 重设计；Alpha 归档；Repo 私有化</td>
+        </tr>
+      </table>
+    </section>
+
+    <!-- ═══ Alpha 任务完成清单 ═══ -->
+    <section class="section">
+      <h2>Alpha 任务清单（上线前 Blocker 全部清除）</h2>
+      <table>
+        <tr>
+          <th style="width: 8%">任务</th>
+          <th style="width: 40%">描述</th>
+          <th style="width: 12%">状态</th>
+          <th>关键 Commit / 备注</th>
+        </tr>
+        <tr>
+          <td>A</td>
+          <td>域名迁移（dropnote.me，DNS，MX）</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td><code>a22f418</code></td>
+        </tr>
+        <tr>
+          <td>B</td>
+          <td>AI 错误处理 + retry 逻辑</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td><code>001b28a</code></td>
+        </tr>
+        <tr>
+          <td>C</td>
+          <td>Dockerfile HOSTNAME 修复（D11 后已无关）</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td><code>a22f418</code>；D11 kill worker 后 moot</td>
+        </tr>
+        <tr>
+          <td>D</td>
+          <td>法律页面（Jason Gao 数据控制人、Google OAuth、免费 tier）</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td><code>de1dba1</code>；/terms + /privacy + /aup</td>
+        </tr>
+        <tr>
+          <td>D11</td>
+          <td>Kill Railway + BullMQ + apps/worker，AI 改同步</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td><code>3f8d258</code>；节省 $5/mo Railway</td>
+        </tr>
+        <tr>
+          <td>E</td>
+          <td>Weekly Digest（Vercel Cron + Resend）</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td>PR #2 merged <code>36e228e</code>；邮件端到端确认送达</td>
+        </tr>
+        <tr>
+          <td>F</td>
+          <td>Onboarding（WelcomeModal + Empty state polish）</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td>PR #3 merged <code>af585e01</code>；Jason 本机 verify 截图存档</td>
+        </tr>
+        <tr>
+          <td>G</td>
+          <td>SEO 博文（原 Omnivore 定位，已删）</td>
+          <td><span class="badge badge-killed">已删除</span></td>
+          <td><code>1a54a1d</code>；2026-05-30 de-OSS pass 删除/blog 博文，Omnivore 定位终止</td>
+        </tr>
+        <tr>
+          <td>H</td>
+          <td>邮件可达性测试（Gmail/Outlook/ProtonMail）</td>
+          <td><span class="badge badge-unknown">待 Jason 执行</span></td>
+          <td>Runbook: <code>docs/task-h-deliverability-qa.html</code>；约 20 分钟，Jason 操作</td>
+        </tr>
+        <tr>
+          <td>I</td>
+          <td>公开落地页 + 定价页 D1 修复</td>
+          <td><span class="badge badge-done">完成</span></td>
+          <td>落地页已在 main（含 <code>e784747</code> 全面重设计）</td>
+        </tr>
+        <tr>
+          <td>J</td>
+          <td>Stripe 重启（$4.99/mo hosted tier）</td>
+          <td><span class="badge badge-killed">等触发条件</span></td>
+          <td>仅当 100 active users → 1-PR 重启，不提前</td>
+        </tr>
+      </table>
+    </section>
+
+    <!-- ═══ 最近在做什么 ═══ -->
+    <section class="section">
+      <h2>最近动态（Beta 开启后，截至 2026-06-19）</h2>
+      <p style="color: var(--muted); margin-bottom: 12px;">Beta 阶段无新 feature sprint，全部是 bug fix + 打磨 + 基础设施硬化。</p>
+      <table>
+        <tr>
+          <th>PR / Commit</th>
+          <th>内容</th>
+          <th>类型</th>
+        </tr>
+        <tr>
+          <td>PR #17（LED-57）</td>
+          <td>在 CI gate 加入 <code>pnpm build</code> 步骤；补录 Vercel Ghost PR 检查修复（旧账号清除）</td>
+          <td><span class="badge badge-progress">CI 硬化</span></td>
+        </tr>
+        <tr>
+          <td>PR #15（LED-52）</td>
+          <td>Settings 页面移动端响应式修复</td>
+          <td><span class="badge badge-draft">移动端</span></td>
+        </tr>
+        <tr>
+          <td>PR #13（LED-52）</td>
+          <td><code>/items</code> 页面移动端侧边距收窄，内容区更宽</td>
+          <td><span class="badge badge-draft">移动端</span></td>
+        </tr>
+        <tr>
+          <td><code>b081b66</code></td>
+          <td>记录 main branch protection 配置（6 项必检：Lint/Typecheck/Unit tests/E2E/Build/Vercel）</td>
+          <td><span class="badge badge-progress">CI 硬化</span></td>
+        </tr>
+        <tr>
+          <td><code>8b18634 / eea618d</code></td>
+          <td>Multica SOP 锁定（create issue = done，不自动开发；backlog 不 todo；流程稳定）</td>
+          <td><span class="badge badge-killed">流程</span></td>
+        </tr>
+        <tr>
+          <td><code>1a54a1d / 3cc936b / b55d3b1</code></td>
+          <td>de-OSS pass：移除所有开源/自托管/Docker 定位；删除 Omnivore 博文；Repo 转私有</td>
+          <td><span class="badge badge-killed">定位调整</span></td>
+        </tr>
+        <tr>
+          <td><code>8138b5c</code></td>
+          <td>Alpha 正式关闭，Alpha 文档归档至 <code>docs/archive/alpha/</code>，进入 Beta</td>
+          <td><span class="badge badge-done">里程碑</span></td>
+        </tr>
+      </table>
+      <p style="color: var(--muted); margin-top: 12px; font-size: 13px;">结论：Beta 期间节奏健康。CI 闸门已补强（Build 步骤加入），移动端两处响应式修复，流程 SOP 已锁定。没有 scope creep，符合"stabilize before hardening"方向。</p>
+    </section>
+
+    <!-- ═══ 下一步计划 / Roadmap ═══ -->
+    <section class="section">
+      <h2>下一步计划 / Roadmap</h2>
+      <p style="color: var(--muted); margin-bottom: 8px;">三阶段序列。当前在 Phase 1。不规划新 feature sprint——resist scope creep。</p>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="badge badge-progress">当前阶段</span>
+          <span class="phase-title">Phase 1 — Beta 稳定</span>
+        </div>
+        <div class="phase-meta">时间窗口：2026-05-30 起，持续进行 · 触发条件：Jason 判断 beta 足够稳定</div>
+        <p style="margin-bottom: 10px;"><strong>目标：</strong>邀请朋友测试，覆盖真实使用场景，发现并修复稳定性 bug，为 production hardening 建立基线。</p>
+        <h4>Beta 期间只做</h4>
+        <ul class="scope-list scope-in">
+          <li>Bug fix（响应用户反馈）</li>
+          <li>移动端响应式打磨（已开始 LED-52）</li>
+          <li>CI/分支保护硬化（LED-57 完成）</li>
+          <li>Task H：邮件可达性测试（Jason 执行，runbook 已备好）</li>
+          <li>Multica backlog 整理（收集 beta 反馈 → 转 ticket → backlog 待排）</li>
+        </ul>
+        <h4>Beta 期间不做</h4>
+        <ul class="scope-list scope-out">
+          <li>新 feature sprint（无论想法多好，先稳定）</li>
+          <li>Stripe 重启（100 users 才触发）</li>
+          <li>浏览器扩展 / 移动端 App（永久延期）</li>
+          <li>v2 per-user token routing（Phase 2 再评估）</li>
+        </ul>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="badge badge-draft">下一阶段</span>
+          <span class="phase-title">Phase 2 — Production Hardening</span>
+        </div>
+        <div class="phase-meta">时间窗口：Beta 稳定后（Jason 拍板开始） · Owner: Mic + Jose</div>
+        <p style="margin-bottom: 10px;"><strong>目标：</strong>把"可以用"变成"生产可靠"。主要针对监控、限制和可扩展性。</p>
+
+        <table>
+          <tr>
+            <th>硬化项目</th>
+            <th>优先级</th>
+            <th>说明</th>
+            <th>执行方</th>
+          </tr>
+          <tr>
+            <td><code>/api/ingest</code> p50/p95 监控</td>
+            <td><span class="badge badge-blocked">P0</span></td>
+            <td>D11 强制要求：监控 AI 处理时间，触发条件 p95 &gt; 30s → 迁 QStash 异步。结构化日志已在代码里，需 Sentry dashboard 配置。</td>
+            <td>Jose brief</td>
+          </tr>
+          <tr>
+            <td>Task H 邮件可达性测试</td>
+            <td><span class="badge badge-blocked">P0</span></td>
+            <td>Gmail / Outlook / ProtonMail 三端收信确认，runbook 在 <code>docs/task-h-deliverability-qa.html</code>，约 20 分钟。</td>
+            <td>Jason 操作</td>
+          </tr>
+          <tr>
+            <td>Session timebox（30/90 天失活）</td>
+            <td><span class="badge badge-progress">P1</span></td>
+            <td>需要 Supabase Pro plan。当前 session 永不过期（已知限制，beta 可接受）。</td>
+            <td>Jason 决策（付费升级）</td>
+          </tr>
+          <tr>
+            <td>Sentry 告警规则</td>
+            <td><span class="badge badge-progress">P1</span></td>
+            <td>配置 ingest 失败率告警、AI timeout 告警，让 Jason 能及时感知 prod 问题。</td>
+            <td>Jose brief</td>
+          </tr>
+          <tr>
+            <td>Rate limiting 强化</td>
+            <td><span class="badge badge-draft">P2</span></td>
+            <td>Upstash Redis 当前用于 rate-limit + abuse counter，需确认在 Vercel serverless 多实例下共享状态。</td>
+            <td>Jose 评估</td>
+          </tr>
+          <tr>
+            <td>v2 per-user token routing 评估</td>
+            <td><span class="badge badge-draft">P2</span></td>
+            <td><code>users.drop_token</code> 已在 schema（<code>drop+[token]@dropnote.me</code>），待用量增长后评估是否开发。</td>
+            <td>Mic + PM 评估</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <span class="badge badge-killed">触发条件</span>
+          <span class="phase-title">Phase 3 — $4.99/mo Hosted Tier 重启</span>
+        </div>
+        <div class="phase-meta">触发条件：100 active users · Owner: Mic + Jose（1-PR 重启）</div>
+        <p><strong>目标：</strong>激活已禁用的 Stripe 代码，推出单一 $4.99/mo hosted tier（Plausible 模型：便利费，非功能锁定）。Stripe SDK 已 null-checked，预计 1 个 PR 即可。</p>
+        <div class="warn-box">
+          在 100 active users 触发前，绝不重启 Stripe。D1 决策（2026-04-02）明确：$9.99/$49.99 tiers 不复活；只有单一 $4.99/mo；只有在用量证明托管需求后才收费。
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 已知限制 ═══ -->
+    <section class="section">
+      <h2>已知限制（暂不处理，Beta 可接受）</h2>
+      <table>
+        <tr>
+          <th>限制</th>
+          <th>影响</th>
+          <th>解决前提</th>
+        </tr>
+        <tr>
+          <td>Session 永不过期</td>
+          <td>用户无需重新登录（体验好，但安全上不理想）</td>
+          <td>Supabase Pro plan 才能设置 30/90 天失活 timebox</td>
+        </tr>
+        <tr>
+          <td>v1 共享收件箱</td>
+          <td>所有用户共用 <code>drop@dropnote.me</code>，靠 <code>from</code> 邮箱识别用户；伪造 from 有风险</td>
+          <td>v2 per-user token routing（<code>drop+[token]@dropnote.me</code>）— schema 已支持，代码未开发</td>
+        </tr>
+        <tr>
+          <td>Vercel Preview URL 受保护</td>
+          <td>Hobby plan 的 Preview URL 需要 Vercel 账号才能访问，无法直接分享给外部测试者</td>
+          <td>升级 Vercel Pro，或只让内部人测</td>
+        </tr>
+        <tr>
+          <td>E2E 测试跳过 auth 流程</td>
+          <td>CI 中 <code>playwright.config.ts</code> 跳过 auth-gated 测试（Google OAuth 无法 headless）</td>
+          <td>需要配置 Playwright 的 OAuth mock 或 service account；Beta 期间可接受</td>
+        </tr>
+        <tr>
+          <td>AI 处理时间未监控</td>
+          <td>D11 要求 p50/p95 跟踪，但 Sentry dashboard 未配置告警规则</td>
+          <td>Phase 2 production hardening 首项</td>
+        </tr>
+      </table>
+    </section>
+
+    <!-- ═══ 已锁定决策 ═══ -->
+    <section class="section">
+      <h2>已锁定决策（不重开）</h2>
+      <table>
+        <tr>
+          <th>编号</th>
+          <th>决策</th>
+          <th>日期</th>
+          <th>原因摘要</th>
+        </tr>
+        <tr>
+          <td>D1</td>
+          <td>Kill $9.99/$49.99 paid tiers；免费托管上线，100 users 才开 $4.99/mo</td>
+          <td>2026-04-02</td>
+          <td>定价无竞争力 vs Readwise $7.99 / Raindrop $3</td>
+        </tr>
+        <tr>
+          <td>D5</td>
+          <td>数据控制人 = Jason Gao（非 LEDOO FORTUNE FINANCIAL INC.）</td>
+          <td>Pre-launch</td>
+          <td>定位为个人独立产品，非公司产品</td>
+        </tr>
+        <tr>
+          <td>D7</td>
+          <td>Stripe 代码保留但 null-checked 禁用</td>
+          <td>2026-04-02</td>
+          <td>触发条件到来时 1-PR 重启，不重建</td>
+        </tr>
+        <tr>
+          <td>D8</td>
+          <td>AI = OpenAI GPT-4o-mini（唯一不用 Anthropic 的 LEDOO 产品）</td>
+          <td>Pre-2026-04-02</td>
+          <td>最便宜且足够好的摘要/打标 model；hosted 用 OpenAI</td>
+        </tr>
+        <tr>
+          <td>D9</td>
+          <td>域名 = <code>dropnote.me</code>（Porkbun, USD $5/yr）</td>
+          <td>2026-05-25</td>
+          <td><code>dropnote.so</code> 拒绝（$65/yr）；<code>dropnote.com</code> 100 users 再用 GoDaddy Broker</td>
+        </tr>
+        <tr>
+          <td>D10</td>
+          <td>drop-note = #1 产品（house-os 已关闭），积极推进</td>
+          <td>2026-05-25</td>
+          <td>house-os 关闭后 drop-note 优先级提升</td>
+        </tr>
+        <tr>
+          <td>D11</td>
+          <td>Kill Railway + BullMQ；AI 同步运行于 <code>/api/ingest</code></td>
+          <td>2026-05-26</td>
+          <td>AI 3–10s 远低于 Vercel 60s 上限；节省 $5/mo；简化架构</td>
+        </tr>
+        <tr>
+          <td>D14</td>
+          <td>Resend domain <code>dropnote.me</code> 配置完成，邮件端到端确认</td>
+          <td>2026-05-27</td>
+          <td>DKIM/SPF/MX 全配，Jason 收到 digest 邮件验证</td>
+        </tr>
+        <tr>
+          <td>OSS Kill</td>
+          <td>AGPL 终止，repo 私有，无开源/自托管方向</td>
+          <td>2026-05-30</td>
+          <td>Jason 决定 drop-note 不公开；聚焦 hosted SaaS</td>
+        </tr>
+      </table>
+    </section>
+
+    <!-- ═══ 需要 Jason 拍板的事项 ═══ -->
+    <section class="section">
+      <h2>需要 Jason 拍板的事项</h2>
+      <p style="color: var(--muted); margin-bottom: 4px;">以下事项 Mic + 团队无法自己决定，需要 Jason 确认或操作。</p>
+
+      <div class="question">
+        <div class="question-q">1. Task H — 邮件可达性测试（Jason 亲自执行，~20 分钟）</div>
+        <div class="question-rec">
+          <strong>Runbook：</strong><code>docs/task-h-deliverability-qa.html</code><br>
+          内容：用 Gmail / Outlook / ProtonMail 各发一封邮件到 <code>drop@dropnote.me</code>，确认三端均能触发摄取、AI 摘要出现在 dashboard。<br>
+          <strong>为什么重要：</strong>这是唯一还未做的 alpha 任务（Task H）。Beta 期间应尽早完成，避免在有真实用户后才发现某邮件客户端不送达。<br>
+          <strong>建议：下次 beta 测试前先跑一遍。</strong>
+        </div>
+      </div>
+
+      <div class="question">
+        <div class="question-q">2. Beta 用户规模 — 何时扩大邀请范围？</div>
+        <div class="question-rec">
+          当前状态：朋友小圈子测试。<br>
+          <strong>问题：</strong>Jason 是否有计划邀请更多人（如 10–20 人）？还是等 production hardening 完成后再扩？<br>
+          <strong>影响：</strong>扩大用户数会加速发现问题，但也会在 hardening 未完成时暴露风险（无 session timebox、无告警规则）。<br>
+          <strong>建议：</strong>先做 Task H + Sentry 告警（Phase 2 P0-P1），再扩邀请范围。
+        </div>
+      </div>
+
+      <div class="question">
+        <div class="question-q">3. Production Hardening 启动时机 — 什么时候开 Phase 2？</div>
+        <div class="question-rec">
+          <strong>问题：</strong>Mic 已有 Phase 2 硬化清单。何时授权 Mic dispatch Jose 开始做？<br>
+          选项 A：现在就开始（Task H 同步做，不等 beta 完全稳定）<br>
+          选项 B：等 beta 收到明确的"稳定信号"（如 2–3 周无重大 bug）再开<br>
+          <strong>建议：</strong>选项 A —— Task H + Sentry 告警配置可以立刻开；这两项不依赖 beta 反馈，早做早保险。Session timebox 等 Supabase Pro 决策后再做。
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 永久延期 / 已 Kill ═══ -->
+    <section class="section">
+      <h2>永久延期 / 已 Kill（不重开）</h2>
+      <table>
+        <tr><th>项目</th><th>状态</th><th>原因</th></tr>
+        <tr><td>$9.99 Pro / $49.99 Power tiers</td><td><span class="badge badge-killed">已 Kill</span></td><td>D1：vs Readwise/Raindrop 无竞争力；100 users 后只开 $4.99</td></tr>
+        <tr><td>浏览器扩展</td><td><span class="badge badge-killed">永久延期</span></td><td>邮件优先是差异化 wedge；扩展稀释焦点</td></tr>
+        <tr><td>移动端 App</td><td><span class="badge badge-killed">V1 超出范围</span></td><td>独立上线，移动 App 是 10x 负担</td></tr>
+        <tr><td>Product Hunt 上线</td><td><span class="badge badge-killed">延期</span></td><td>等 beta 后 60 天再做</td></tr>
+        <tr><td>开源 / AGPL / 自托管</td><td><span class="badge badge-killed">已 Kill</span></td><td>2026-05-30 Jason 决定，repo 私有，聚焦 hosted SaaS</td></tr>
+        <tr><td>Omnivore 定位 / SEO 博文</td><td><span class="badge badge-killed">已 Kill</span></td><td>定位切换为"save anything from anywhere"；Omnivore 相关内容全删</td></tr>
+        <tr><td>v2 per-user token routing</td><td><span class="badge badge-draft">延期</span></td><td>Schema 已支持，代码未开发；Phase 2 用量增长后再评估</td></tr>
+        <tr><td>与 Readwise 头对头竞争</td><td><span class="badge badge-killed">已 Kill</span></td><td>无法赢；当前定位 = "save anything"，不打功能 battle</td></tr>
+      </table>
+    </section>
+
+    <footer>
+      生成时间：2026-06-19 · 负责人：<code>drop-mic (Mic)</code> · 数据来源：git log、docs/.mic-state.md、CLAUDE.md（均直接读取，非凭记忆）<br>
+      下次更新：beta 阶段有重大进展（Task H 完成、Phase 2 启动、或 Jason 拍板扩大 beta 邀请）后更新本报告
+    </footer>
+
+  </div>
+</body>
+</html>
