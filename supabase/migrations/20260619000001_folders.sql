@@ -47,7 +47,7 @@ CREATE OR REPLACE FUNCTION get_folders_with_counts()
 RETURNS TABLE (
   id uuid,
   name text,
-  position int,
+  "position" int,
   item_count int
 )
 LANGUAGE sql
