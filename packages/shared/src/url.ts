@@ -5,17 +5,45 @@
 
 const URL_PATTERN = /https?:\/\/[^\s<>"{}|\\^`[\]]+/i
 
-// Domains whose links are detected regardless of surrounding commentary length.
-// WeChat official-account shares almost always come with a Chinese title/teaser
-// ahead of the link, which routinely exceeds the generic "mostly just a link"
-// heuristic below.
-const PREAMBLE_EXEMPT_DOMAIN_PATTERN = /^https?:\/\/mp\.weixin\.qq\.com\//i
+// WeChat official-account links are detected in a dedicated pass, independent
+// of the generic URL_PATTERN match and the 60-char "mostly just a link"
+// heuristic below (similar to the dedicated YouTube detection pass). This
+// handles two WeChat-specific realities: the in-app "copy link" sometimes
+// omits the scheme, and shares are almost always preceded (and sometimes
+// followed, with no separating whitespace) by Chinese text that would
+// otherwise defeat the generic matcher or get glued onto the URL.
+const WECHAT_HOST_PATTERN = /(https?:\/\/)?mp\.weixin\.qq\.com\//i
+const URL_DELIMITER_PATTERN = /[\s<>"{}|\\^`[\]]/
 
-// Bare-host fallback for links copied without a scheme (WeChat's in-app "copy
-// link" sometimes omits http(s)://), so a schemeless paste still resolves.
-const SCHEMELESS_WECHAT_PATTERN = /mp\.weixin\.qq\.com\/[^\s<>"{}|\\^`[\]]+/i
+// WeChat URLs are always plain ASCII, so any CJK text or full-width/general
+// punctuation glued directly onto the link (no separating whitespace) is
+// prose, not part of the URL -- stop the match there.
+function isCjkOrFullwidth(codePoint: number): boolean {
+  return (
+    (codePoint >= 0x2000 && codePoint <= 0x206f) || // general punctuation (smart quotes, dashes, ellipsis)
+    (codePoint >= 0x3000 && codePoint <= 0x30ff) || // CJK symbols/punctuation, hiragana, katakana
+    (codePoint >= 0x4e00 && codePoint <= 0x9fff) || // CJK unified ideographs
+    (codePoint >= 0xff00 && codePoint <= 0xffef) // full-width forms
+  )
+}
 
 const TRAILING_PUNCTUATION_PATTERN = /[.,!?;:'")\]]+$/
+
+function extractWeChatUrl(text: string): string | null {
+  const hostMatch = text.match(WECHAT_HOST_PATTERN)
+  if (!hostMatch || hostMatch.index === undefined) return null
+
+  const start = hostMatch.index
+  let end = start + hostMatch[0].length
+  while (end < text.length) {
+    const codePoint = text.codePointAt(end) ?? 0
+    if (URL_DELIMITER_PATTERN.test(text[end]) || isCjkOrFullwidth(codePoint)) break
+    end++
+  }
+
+  const cleaned = text.slice(start, end).replace(TRAILING_PUNCTUATION_PATTERN, '')
+  return hostMatch[1] ? cleaned : `https://${cleaned}`
+}
 
 /**
  * Returns the URL if the text is primarily a single URL (ignoring surrounding whitespace).
@@ -25,18 +53,15 @@ export function extractSingleUrl(text: string): string | null {
   const trimmed = text.trim()
   if (!trimmed) return null
 
+  const wechatUrl = extractWeChatUrl(trimmed)
+  if (wechatUrl) return wechatUrl
+
   const match = trimmed.match(URL_PATTERN)
-  if (!match) {
-    const schemeless = trimmed.match(SCHEMELESS_WECHAT_PATTERN)
-    if (!schemeless) return null
-    return `https://${schemeless[0].replace(TRAILING_PUNCTUATION_PATTERN, '')}`
-  }
+  if (!match) return null
 
   const url = match[0]
   // Strip trailing punctuation that may have been included in the regex match
   const cleaned = url.replace(TRAILING_PUNCTUATION_PATTERN, '')
-
-  if (PREAMBLE_EXEMPT_DOMAIN_PATTERN.test(cleaned)) return cleaned
 
   // Only treat as "primarily a URL" if non-URL text is short (≤ 60 chars)
   const idx = trimmed.indexOf(cleaned)

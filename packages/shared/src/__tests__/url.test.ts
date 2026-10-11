@@ -63,6 +63,30 @@ describe('extractSingleUrl', () => {
       'https://www.xiaohongshu.com/explore/abc123'
     )
   })
+
+  it('prefers a schemeless WeChat link over another URL elsewhere in the text', () => {
+    expect(
+      extractSingleUrl('mp.weixin.qq.com/s/AbCdEfGhIjKl\n\n--\nSent from https://example.com/sig')
+    ).toBe('https://mp.weixin.qq.com/s/AbCdEfGhIjKl')
+  })
+
+  it('prefers a scheme-ful WeChat link over an earlier URL in the text', () => {
+    expect(
+      extractSingleUrl('see https://example.com then https://mp.weixin.qq.com/s/AbCdEfGhIjKl')
+    ).toBe('https://mp.weixin.qq.com/s/AbCdEfGhIjKl')
+  })
+
+  it('stops a schemeless WeChat link at glued-on Chinese punctuation/text', () => {
+    expect(extractSingleUrl('看这篇mp.weixin.qq.com/s/AbCdEfGhIjKl,写得很好。')).toBe(
+      'https://mp.weixin.qq.com/s/AbCdEfGhIjKl'
+    )
+  })
+
+  it('stops a scheme-ful WeChat link at glued-on Chinese punctuation/text', () => {
+    expect(extractSingleUrl('看这篇https://mp.weixin.qq.com/s/AbCdEfGhIjKl,写得很好。')).toBe(
+      'https://mp.weixin.qq.com/s/AbCdEfGhIjKl'
+    )
+  })
 })
 
 describe('extractYouTubeId', () => {
