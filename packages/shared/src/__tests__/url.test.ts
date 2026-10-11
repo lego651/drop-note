@@ -41,6 +41,28 @@ describe('extractSingleUrl', () => {
   it('handles URL with whitespace padding', () => {
     expect(extractSingleUrl('  https://example.com  ')).toBe('https://example.com')
   })
+
+  it('detects a schemeless mp.weixin.qq.com link (WeChat in-app "copy link")', () => {
+    expect(extractSingleUrl('mp.weixin.qq.com/s/AbCdEfGhIjKlMnOpQrSt12')).toBe(
+      'https://mp.weixin.qq.com/s/AbCdEfGhIjKlMnOpQrSt12'
+    )
+  })
+
+  it('detects a mp.weixin.qq.com link behind a long Chinese title/teaser (> 60 chars)', () => {
+    const text =
+      '【重磅】最新研究显示每天走路八千步就能显著改善健康状况,快来看看这篇文章吧,非常值得一读: https://mp.weixin.qq.com/s?__biz=MzI1NDQ4MTM0MA==&mid=2247483848&idx=1&sn=a1b2c3d4e5f60718293a4b5c6d7e8f90&chksm=abcdefg1234567890#rd'
+    expect(extractSingleUrl(text)).toBe(
+      'https://mp.weixin.qq.com/s?__biz=MzI1NDQ4MTM0MA==&mid=2247483848&idx=1&sn=a1b2c3d4e5f60718293a4b5c6d7e8f90&chksm=abcdefg1234567890#rd'
+    )
+  })
+
+  it('does not regress xiaohongshu.com links: still subject to the 60-char heuristic', () => {
+    const longPrefix = 'a'.repeat(61)
+    expect(extractSingleUrl(`${longPrefix} https://www.xiaohongshu.com/explore/abc123`)).toBeNull()
+    expect(extractSingleUrl('Check this out: https://www.xiaohongshu.com/explore/abc123')).toBe(
+      'https://www.xiaohongshu.com/explore/abc123'
+    )
+  })
 })
 
 describe('extractYouTubeId', () => {

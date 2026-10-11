@@ -5,6 +5,18 @@
 
 const URL_PATTERN = /https?:\/\/[^\s<>"{}|\\^`[\]]+/i
 
+// Domains whose links are detected regardless of surrounding commentary length.
+// WeChat official-account shares almost always come with a Chinese title/teaser
+// ahead of the link, which routinely exceeds the generic "mostly just a link"
+// heuristic below.
+const PREAMBLE_EXEMPT_DOMAIN_PATTERN = /^https?:\/\/mp\.weixin\.qq\.com\//i
+
+// Bare-host fallback for links copied without a scheme (WeChat's in-app "copy
+// link" sometimes omits http(s)://), so a schemeless paste still resolves.
+const SCHEMELESS_WECHAT_PATTERN = /mp\.weixin\.qq\.com\/[^\s<>"{}|\\^`[\]]+/i
+
+const TRAILING_PUNCTUATION_PATTERN = /[.,!?;:'")\]]+$/
+
 /**
  * Returns the URL if the text is primarily a single URL (ignoring surrounding whitespace).
  * Allows a few extra non-URL words (e.g. a short intro before the link).
@@ -14,11 +26,17 @@ export function extractSingleUrl(text: string): string | null {
   if (!trimmed) return null
 
   const match = trimmed.match(URL_PATTERN)
-  if (!match) return null
+  if (!match) {
+    const schemeless = trimmed.match(SCHEMELESS_WECHAT_PATTERN)
+    if (!schemeless) return null
+    return `https://${schemeless[0].replace(TRAILING_PUNCTUATION_PATTERN, '')}`
+  }
 
   const url = match[0]
   // Strip trailing punctuation that may have been included in the regex match
-  const cleaned = url.replace(/[.,!?;:'")\]]+$/, '')
+  const cleaned = url.replace(TRAILING_PUNCTUATION_PATTERN, '')
+
+  if (PREAMBLE_EXEMPT_DOMAIN_PATTERN.test(cleaned)) return cleaned
 
   // Only treat as "primarily a URL" if non-URL text is short (≤ 60 chars)
   const idx = trimmed.indexOf(cleaned)
