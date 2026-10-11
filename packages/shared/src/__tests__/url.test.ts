@@ -41,6 +41,18 @@ describe('extractSingleUrl', () => {
   it('handles URL with whitespace padding', () => {
     expect(extractSingleUrl('  https://example.com  ')).toBe('https://example.com')
   })
+
+  it('detects a twitter.com link even behind a long reaction preamble (> 60 chars)', () => {
+    const text =
+      'Wow, this is a wild thread about the economy and why everyone is wrong about the recession: https://twitter.com/someuser/status/1234567890123456789'
+    expect(extractSingleUrl(text)).toBe('https://twitter.com/someuser/status/1234567890123456789')
+  })
+
+  it('detects an x.com link even behind a long reaction preamble (> 60 chars)', () => {
+    const text =
+      'Honestly this take is wrong on so many levels but worth reading the replies too: https://x.com/someuser/status/9876543210987654321'
+    expect(extractSingleUrl(text)).toBe('https://x.com/someuser/status/9876543210987654321')
+  })
 })
 
 describe('extractYouTubeId', () => {

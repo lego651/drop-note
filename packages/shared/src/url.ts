@@ -5,6 +5,11 @@
 
 const URL_PATTERN = /https?:\/\/[^\s<>"{}|\\^`[\]]+/i
 
+// Social domains whose links are detected regardless of surrounding commentary length —
+// sharing a tweet/post almost always comes with a reaction or quote ahead of the link,
+// which routinely exceeds the generic "mostly just a link" heuristic below.
+const SOCIAL_DOMAIN_PATTERN = /^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\//i
+
 /**
  * Returns the URL if the text is primarily a single URL (ignoring surrounding whitespace).
  * Allows a few extra non-URL words (e.g. a short intro before the link).
@@ -19,6 +24,8 @@ export function extractSingleUrl(text: string): string | null {
   const url = match[0]
   // Strip trailing punctuation that may have been included in the regex match
   const cleaned = url.replace(/[.,!?;:'")\]]+$/, '')
+
+  if (SOCIAL_DOMAIN_PATTERN.test(cleaned)) return cleaned
 
   // Only treat as "primarily a URL" if non-URL text is short (≤ 60 chars)
   const idx = trimmed.indexOf(cleaned)
