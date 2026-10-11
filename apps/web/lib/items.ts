@@ -7,7 +7,6 @@ export type ItemSummary = {
   id: string
   subject: string | null
   sender_email: string
-  sender_verified?: boolean | null
   ai_summary: string | null
   status: string
   error_message: string | null

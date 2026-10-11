@@ -9,33 +9,35 @@ import {
 } from '../email'
 
 describe('verifySenderAuth', () => {
-  it('passes when SPF passes for the sender domain', () => {
-    expect(verifySenderAuth('alice@example.com', 'pass', '')).toBe('pass')
-  })
-
   it('passes when DKIM passes for the sender domain', () => {
-    expect(verifySenderAuth('alice@example.com', 'fail', '{@example.com : pass}')).toBe('pass')
+    expect(verifySenderAuth('alice@example.com', '{@example.com : pass}')).toBe('pass')
   })
 
-  it('is case-insensitive for SPF value', () => {
-    expect(verifySenderAuth('alice@example.com', 'PASS', '')).toBe('pass')
+  it('fails when DKIM fails', () => {
+    expect(verifySenderAuth('alice@example.com', '{@example.com : fail}')).toBe('fail')
   })
 
-  it('fails when both SPF and DKIM fail', () => {
-    expect(verifySenderAuth('alice@example.com', 'fail', '{@example.com : fail}')).toBe('fail')
-  })
-
-  it('fails when SPF/DKIM fields are entirely absent (spoofable with no signal)', () => {
-    expect(verifySenderAuth('alice@example.com', '', '')).toBe('fail')
+  it('fails when the DKIM field is entirely absent (spoofable with no signal)', () => {
+    expect(verifySenderAuth('alice@example.com', '')).toBe('fail')
   })
 
   it('does not accept a DKIM pass for a different domain than the claimed sender', () => {
     // Attacker claims From: victim@real-domain.com but their own domain's DKIM passes
-    expect(verifySenderAuth('victim@real-domain.com', 'fail', '{@attacker.com : pass}')).toBe('fail')
+    expect(verifySenderAuth('victim@real-domain.com', '{@attacker.com : pass}')).toBe('fail')
   })
 
   it('fails for an unparseable sender email with no domain', () => {
-    expect(verifySenderAuth('not-an-email', 'pass', '')).toBe('fail')
+    expect(verifySenderAuth('not-an-email', '')).toBe('fail')
+  })
+
+  it('does not treat an SPF-only pass as verified (envelope MAIL FROM is not the header From domain)', () => {
+    // DRO-21 review: attacker sends with their own MAIL FROM (SPF: pass for
+    // their domain) but a spoofed header `From: victim@real-domain.com`.
+    // SendGrid's SPF field reflects the envelope sender, not the header
+    // From, so it must never be able to verify a claimed identity on its own.
+    // This function only ever receives the dkim field, so passing an SPF
+    // string in its place must not be mistaken for a DKIM pass.
+    expect(verifySenderAuth('victim@real-domain.com', 'pass')).toBe('fail')
   })
 })
 

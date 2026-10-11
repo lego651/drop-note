@@ -6,7 +6,6 @@ import { ItemDetailEditor } from '@/components/ItemDetailEditor'
 import { AttachmentsSection } from '@/components/AttachmentsSection'
 import { format } from 'date-fns'
 import { extractYouTubeId } from '@drop-note/shared'
-import { Badge } from '@/components/ui/badge'
 
 export async function generateMetadata(
   { params }: { params: { id: string } }
@@ -154,14 +153,7 @@ export default async function ItemDetailPage({ params }: { params: { id: string 
       {/* Read-only metadata */}
       <div className="mb-6 space-y-1">
         <h1 className="text-xl font-semibold">{item.subject ?? item.filename ?? 'Untitled'}</h1>
-        <div className="flex items-center gap-2">
-          <p className="text-sm text-muted-foreground">{item.sender_email}</p>
-          {item.sender_verified === false && (
-            <Badge variant="outline" className="text-muted-foreground">
-              Unverified sender
-            </Badge>
-          )}
-        </div>
+        <p className="text-sm text-muted-foreground">{item.sender_email}</p>
         <p className="text-sm text-muted-foreground">
           {format(new Date(item.created_at), 'PPP p')}
         </p>

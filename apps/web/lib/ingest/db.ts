@@ -68,7 +68,6 @@ export async function createAttachmentItem(params: {
   userId: string
   subject: string
   senderEmail: string
-  senderVerified: boolean | null
 }): Promise<string> {
   const { data, error } = await supabaseAdmin
     .from('items')
@@ -76,7 +75,6 @@ export async function createAttachmentItem(params: {
       user_id: params.userId,
       subject: params.subject,
       sender_email: params.senderEmail,
-      sender_verified: params.senderVerified,
       type: 'attachment',
       status: 'pending',
     })
