@@ -97,6 +97,7 @@ describe('getYouTubeThumbnailUrl', () => {
 describe('fetchYouTubeTitle', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it('returns the title from a successful oEmbed response', async () => {

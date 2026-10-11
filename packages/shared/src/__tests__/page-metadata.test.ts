@@ -15,6 +15,7 @@ function mockPublicDns() {
 describe('fetchPageMetadata', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
     lookupMock.mockReset()
     mockPublicDns()
   })
@@ -71,6 +72,18 @@ describe('fetchPageMetadata', () => {
     const result = await fetchPageMetadata('https://example.com/article')
 
     expect(result?.imageUrl).toBe('https://example.com/images/thumb.jpg')
+  })
+
+  it('does not truncate og:title at an apostrophe inside a double-quoted attribute', async () => {
+    mockHtmlResponse(`
+      <html><head>
+        <meta property="og:title" content="Don't Miss This" />
+      </head></html>
+    `)
+
+    const result = await fetchPageMetadata('https://example.com/article')
+
+    expect(result?.title).toBe("Don't Miss This")
   })
 
   it('decodes HTML entities in title and description', async () => {

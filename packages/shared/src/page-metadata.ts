@@ -39,14 +39,26 @@ function decodeHtmlEntities(str: string): string {
   })
 }
 
+/**
+ * Extracts a quoted attribute value from a single tag's source, matching the
+ * actual opening quote character to the closing one via backreference —
+ * `[^"']*` would wrongly stop at an apostrophe inside a double-quoted value
+ * (e.g. content="Don't Miss This").
+ */
+function extractAttr(tag: string, attr: string): string | null {
+  const match = tag.match(new RegExp(`${attr}=(["'])((?:(?!\\1)[\\s\\S])*)\\1`, 'i'))
+  return match ? match[2] : null
+}
+
 function matchMetaContent(html: string, name: string): string | null {
-  const patterns = [
-    new RegExp(`<meta[^>]+(?:property|name)=["']${name}["'][^>]*content=["']([^"']*)["']`, 'i'),
-    new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]*(?:property|name)=["']${name}["']`, 'i'),
-  ]
-  for (const pattern of patterns) {
-    const match = html.match(pattern)
-    if (match?.[1]) return decodeHtmlEntities(match[1].trim())
+  const metaTagPattern = /<meta\b[^>]*>/gi
+  let tagMatch: RegExpExecArray | null
+  while ((tagMatch = metaTagPattern.exec(html))) {
+    const tag = tagMatch[0]
+    const tagName = extractAttr(tag, 'property') ?? extractAttr(tag, 'name')
+    if (tagName?.toLowerCase() !== name.toLowerCase()) continue
+    const content = extractAttr(tag, 'content')
+    if (content) return decodeHtmlEntities(content.trim())
   }
   return null
 }
