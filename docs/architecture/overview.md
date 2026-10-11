@@ -195,7 +195,7 @@ sequenceDiagram
     UI->>API: GET /api/items/search?q=...
     API->>API: validate: 2-200 chars (else 400, or [] if <2 chars)
     API->>SB: auth.getUser() (401 if not signed in)
-    API->>Redis: INCR search:<userId> (20 req/min; fail-open if Redis errors)
+    API->>Redis: INCR search:<userId> (20 req/min, fail-open if Redis errors)
     API->>RPC: supabase.rpc('search_items', {query})
     RPC->>RPC: SECURITY INVOKER — auth.uid() scopes rows, RLS still applies
     RPC-->>API: rows matching websearch_to_tsquery(search_vector) OR tag name ILIKE match
@@ -249,7 +249,7 @@ sequenceDiagram
     opt paid tier only
         U->>UI: restore from trash
         UI->>Restore: POST /api/items/[id]/restore
-        Restore->>DB: 403 if tier==='free'; else UPDATE deleted_at = NULL
+        Restore->>DB: 403 if tier==='free', else UPDATE deleted_at = NULL
     end
 
     Cron->>DB: DELETE items WHERE deleted_at < now()-30d (purge, all tiers)
