@@ -12,7 +12,7 @@ const URL_PATTERN = /https?:\/\/[^\s<>"{}|\\^`[\]]+/i
 // omits the scheme, and shares are almost always preceded (and sometimes
 // followed, with no separating whitespace) by Chinese text that would
 // otherwise defeat the generic matcher or get glued onto the URL.
-const WECHAT_HOST_PATTERN = /(https?:\/\/)?mp\.weixin\.qq\.com\//i
+const WECHAT_HOST_PATTERN = /(?<![\w.-])(https?:\/\/)?mp\.weixin\.qq\.com\//i
 const URL_DELIMITER_PATTERN = /[\s<>"{}|\\^`[\]]/
 
 // WeChat URLs are always plain ASCII, so any CJK text or full-width/general

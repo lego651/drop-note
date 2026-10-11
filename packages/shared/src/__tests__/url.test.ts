@@ -87,6 +87,14 @@ describe('extractSingleUrl', () => {
       'https://mp.weixin.qq.com/s/AbCdEfGhIjKl'
     )
   })
+
+  it('does not treat a look-alike host (evilmp.weixin.qq.com) as a WeChat link', () => {
+    const longPrefix = 'a'.repeat(61)
+    expect(extractSingleUrl(`${longPrefix} https://evilmp.weixin.qq.com/s/AbCd`)).toBeNull()
+    expect(extractSingleUrl('Check this out: https://evilmp.weixin.qq.com/s/AbCd')).toBe(
+      'https://evilmp.weixin.qq.com/s/AbCd'
+    )
+  })
 })
 
 describe('extractYouTubeId', () => {
