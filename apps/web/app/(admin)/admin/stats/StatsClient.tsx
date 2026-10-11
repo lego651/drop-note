@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { TrendChart } from './TrendChart'
+
+interface TrendPoint {
+  date: string
+  count: number
+}
 
 interface StatsData {
   totalUsers: number
@@ -9,6 +15,11 @@ interface StatsData {
   itemsIngestedToday: number
   failedItems: number
   totalActiveItems: number
+  itemsSavedTotal: number
+  itemsSavedTrend: TrendPoint[]
+  signupsTrend: TrendPoint[]
+  dauProxy: number
+  wauProxy: number
   queue: {
     waiting: number
     active: number
@@ -65,12 +76,20 @@ export function StatsClient() {
               { label: 'Items Today', value: stats.itemsIngestedToday },
               { label: 'Failed Items', value: stats.failedItems },
               { label: 'Active Items', value: stats.totalActiveItems },
+              { label: 'Items Saved (Total)', value: stats.itemsSavedTotal },
+              { label: 'DAU (proxy)', value: stats.dauProxy },
+              { label: 'WAU (proxy)', value: stats.wauProxy },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-md border border-border p-4">
                 <p className="text-xs text-muted-foreground">{label}</p>
                 <p className="text-2xl font-semibold mt-1">{value}</p>
               </div>
             ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <TrendChart title="Items Saved (Last 7 Days)" data={stats.itemsSavedTrend} />
+            <TrendChart title="Signups (Last 14 Days)" data={stats.signupsTrend} />
           </div>
 
           <div className="rounded-md border border-border p-4 space-y-2">
