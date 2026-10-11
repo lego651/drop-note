@@ -5,10 +5,14 @@
 
 const URL_PATTERN = /https?:\/\/[^\s<>"{}|\\^`[\]]+/i
 
-// Social domains whose links are detected regardless of surrounding commentary length —
-// sharing a tweet/post almost always comes with a reaction or quote ahead of the link,
-// which routinely exceeds the generic "mostly just a link" heuristic below.
-const SOCIAL_DOMAIN_PATTERN = /^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\//i
+// Post permalinks (twitter.com|x.com/<user>/status/<id>) are detected anywhere in the
+// text, regardless of surrounding commentary length or other URLs that may precede them —
+// sharing a tweet/post almost always comes with a reaction or quote (and sometimes another
+// link) ahead of it, which routinely exceeds the generic "mostly just a link" heuristic
+// below. Scoped to /status/ permalinks (not bare profile links) so a long email that merely
+// mentions someone's profile in passing (e.g. a "Twitter: x.com/janedoe" signature) doesn't
+// get misclassified as a link share.
+const SOCIAL_URL_PATTERN = /https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/[^\s/]+\/status\/\d+[^\s<>"{}|\\^`[\]]*/i
 
 /**
  * Returns the URL if the text is primarily a single URL (ignoring surrounding whitespace).
@@ -18,14 +22,15 @@ export function extractSingleUrl(text: string): string | null {
   const trimmed = text.trim()
   if (!trimmed) return null
 
+  const socialMatch = trimmed.match(SOCIAL_URL_PATTERN)
+  if (socialMatch) return socialMatch[0].replace(/[.,!?;:'")\]]+$/, '')
+
   const match = trimmed.match(URL_PATTERN)
   if (!match) return null
 
   const url = match[0]
   // Strip trailing punctuation that may have been included in the regex match
   const cleaned = url.replace(/[.,!?;:'")\]]+$/, '')
-
-  if (SOCIAL_DOMAIN_PATTERN.test(cleaned)) return cleaned
 
   // Only treat as "primarily a URL" if non-URL text is short (≤ 60 chars)
   const idx = trimmed.indexOf(cleaned)
