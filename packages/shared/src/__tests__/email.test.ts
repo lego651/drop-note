@@ -4,8 +4,40 @@ import {
   parseSendGridPayload,
   countItems,
   enforceAttachmentSizeLimit,
+  verifySenderAuth,
   type ParsedAttachment,
 } from '../email'
+
+describe('verifySenderAuth', () => {
+  it('passes when SPF passes for the sender domain', () => {
+    expect(verifySenderAuth('alice@example.com', 'pass', '')).toBe('pass')
+  })
+
+  it('passes when DKIM passes for the sender domain', () => {
+    expect(verifySenderAuth('alice@example.com', 'fail', '{@example.com : pass}')).toBe('pass')
+  })
+
+  it('is case-insensitive for SPF value', () => {
+    expect(verifySenderAuth('alice@example.com', 'PASS', '')).toBe('pass')
+  })
+
+  it('fails when both SPF and DKIM fail', () => {
+    expect(verifySenderAuth('alice@example.com', 'fail', '{@example.com : fail}')).toBe('fail')
+  })
+
+  it('fails when SPF/DKIM fields are entirely absent (spoofable with no signal)', () => {
+    expect(verifySenderAuth('alice@example.com', '', '')).toBe('fail')
+  })
+
+  it('does not accept a DKIM pass for a different domain than the claimed sender', () => {
+    // Attacker claims From: victim@real-domain.com but their own domain's DKIM passes
+    expect(verifySenderAuth('victim@real-domain.com', 'fail', '{@attacker.com : pass}')).toBe('fail')
+  })
+
+  it('fails for an unparseable sender email with no domain', () => {
+    expect(verifySenderAuth('not-an-email', 'pass', '')).toBe('fail')
+  })
+})
 
 describe('parseFromAddress', () => {
   it('extracts email from "Display Name <email>" format and lowercases it', () => {

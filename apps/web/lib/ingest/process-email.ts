@@ -37,6 +37,8 @@ export interface ProcessEmailParams {
   attachmentKeys: string[]
   attachmentData: Record<string, string>
   bodyItemId: string
+  /** Whether SPF/DKIM confirmed `from`'s domain at ingest (DRO-16). Optional for callers without that signal. */
+  senderVerified?: boolean | null
 }
 
 export interface ProcessEmailResult {
@@ -47,7 +49,7 @@ export interface ProcessEmailResult {
 }
 
 export async function processEmail(params: ProcessEmailParams): Promise<ProcessEmailResult> {
-  const { userId, userTier, from, subject, text, html, attachmentInfo, attachmentKeys, attachmentData, bodyItemId } = params
+  const { userId, userTier, from, subject, text, html, attachmentInfo, attachmentKeys, attachmentData, bodyItemId, senderVerified = null } = params
 
   await setItemProcessing(bodyItemId)
 
@@ -130,6 +132,7 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
         userId,
         subject: attachment.filename,
         senderEmail: from,
+        senderVerified,
       })
       itemIds.push(attachItemId)
 

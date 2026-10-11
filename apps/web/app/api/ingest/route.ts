@@ -19,6 +19,7 @@ import { NextResponse } from 'next/server'
 import { Redis } from '@upstash/redis'
 import {
   parseFromAddress,
+  verifySenderAuth,
   isOverRateLimit,
   TIER_ITEM_LIMITS,
   TIER_ATTACHMENT_SIZE_MB,
@@ -128,6 +129,10 @@ export async function POST(request: Request) {
     const text = (formData.get('text') as string) ?? ''
     const html = (formData.get('html') as string) ?? ''
     const attachmentInfo = (formData.get('attachment-info') as string) ?? ''
+    // SendGrid Inbound Parse's default POST fields — used to verify the
+    // claimed `from` identity (see DRO-16). Never trust `from` alone.
+    const spf = (formData.get('SPF') as string) ?? ''
+    const dkim = (formData.get('dkim') as string) ?? ''
 
     // MX is on the root domain — all mail to dropnote.me hits this endpoint.
     // Only process emails addressed to drop@dropnote.me; silently discard
@@ -156,6 +161,8 @@ export async function POST(request: Request) {
     if (!senderEmail) {
       return NextResponse.json({ ok: true }, { status: 200 })
     }
+
+    const senderVerified = verifySenderAuth(senderEmail, spf, dkim) === 'pass'
 
     const supabase = supabaseAdmin
 
@@ -280,6 +287,7 @@ export async function POST(request: Request) {
         user_id: user.id,
         subject: subject || '(no subject)',
         sender_email: senderEmail,
+        sender_verified: senderVerified,
         type: 'email_body',
         status: 'processing',
       })
@@ -314,6 +322,7 @@ export async function POST(request: Request) {
       attachmentKeys,
       attachmentData,
       bodyItemId: item.id,
+      senderVerified,
     })
 
     const totalMs = Date.now() - startMs
@@ -329,6 +338,7 @@ export async function POST(request: Request) {
       text_length: text.length,
       html_length: html.length,
       attachment_count: attachmentKeys.length,
+      sender_verified: senderVerified,
     }))
 
     return NextResponse.json({ ok: true }, { status: 200 })

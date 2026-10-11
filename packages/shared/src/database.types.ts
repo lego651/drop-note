@@ -124,6 +124,7 @@ export type Database = {
           pinned: boolean
           search_vector: unknown
           sender_email: string
+          sender_verified: boolean | null
           source_type: string | null
           source_url: string | null
           status: Database["public"]["Enums"]["item_status"]
@@ -146,6 +147,7 @@ export type Database = {
           pinned?: boolean
           search_vector?: unknown
           sender_email: string
+          sender_verified?: boolean | null
           source_type?: string | null
           source_url?: string | null
           status?: Database["public"]["Enums"]["item_status"]
@@ -168,6 +170,7 @@ export type Database = {
           pinned?: boolean
           search_vector?: unknown
           sender_email?: string
+          sender_verified?: boolean | null
           source_type?: string | null
           source_url?: string | null
           status?: Database["public"]["Enums"]["item_status"]

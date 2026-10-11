@@ -157,7 +157,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   let query = supabase
     .from('items')
     .select(
-      'id, subject, sender_email, ai_summary, status, error_message, pinned, created_at, source_type, source_url, thumbnail_url, item_tags(tags(id, name))',
+      'id, subject, sender_email, sender_verified, ai_summary, status, error_message, pinned, created_at, source_type, source_url, thumbnail_url, item_tags(tags(id, name))',
       { count: 'exact' },
     )
     .eq('user_id', user.id)
