@@ -178,9 +178,12 @@ export function checkLintWarnings() {
   let warnings = 0
   let errors = 0
   const errorsOut = []
+  let targetsAttempted = 0
+  let targetsParsed = 0
   for (const t of targets) {
     const existingPaths = t.paths.filter((p) => existsSync(join(ROOT, p)))
     if (existingPaths.length === 0) continue
+    targetsAttempted++
     const res = sh('npx', ['eslint', '-c', t.config, '--format', 'json', '--ext', '.ts,.tsx', ...existingPaths])
     if (!res.stdout) continue
     let files
@@ -189,6 +192,7 @@ export function checkLintWarnings() {
     } catch {
       continue
     }
+    targetsParsed++
     for (const f of files) {
       for (const m of f.messages) {
         if (m.severity === 1) warnings++
@@ -198,6 +202,9 @@ export function checkLintWarnings() {
         }
       }
     }
+  }
+  if (targetsAttempted > 0 && targetsParsed === 0) {
+    return skip('eslint produced no parseable output for any target — could not determine lint status')
   }
   const summary = `${warnings} warning(s), ${errors} error(s) (errors should be 0 — CI blocks on them)`
   if (errors > 0) return fail(summary, { detail: errorsOut.slice(0, 10) })
@@ -292,11 +299,13 @@ export function checkDependencies() {
   const auditRes = sh('pnpm', ['audit', '--json'])
   let vulnSummary = 'audit unavailable'
   let highCritical = 0
+  let auditOk = false
   try {
     const audit = JSON.parse(auditRes.stdout)
     const v = audit.metadata?.vulnerabilities ?? {}
     highCritical = (v.high ?? 0) + (v.critical ?? 0)
     vulnSummary = `${v.critical ?? 0} critical, ${v.high ?? 0} high, ${v.moderate ?? 0} moderate, ${v.low ?? 0} low`
+    auditOk = true
   } catch {
     /* leave defaults if stdout wasn't parseable JSON */
   }
@@ -318,6 +327,9 @@ export function checkDependencies() {
   }
 
   const summary = `vulnerabilities: ${vulnSummary}; ${majorsBehind} direct dependency(ies) > 2 majors behind`
+  if (!auditOk) {
+    return skip(`${summary} — \`pnpm audit\` produced no parseable JSON, so vulnerability status is unconfirmed`)
+  }
   if (highCritical > 0 || majorsBehind > 0) return fail(summary)
   return pass(summary)
 }
@@ -385,16 +397,24 @@ export function checkLargeFilesAndFunctions() {
     '--no-inline-config', '--format', 'json', '--ext', '.ts,.tsx', ...existing,
   ])
   let largeFunctions = 0
+  let eslintOk = false
   try {
     const parsed = JSON.parse(eslintRes.stdout)
     largeFunctions = parsed.reduce((n, f) => n + f.messages.filter((m) => m.ruleId === 'max-lines-per-function').length, 0)
+    eslintOk = true
   } catch {
     /* leave 0 if eslint output unparsable */
   }
 
+  const detail = largeFiles.slice(0, 5).map((x) => `${x.f.replace(ROOT + '/', '')} (${x.lines} lines)`)
+  if (!eslintOk) {
+    const summary = `${largeFiles.length} file(s) > 400 lines; large-function count unavailable (eslint produced no parseable output)`
+    return largeFiles.length > 0 ? warn(summary, { detail }) : skip(summary)
+  }
+
   const summary = `${largeFiles.length} file(s) > 400 lines, ${largeFunctions} function(s) > 80 lines`
   if (largeFiles.length > 0 || largeFunctions > 0) {
-    return warn(summary, { detail: largeFiles.slice(0, 5).map((x) => `${x.f.replace(ROOT + '/', '')} (${x.lines} lines)`) })
+    return warn(summary, { detail })
   }
   return pass(summary)
 }
@@ -437,11 +457,20 @@ const SECRET_PATTERNS = [
   { name: 'AWS Access Key ID', re: /AKIA[0-9A-Z]{16}/ },
   { name: 'Private key block', re: /-----BEGIN (RSA|EC|OPENSSH|PGP|DSA) PRIVATE KEY-----/ },
   { name: 'Stripe live secret key', re: /sk_live_[0-9a-zA-Z]{20,}/ },
+  { name: 'Stripe restricted key (live)', re: /\brk_live_[0-9a-zA-Z]{20,}/ },
+  { name: 'Stripe webhook secret', re: /\bwhsec_[0-9a-zA-Z]{20,}/ },
+  { name: 'Resend API key', re: /\bre_[0-9a-zA-Z]{20,}/ },
   { name: 'OpenAI API key', re: /sk-[A-Za-z0-9]{32,}/ },
   { name: 'SendGrid API key', re: /SG\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/ },
   { name: 'GitHub token', re: /gh[pousr]_[A-Za-z0-9]{36,}/ },
   { name: 'Slack token', re: /xox[baprs]-[A-Za-z0-9-]{10,}/ },
-  { name: 'Generic secret assignment', re: /(secret|password|api[_-]?key)\s*[:=]\s*["'][A-Za-z0-9_\-/+]{24,}["']/i },
+  { name: 'Supabase/JWT-style key', re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/ },
+  { name: 'Generic secret assignment (quoted)', re: /(secret|password|api[_-]?key)\s*[:=]\s*["'][A-Za-z0-9_\-/+]{24,}["']/i },
+  {
+    // Excludes the "your-..." placeholder convention used throughout .env.example and docs copied from it.
+    name: 'Unquoted secret env assignment',
+    re: /\b(SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|STRIPE_WEBHOOK_SECRET|RESEND_API_KEY|SENDGRID_INGEST_SECRET|SENTRY_AUTH_TOKEN|CRON_SECRET|OPENAI_API_KEY|ANTHROPIC_API_KEY|GEMINI_API_KEY|UPSTASH_REDIS_REST_TOKEN)\s*=\s*(?!your[-_])[^\s"']{16,}/,
+  },
 ]
 export function checkSecretScan() {
   const lsFiles = sh('git', ['ls-files'])
@@ -452,6 +481,7 @@ export function checkSecretScan() {
     .filter((f) => !f.startsWith('scripts/health/')) // avoid matching this file's own pattern definitions
     .filter((f) => !/\.(lock|lockb|png|jpg|jpeg|gif|ico|woff2?|ttf|pdf)$/.test(f))
     .filter((f) => f !== 'pnpm-lock.yaml')
+    .filter((f) => !/\.env\.example$/.test(f)) // placeholder values ("eyJ...", "re_...") by convention, not real secrets
 
   const hits = []
   for (const file of files) {
@@ -541,7 +571,14 @@ export async function checkLighthouse() {
   const port = 4173
   const proc = spawn('npx', ['next', 'start', '-p', String(port)], {
     cwd: join(ROOT, 'apps/web'),
-    env: { ...process.env },
+    // Same placeholder env as buildWebApp() — process.env values set here win over
+    // any apps/web/.env.local on disk, so this never calls production Supabase.
+    env: {
+      ...process.env,
+      NEXT_PUBLIC_SUPABASE_URL: 'https://placeholder.supabase.co',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'placeholder-anon-key',
+      SUPABASE_SERVICE_ROLE_KEY: 'placeholder-service-role-key',
+    },
     stdio: 'ignore',
   })
 
