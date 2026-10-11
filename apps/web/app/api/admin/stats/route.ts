@@ -1,43 +1,45 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
+import { buildDayBuckets, countDistinctUsers, type DayBucket, type TrendPoint } from '@/lib/admin/stats'
 
-interface TrendPoint {
-  date: string
-  count: number
+// Matches supabase/config.toml's PostgREST max_rows; pagination must stop before this cap.
+const USAGE_LOG_PAGE_SIZE = 1000
+
+async function fetchDailyCounts(
+  table: 'items' | 'users',
+  buckets: DayBucket[]
+): Promise<TrendPoint[]> {
+  const results = await Promise.all(
+    buckets.map(({ startISO, endISO }) =>
+      supabaseAdmin
+        .from(table)
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', startISO)
+        .lt('created_at', endISO)
+    )
+  )
+  return buckets.map((bucket, i) => ({ date: bucket.date, count: results[i].count ?? 0 }))
 }
 
-function dateKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function startOfDay(d: Date): Date {
-  const copy = new Date(d)
-  copy.setHours(0, 0, 0, 0)
-  return copy
-}
-
-function daysAgo(d: Date, days: number): Date {
-  const copy = new Date(d)
-  copy.setDate(copy.getDate() - days)
-  return copy
-}
-
-// Buckets rows into daily counts, inclusive of `now`'s day, going back `days` total days.
-function buildDailyTrend(rows: { created_at: string }[], days: number, now: Date): TrendPoint[] {
-  const buckets = new Map<string, number>()
-  for (let i = days - 1; i >= 0; i--) {
-    buckets.set(dateKey(daysAgo(now, i)), 0)
+// Pages through usage_log with `.range()` so counts aren't silently capped at
+// PostgREST's max_rows (1000) once a window has more rows than that.
+async function fetchUsageLogUserIds(sinceISO: string): Promise<{ user_id: string }[]> {
+  const rows: { user_id: string }[] = []
+  let offset = 0
+  for (;;) {
+    const { data, error } = await supabaseAdmin
+      .from('usage_log')
+      .select('user_id')
+      .gte('created_at', sinceISO)
+      .order('id', { ascending: true })
+      .range(offset, offset + USAGE_LOG_PAGE_SIZE - 1)
+    if (error || !data || data.length === 0) break
+    rows.push(...data)
+    if (data.length < USAGE_LOG_PAGE_SIZE) break
+    offset += USAGE_LOG_PAGE_SIZE
   }
-  for (const row of rows) {
-    const key = dateKey(new Date(row.created_at))
-    if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1)
-  }
-  return Array.from(buckets.entries()).map(([date, count]) => ({ date, count }))
-}
-
-function countDistinctUsers(rows: { user_id: string }[]): number {
-  return new Set(rows.map((row) => row.user_id)).size
+  return rows
 }
 
 export async function GET() {
@@ -45,10 +47,10 @@ export async function GET() {
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const now = new Date()
-  const todayStart = startOfDay(now)
-  const todayISO = todayStart.toISOString()
-  const sevenDaysAgoISO = daysAgo(todayStart, 6).toISOString()
-  const fourteenDaysAgoISO = daysAgo(todayStart, 13).toISOString()
+  const last7Buckets = buildDayBuckets(now, 7)
+  const last14Buckets = buildDayBuckets(now, 14)
+  const todayISO = last7Buckets[last7Buckets.length - 1].startISO
+  const sevenDaysAgoISO = last7Buckets[0].startISO
 
   const [
     { count: totalUsers },
@@ -57,10 +59,10 @@ export async function GET() {
     { count: failedItems },
     { count: totalActiveItems },
     { count: itemsSavedTotal },
-    { data: itemsLast7Days },
-    { data: usersLast14Days },
-    { data: usageToday },
-    { data: usageLast7Days },
+    itemsSavedTrend,
+    signupsTrend,
+    usageToday,
+    usageLast7Days,
   ] = await Promise.all([
     supabaseAdmin.from('users').select('*', { count: 'exact', head: true }),
     supabaseAdmin
@@ -80,10 +82,10 @@ export async function GET() {
       .select('*', { count: 'exact', head: true })
       .is('deleted_at', null),
     supabaseAdmin.from('items').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('items').select('created_at').gte('created_at', sevenDaysAgoISO),
-    supabaseAdmin.from('users').select('created_at').gte('created_at', fourteenDaysAgoISO),
-    supabaseAdmin.from('usage_log').select('user_id').gte('created_at', todayISO),
-    supabaseAdmin.from('usage_log').select('user_id').gte('created_at', sevenDaysAgoISO),
+    fetchDailyCounts('items', last7Buckets),
+    fetchDailyCounts('users', last14Buckets),
+    fetchUsageLogUserIds(todayISO),
+    fetchUsageLogUserIds(sevenDaysAgoISO),
   ])
 
   return NextResponse.json({
@@ -93,9 +95,9 @@ export async function GET() {
     failedItems: failedItems ?? 0,
     totalActiveItems: totalActiveItems ?? 0,
     itemsSavedTotal: itemsSavedTotal ?? 0,
-    itemsSavedTrend: buildDailyTrend(itemsLast7Days ?? [], 7, now),
-    signupsTrend: buildDailyTrend(usersLast14Days ?? [], 14, now),
-    dauProxy: countDistinctUsers(usageToday ?? []),
-    wauProxy: countDistinctUsers(usageLast7Days ?? []),
+    itemsSavedTrend,
+    signupsTrend,
+    dauProxy: countDistinctUsers(usageToday),
+    wauProxy: countDistinctUsers(usageLast7Days),
   })
 }

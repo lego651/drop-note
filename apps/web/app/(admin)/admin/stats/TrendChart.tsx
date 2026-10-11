@@ -1,7 +1,4 @@
-interface TrendPoint {
-  date: string
-  count: number
-}
+import type { TrendPoint } from '@/lib/admin/stats'
 
 function formatShortDate(dateStr?: string): string {
   if (!dateStr) return ''

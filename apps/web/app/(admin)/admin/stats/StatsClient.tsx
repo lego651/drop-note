@@ -2,12 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import type { TrendPoint } from '@/lib/admin/stats'
 import { TrendChart } from './TrendChart'
-
-interface TrendPoint {
-  date: string
-  count: number
-}
 
 interface StatsData {
   totalUsers: number
