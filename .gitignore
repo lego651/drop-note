@@ -14,3 +14,5 @@ e2e/fixtures/admin.json
 supabase/.temp
 .vercel
 .claude
+scripts/health/reports
+scripts/health/.jscpd-tmp
