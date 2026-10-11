@@ -59,8 +59,9 @@ export function resolveEffectiveBodyText(bodyText: string, bodyHtml: string): st
   const trimmedText = bodyText.trim()
   if (!trimmedText) return htmlToText(bodyHtml)
 
-  const isHtmlDominant = trimmedText.length < bodyHtml.length * 0.1
-  return isHtmlDominant ? htmlToText(bodyHtml) : bodyText
+  const renderedHtml = htmlToText(bodyHtml)
+  const isHtmlDominant = trimmedText.length < renderedHtml.length * 0.1
+  return isHtmlDominant ? renderedHtml : bodyText
 }
 
 export async function processEmail(params: ProcessEmailParams): Promise<ProcessEmailResult> {

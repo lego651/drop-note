@@ -40,7 +40,7 @@ export function htmlToText(html: string): string {
   const withoutHiddenBlocks = html.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
 
   const withLinksInlined = withoutHiddenBlocks.replace(
-    /<a\b[^>]*href=["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi,
+    /<a\b[^>]*href=["']([^"']*)["'][^>]*>([\s\S]{0,2000}?)<\/a>/gi,
     (_, href: string, label: string) => {
       const cleanLabel = label.replace(/<[^>]+>/g, '').trim()
       return cleanLabel && cleanLabel !== href ? `${cleanLabel} (${href})` : href
