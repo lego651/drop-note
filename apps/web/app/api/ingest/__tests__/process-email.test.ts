@@ -43,9 +43,10 @@ vi.mock('@drop-note/shared', async (importOriginal) => {
   }
 })
 
-import { processEmail } from '../../../../lib/ingest/process-email'
+import { processEmail, resolveEffectiveBodyText } from '../../../../lib/ingest/process-email'
 import { setItemPending, setItemFailed, setItemDone } from '../../../../lib/ingest/db'
 import { summarizeEmailBody } from '../../../../lib/ingest/ai'
+import { parseSendGridPayload } from '@drop-note/shared'
 
 function makeParams() {
   return {
@@ -131,5 +132,63 @@ describe('processEmail — AI error handling', () => {
 
     expect(typeof result.aiMs).toBe('number')
     expect(result.aiMs).toBeGreaterThanOrEqual(0)
+  })
+})
+
+describe('resolveEffectiveBodyText', () => {
+  it('returns bodyText unchanged when bodyHtml is empty', () => {
+    expect(resolveEffectiveBodyText('Hello world', '')).toBe('Hello world')
+  })
+
+  it('falls back to a plain-text rendering of bodyHtml when bodyText is empty', () => {
+    const html = '<p>Check out <a href="https://example.com/article">this article</a></p>'
+    expect(resolveEffectiveBodyText('', html)).toBe('Check out this article (https://example.com/article)')
+  })
+
+  it('falls back to bodyHtml when bodyText is much shorter (HTML-dominant email)', () => {
+    const html = `<html><body><table><tr><td>${'x'.repeat(500)}</td></tr></table>` +
+      '<p>Check out <a href="https://example.com/article">this article</a></p></body></html>'
+    const result = resolveEffectiveBodyText('Hi', html)
+    expect(result).toContain('https://example.com/article')
+  })
+
+  it('keeps bodyText when it is a substantial fraction of bodyHtml length', () => {
+    const bodyText = 'A full plain-text paragraph with real content.'
+    const html = `<p>${bodyText}</p>`
+    expect(resolveEffectiveBodyText(bodyText, html)).toBe(bodyText)
+  })
+})
+
+describe('processEmail — HTML-only newsletter fallback', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('detects a link that only exists inside bodyHtml when bodyText is empty', async () => {
+    vi.mocked(parseSendGridPayload).mockReturnValue({
+      from: 'newsletter@example.com',
+      subject: 'Weekly digest',
+      bodyText: '',
+      bodyHtml: '<html><body><p>Read <a href="https://example.com/article">this piece</a></p></body></html>',
+      attachments: [],
+    })
+    vi.mocked(summarizeEmailBody).mockResolvedValue({
+      summary: 'A summary',
+      tags: [],
+      error: null,
+      retryable: false,
+    })
+
+    const result = await processEmail(makeParams())
+
+    expect(result.status).toBe('done')
+    expect(summarizeEmailBody).toHaveBeenCalledWith(
+      'Weekly digest',
+      expect.stringContaining('https://example.com/article'),
+    )
+    expect(setItemDone).toHaveBeenCalledWith(
+      'item-1',
+      expect.objectContaining({ sourceType: 'url', sourceUrl: 'https://example.com/article' }),
+    )
   })
 })
