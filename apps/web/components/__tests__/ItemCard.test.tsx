@@ -100,6 +100,28 @@ describe('ItemCard', () => {
     )
   })
 
+  it('renders the thumbnail via next/image for a youtube item', () => {
+    render(<ItemCard item={base} />)
+
+    const thumb = screen.getByAltText('Test subject')
+    expect(thumb).toHaveAttribute('src', 'https://example.com/thumb.jpg')
+  })
+
+  it('renders the thumbnail via a plain <img> (not next/image) for a generic url item, since og:image hosts are not in the next/image allowlist', () => {
+    const urlItem: ItemSummary = {
+      ...base,
+      source_type: 'url',
+      source_url: 'https://www.reddit.com/r/programming/comments/1a2b3c4/some_thread/',
+      thumbnail_url: 'https://arbitrary-blog-host.example/og.jpg',
+      subject: null,
+    }
+    render(<ItemCard item={urlItem} />)
+
+    const thumb = screen.getByAltText('')
+    expect(thumb).toHaveAttribute('src', 'https://arbitrary-blog-host.example/og.jpg')
+    expect(thumb).toHaveAttribute('loading', 'lazy')
+  })
+
   it('does not render an external-link control when source_url is null', () => {
     const emailItem: ItemSummary = {
       ...base,

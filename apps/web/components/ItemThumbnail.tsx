@@ -27,13 +27,25 @@ export function ItemThumbnail({
     youtubeId && 'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
   )
 
-  const imageEl = (
+  // youtubeId thumbnails come from img.youtube.com, which is in next.config.mjs's
+  // remotePatterns allowlist. Generic og:image thumbnails can come from any host,
+  // so next/image would throw an "unconfigured host" error — use a plain <img> instead.
+  const imageEl = youtubeId ? (
     <Image
       src={thumbnailUrl}
       alt={subject ?? 'Video thumbnail'}
       fill
       className="object-cover"
       sizes="(max-width: 640px) 112px, 144px"
+    />
+  ) : (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={thumbnailUrl}
+      alt={subject ?? ''}
+      className="absolute inset-0 h-full w-full object-cover"
+      loading="lazy"
+      referrerPolicy="no-referrer"
     />
   )
 

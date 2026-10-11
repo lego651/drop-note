@@ -40,14 +40,18 @@ vi.mock('@drop-note/shared', async (importOriginal) => {
       attachments: [],
     }),
     fetchYouTubeTitle: vi.fn().mockResolvedValue(null),
-    fetchPageMetadata: vi.fn().mockResolvedValue(null),
   }
 })
+
+vi.mock('@drop-note/shared/page-metadata', () => ({
+  fetchPageMetadata: vi.fn().mockResolvedValue(null),
+}))
 
 import { processEmail } from '../../../../lib/ingest/process-email'
 import { setItemPending, setItemFailed, setItemDone } from '../../../../lib/ingest/db'
 import { summarizeEmailBody } from '../../../../lib/ingest/ai'
-import { fetchPageMetadata, parseSendGridPayload } from '@drop-note/shared'
+import { parseSendGridPayload } from '@drop-note/shared'
+import { fetchPageMetadata } from '@drop-note/shared/page-metadata'
 
 function makeParams() {
   return {

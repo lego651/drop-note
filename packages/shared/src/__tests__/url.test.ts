@@ -4,7 +4,6 @@ import {
   extractYouTubeId,
   getYouTubeThumbnailUrl,
   fetchYouTubeTitle,
-  fetchPageMetadata,
 } from '../url'
 
 describe('extractSingleUrl', () => {
@@ -139,104 +138,5 @@ describe('fetchYouTubeTitle', () => {
   })
 })
 
-describe('fetchPageMetadata', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  function mockHtmlResponse(html: string, ok = true, contentType = 'text/html; charset=utf-8') {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok,
-      headers: { get: (name: string) => (name === 'content-type' ? contentType : null) },
-      text: () => Promise.resolve(html),
-    }))
-  }
-
-  it('extracts og:title, og:description, and og:image', async () => {
-    mockHtmlResponse(`
-      <html><head>
-        <meta property="og:title" content="A Great Article" />
-        <meta property="og:description" content="A short summary of the article." />
-        <meta property="og:image" content="https://example.com/thumb.jpg" />
-      </head></html>
-    `)
-
-    const result = await fetchPageMetadata('https://example.com/article')
-
-    expect(result).toEqual({
-      title: 'A Great Article',
-      description: 'A short summary of the article.',
-      imageUrl: 'https://example.com/thumb.jpg',
-    })
-  })
-
-  it('falls back to <title> and first paragraph when og tags are missing', async () => {
-    mockHtmlResponse(`
-      <html><head><title>Plain Title</title></head>
-      <body><p>First paragraph text.</p></body></html>
-    `)
-
-    const result = await fetchPageMetadata('https://example.com/article')
-
-    expect(result).toEqual({
-      title: 'Plain Title',
-      description: 'First paragraph text.',
-      imageUrl: null,
-    })
-  })
-
-  it('resolves a relative og:image against the page URL', async () => {
-    mockHtmlResponse(`
-      <html><head>
-        <meta property="og:title" content="Title" />
-        <meta property="og:image" content="/images/thumb.jpg" />
-      </head></html>
-    `)
-
-    const result = await fetchPageMetadata('https://example.com/article')
-
-    expect(result?.imageUrl).toBe('https://example.com/images/thumb.jpg')
-  })
-
-  it('decodes HTML entities in title and description', async () => {
-    mockHtmlResponse(`
-      <html><head>
-        <meta property="og:title" content="Cats &amp; Dogs" />
-        <meta property="og:description" content="It&#39;s great" />
-      </head></html>
-    `)
-
-    const result = await fetchPageMetadata('https://example.com/article')
-
-    expect(result?.title).toBe('Cats & Dogs')
-    expect(result?.description).toBe("It's great")
-  })
-
-  it('returns null when the response is not ok', async () => {
-    mockHtmlResponse('<html></html>', false)
-
-    const result = await fetchPageMetadata('https://example.com/404')
-    expect(result).toBeNull()
-  })
-
-  it('returns null when the content type is not HTML', async () => {
-    mockHtmlResponse('{}', true, 'application/json')
-
-    const result = await fetchPageMetadata('https://example.com/data.json')
-    expect(result).toBeNull()
-  })
-
-  it('returns null when fetch throws', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')))
-
-    const result = await fetchPageMetadata('https://example.com/article')
-    expect(result).toBeNull()
-  })
-
-  it('returns null when no metadata can be found at all', async () => {
-    mockHtmlResponse('<html><head></head><body></body></html>')
-
-    const result = await fetchPageMetadata('https://example.com/empty')
-    expect(result).toBeNull()
-  })
-})
+// fetchPageMetadata now lives in ../page-metadata (server-only) — see
+// ../__tests__/page-metadata.test.ts for its tests.

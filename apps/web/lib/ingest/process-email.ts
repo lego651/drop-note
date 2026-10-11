@@ -19,9 +19,9 @@ import {
   extractYouTubeId,
   getYouTubeThumbnailUrl,
   fetchYouTubeTitle,
-  fetchPageMetadata,
 } from '@drop-note/shared'
 import type { SourceType } from '@drop-note/shared'
+import { fetchPageMetadata } from '@drop-note/shared/page-metadata'
 import { setItemProcessing, setItemDone, setItemFailed, setItemPending, upsertTags, createAttachmentItem } from './db'
 import { uploadAttachment } from './storage'
 import { summarizeEmailBody, describeImage } from './ai'

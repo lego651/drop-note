@@ -5,9 +5,10 @@ import { resolve } from 'path'
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: {
-      '@': resolve(__dirname, 'apps/web'),
-    },
+    alias: [
+      { find: '@', replacement: resolve(__dirname, 'apps/web') },
+      { find: /^@drop-note\/shared\/(.*)$/, replacement: resolve(__dirname, 'packages/shared/src/$1') },
+    ],
   },
   test: {
     globals: true,
