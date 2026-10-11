@@ -150,6 +150,7 @@ Historical ticket breakdowns and sprint reviews are frozen in `docs/archive/alph
 |---|---|
 | `docs/STYLE_GUIDE.md` | UI styling standard — read before any UI work |
 | `docs/google-oauth-setup.md` | One-time Google OAuth + Supabase setup runbook |
+| `docs/architecture/overview.md` | System context, request-flow diagrams, module map, data model |
 | `docs/architecture/email-pipeline.md` | Current email → ingest → AI → DB data flow |
 | `docs/.mic-state.md` | drop-mic agent's persistent working memory |
 
