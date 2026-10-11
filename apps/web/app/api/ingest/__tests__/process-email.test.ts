@@ -40,12 +40,14 @@ vi.mock('@drop-note/shared', async (importOriginal) => {
       attachments: [],
     }),
     fetchYouTubeTitle: vi.fn().mockResolvedValue(null),
+    fetchPageMetadata: vi.fn().mockResolvedValue(null),
   }
 })
 
 import { processEmail } from '../../../../lib/ingest/process-email'
 import { setItemPending, setItemFailed, setItemDone } from '../../../../lib/ingest/db'
 import { summarizeEmailBody } from '../../../../lib/ingest/ai'
+import { fetchPageMetadata, parseSendGridPayload } from '@drop-note/shared'
 
 function makeParams() {
   return {
@@ -131,5 +133,72 @@ describe('processEmail — AI error handling', () => {
 
     expect(typeof result.aiMs).toBe('number')
     expect(result.aiMs).toBeGreaterThanOrEqual(0)
+  })
+})
+
+describe('processEmail — generic URL metadata fetch', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(parseSendGridPayload).mockReturnValue({
+      from: 'test@example.com',
+      subject: 'Check this out',
+      bodyText: 'https://www.reddit.com/r/programming/comments/1a2b3c4/some_thread/',
+      bodyHtml: '',
+      attachments: [],
+    })
+    vi.mocked(summarizeEmailBody).mockResolvedValue({
+      summary: 'A reddit thread summary',
+      tags: [],
+      error: null,
+      retryable: false,
+    })
+  })
+
+  it('rewrites the summarize subject/body and stores a thumbnail when metadata fetch succeeds', async () => {
+    vi.mocked(fetchPageMetadata).mockResolvedValue({
+      title: 'Some programming thread',
+      description: 'A lively discussion about programming.',
+      imageUrl: 'https://reddit.com/thumb.jpg',
+    })
+
+    const result = await processEmail(makeParams())
+
+    expect(fetchPageMetadata).toHaveBeenCalledWith(
+      'https://www.reddit.com/r/programming/comments/1a2b3c4/some_thread/',
+    )
+    expect(summarizeEmailBody).toHaveBeenCalledWith(
+      'Some programming thread',
+      'Some programming thread\n\nA lively discussion about programming.',
+    )
+    expect(result.status).toBe('done')
+    expect(setItemDone).toHaveBeenCalledWith(
+      'item-1',
+      expect.objectContaining({
+        sourceType: 'url',
+        sourceUrl: 'https://www.reddit.com/r/programming/comments/1a2b3c4/some_thread/',
+        thumbnailUrl: 'https://reddit.com/thumb.jpg',
+      }),
+    )
+  })
+
+  it('fails soft to the raw URL text when the metadata fetch fails, without regressing to failed', async () => {
+    vi.mocked(fetchPageMetadata).mockResolvedValue(null)
+
+    const result = await processEmail(makeParams())
+
+    expect(summarizeEmailBody).toHaveBeenCalledWith(
+      'Check this out',
+      'https://www.reddit.com/r/programming/comments/1a2b3c4/some_thread/',
+    )
+    expect(result.status).toBe('done')
+    expect(setItemFailed).not.toHaveBeenCalled()
+    expect(setItemDone).toHaveBeenCalledWith(
+      'item-1',
+      expect.objectContaining({
+        sourceType: 'url',
+        sourceUrl: 'https://www.reddit.com/r/programming/comments/1a2b3c4/some_thread/',
+        thumbnailUrl: null,
+      }),
+    )
   })
 })

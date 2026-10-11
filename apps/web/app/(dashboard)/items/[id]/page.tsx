@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ItemDetailEditor } from '@/components/ItemDetailEditor'
 import { AttachmentsSection } from '@/components/AttachmentsSection'
 import { format } from 'date-fns'
+import { ExternalLink } from 'lucide-react'
 import { extractYouTubeId } from '@drop-note/shared'
 
 export async function generateMetadata(
@@ -157,6 +158,17 @@ export default async function ItemDetailPage({ params }: { params: { id: string 
         <p className="text-sm text-muted-foreground">
           {format(new Date(item.created_at), 'PPP p')}
         </p>
+        {item.source_type !== 'youtube' && item.source_url && (
+          <a
+            href={item.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground underline"
+          >
+            <ExternalLink size={14} />
+            Open original
+          </a>
+        )}
       </div>
 
       {/* Editable fields */}

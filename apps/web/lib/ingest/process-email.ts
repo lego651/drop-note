@@ -19,6 +19,7 @@ import {
   extractYouTubeId,
   getYouTubeThumbnailUrl,
   fetchYouTubeTitle,
+  fetchPageMetadata,
 } from '@drop-note/shared'
 import type { SourceType } from '@drop-note/shared'
 import { setItemProcessing, setItemDone, setItemFailed, setItemPending, upsertTags, createAttachmentItem } from './db'
@@ -88,6 +89,14 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
     } else if (detectedUrl) {
       sourceType = 'url'
       sourceUrl = detectedUrl
+      const pageMetadata = await fetchPageMetadata(detectedUrl)
+      if (pageMetadata) {
+        summarizeSubject = pageMetadata.title ?? parsed.subject
+        summarizeBody = [pageMetadata.title, pageMetadata.description]
+          .filter((part): part is string => Boolean(part))
+          .join('\n\n') || summarizeBody
+        thumbnailUrl = pageMetadata.imageUrl ?? null
+      }
       console.log(`[ingest] Detected URL: ${detectedUrl}`)
     } else {
       sourceType = 'email'

@@ -83,6 +83,35 @@ describe('ItemCard', () => {
     )
   })
 
+  it('renders an "Open original" control for a generic url item', () => {
+    const urlItem: ItemSummary = {
+      ...base,
+      source_type: 'url',
+      source_url: 'https://www.reddit.com/r/programming/comments/1a2b3c4/some_thread/',
+    }
+    render(<ItemCard item={urlItem} />)
+
+    const link = screen.getByRole('button', { name: 'Open original' })
+    expect(link).toBeInTheDocument()
+
+    fireEvent.click(link)
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://www.reddit.com/r/programming/comments/1a2b3c4/some_thread/',
+    )
+  })
+
+  it('does not render an external-link control when source_url is null', () => {
+    const emailItem: ItemSummary = {
+      ...base,
+      source_type: 'email',
+      source_url: null,
+    }
+    render(<ItemCard item={emailItem} />)
+
+    expect(screen.queryByRole('button', { name: 'Open original' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Open on YouTube' })).toBeNull()
+  })
+
   it('does not wrap the card in a link while the item is still processing', () => {
     const processing: ItemSummary = {
       ...base,

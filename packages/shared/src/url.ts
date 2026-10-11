@@ -76,3 +76,103 @@ export async function fetchYouTubeTitle(videoUrl: string): Promise<string | null
     return null
   }
 }
+
+export interface PageMetadata {
+  title: string | null
+  description: string | null
+  imageUrl: string | null
+}
+
+const PAGE_METADATA_TIMEOUT_MS = 5_000
+const PAGE_METADATA_MAX_HTML_LENGTH = 200_000
+const PAGE_METADATA_TITLE_MAX_LENGTH = 300
+const PAGE_METADATA_DESCRIPTION_MAX_LENGTH = 1_000
+
+const HTML_ENTITY_MAP: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+}
+
+function decodeHtmlEntities(str: string): string {
+  return str.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, entity: string) => {
+    if (entity[0] === '#') {
+      const isHex = entity[1]?.toLowerCase() === 'x'
+      const code = parseInt(isHex ? entity.slice(2) : entity.slice(1), isHex ? 16 : 10)
+      return Number.isNaN(code) ? match : String.fromCodePoint(code)
+    }
+    return HTML_ENTITY_MAP[entity.toLowerCase()] ?? match
+  })
+}
+
+function matchMetaContent(html: string, name: string): string | null {
+  const patterns = [
+    new RegExp(`<meta[^>]+(?:property|name)=["']${name}["'][^>]*content=["']([^"']*)["']`, 'i'),
+    new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]*(?:property|name)=["']${name}["']`, 'i'),
+  ]
+  for (const pattern of patterns) {
+    const match = html.match(pattern)
+    if (match?.[1]) return decodeHtmlEntities(match[1].trim())
+  }
+  return null
+}
+
+function matchTitleTag(html: string): string | null {
+  const match = html.match(/<title[^>]*>([^<]*)<\/title>/i)
+  return match?.[1] ? decodeHtmlEntities(match[1].trim()) : null
+}
+
+function matchFirstParagraph(html: string): string | null {
+  const match = html.match(/<p[^>]*>([\s\S]*?)<\/p>/i)
+  if (!match) return null
+  const text = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
+  return text || null
+}
+
+function resolveUrl(maybeRelative: string, base: string): string | null {
+  try {
+    return new URL(maybeRelative, base).toString()
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Fetches lightweight page metadata (og:title/og:description/og:image, falling
+ * back to <title> + first paragraph) for a generic (non-YouTube) URL.
+ * Returns null on any error, non-HTML response, or when nothing is found —
+ * callers should fall back to the raw URL/subject gracefully.
+ */
+export async function fetchPageMetadata(pageUrl: string): Promise<PageMetadata | null> {
+  try {
+    const res = await fetch(pageUrl, {
+      signal: AbortSignal.timeout(PAGE_METADATA_TIMEOUT_MS),
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; drop-note-bot/1.0; +https://dropnote.me)' },
+    })
+    if (!res.ok) return null
+
+    const contentType = res.headers.get('content-type') ?? ''
+    if (!contentType.includes('html')) return null
+
+    const html = (await res.text()).slice(0, PAGE_METADATA_MAX_HTML_LENGTH)
+
+    const title = (matchMetaContent(html, 'og:title') ?? matchTitleTag(html))
+      ?.slice(0, PAGE_METADATA_TITLE_MAX_LENGTH) ?? null
+    const description = (
+      matchMetaContent(html, 'og:description')
+      ?? matchMetaContent(html, 'description')
+      ?? matchFirstParagraph(html)
+    )?.slice(0, PAGE_METADATA_DESCRIPTION_MAX_LENGTH) ?? null
+    const rawImageUrl = matchMetaContent(html, 'og:image')
+    const imageUrl = rawImageUrl ? resolveUrl(rawImageUrl, pageUrl) : null
+
+    if (!title && !description && !imageUrl) return null
+
+    return { title, description, imageUrl }
+  } catch {
+    return null
+  }
+}

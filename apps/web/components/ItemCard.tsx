@@ -111,10 +111,10 @@ export function ItemCard({
           {item.subject ?? '(No subject)'}
         </p>
         <div className="flex items-center gap-1 shrink-0">
-          {youtubeId && item.source_url && (
+          {item.source_url && (
             <button
               type="button"
-              aria-label="Open on YouTube"
+              aria-label={youtubeId ? 'Open on YouTube' : 'Open original'}
               className="text-muted-foreground opacity-40 hover:opacity-100 transition-opacity"
               onClick={(e) => {
                 e.stopPropagation()
