@@ -47,13 +47,18 @@ test('4. invite code generation creates new code', async ({ page }) => {
   await expect(page.getByRole('row')).toHaveCount(before + 1)
 })
 
-test('5. stats page renders without errors', async ({ page }) => {
+test('5. stats page renders without errors and shows metrics', async ({ page }) => {
   const consoleErrors: string[] = []
   page.on('console', (msg) => {
     if (msg.type() === 'error') consoleErrors.push(msg.text())
   })
 
-  await page.goto('/admin')
+  await page.goto('/admin/stats')
   await expect(page.getByText(/total users/i)).toBeVisible()
+  await expect(page.getByText(/items saved \(total\)/i)).toBeVisible()
+  await expect(page.getByText(/items saved \(last 7 days\)/i)).toBeVisible()
+  await expect(page.getByText(/signups \(last 14 days\)/i)).toBeVisible()
+  await expect(page.getByText(/dau \(proxy\)/i)).toBeVisible()
+  await expect(page.getByText(/wau \(proxy\)/i)).toBeVisible()
   expect(consoleErrors).toHaveLength(0)
 })

@@ -41,6 +41,31 @@ export function parseFromAddress(raw: string): string {
 }
 
 /**
+ * Checks SendGrid Inbound Parse's `dkim` field against the claimed sender
+ * domain. The product identifies users purely by the SMTP `From` header
+ * (see CLAUDE.md), so this is the only signal distinguishing a genuine
+ * sender from a trivially spoofed `From` address.
+ *
+ * SPF is deliberately not used here: SendGrid's `SPF` field validates the
+ * envelope MAIL FROM, not the header `From` domain, so an attacker can get
+ * `SPF: pass` on their own domain while spoofing an unrelated `From`
+ * address. DKIM is checked per-domain, so it doesn't have that gap.
+ *
+ * `dkim` comes back as e.g. `{@example.com : pass}` (possibly multiple
+ * domains). A missing/malformed field counts as 'fail' — identity can't be
+ * confirmed, so we don't give spoofable input the benefit of the doubt.
+ */
+export function verifySenderAuth(senderEmail: string, dkim: string): 'pass' | 'fail' {
+  const domain = senderEmail.split('@')[1]?.toLowerCase() ?? ''
+  if (!domain) return 'fail'
+
+  const escapedDomain = domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const dkimPass = new RegExp(`@${escapedDomain}\\s*:\\s*pass`, 'i').test(dkim)
+
+  return dkimPass ? 'pass' : 'fail'
+}
+
+/**
  * Parse a SendGrid Inbound Parse POST payload into a structured ParsedEmail.
  */
 export function parseSendGridPayload(fields: Record<string, string>): ParsedEmail {

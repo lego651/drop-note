@@ -44,6 +44,14 @@ function extractWeChatUrl(text: string): string | null {
   const cleaned = text.slice(start, end).replace(TRAILING_PUNCTUATION_PATTERN, '')
   return hostMatch[1] ? cleaned : `https://${cleaned}`
 }
+// Post permalinks (twitter.com|x.com/<user>/status/<id>) are detected anywhere in the
+// text, regardless of surrounding commentary length or other URLs that may precede them —
+// sharing a tweet/post almost always comes with a reaction or quote (and sometimes another
+// link) ahead of it, which routinely exceeds the generic "mostly just a link" heuristic
+// below. Scoped to /status/ permalinks (not bare profile links) so a long email that merely
+// mentions someone's profile in passing (e.g. a "Twitter: x.com/janedoe" signature) doesn't
+// get misclassified as a link share.
+const SOCIAL_URL_PATTERN = /https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/[^\s/]+\/status\/\d+[^\s<>"{}|\\^`[\]]*/i
 
 /**
  * Returns the URL if the text is primarily a single URL (ignoring surrounding whitespace).
@@ -55,6 +63,8 @@ export function extractSingleUrl(text: string): string | null {
 
   const wechatUrl = extractWeChatUrl(trimmed)
   if (wechatUrl) return wechatUrl
+  const socialMatch = trimmed.match(SOCIAL_URL_PATTERN)
+  if (socialMatch) return socialMatch[0].replace(/[.,!?;:'")\]]+$/, '')
 
   const match = trimmed.match(URL_PATTERN)
   if (!match) return null
