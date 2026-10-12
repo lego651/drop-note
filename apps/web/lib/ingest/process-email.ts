@@ -19,6 +19,7 @@ import {
   extractYouTubeId,
   getYouTubeThumbnailUrl,
   fetchYouTubeTitle,
+  htmlToText,
 } from '@drop-note/shared'
 import type { SourceType } from '@drop-note/shared'
 import { fetchPageMetadata } from '@drop-note/shared/page-metadata'
@@ -47,6 +48,23 @@ export interface ProcessEmailResult {
   aiMs: number
 }
 
+/**
+ * Picks which body text to run URL/YouTube detection and summarization on.
+ * When bodyText is empty, or much shorter than the HTML part (suggesting an
+ * HTML-only or HTML-dominant email), renders bodyHtml to plain text instead
+ * so embedded links and content aren't silently dropped.
+ */
+export function resolveEffectiveBodyText(bodyText: string, bodyHtml: string): string {
+  if (!bodyHtml.trim()) return bodyText
+
+  const trimmedText = bodyText.trim()
+  if (!trimmedText) return htmlToText(bodyHtml)
+
+  const renderedHtml = htmlToText(bodyHtml)
+  const isHtmlDominant = trimmedText.length < renderedHtml.length * 0.1
+  return isHtmlDominant ? renderedHtml : bodyText
+}
+
 export async function processEmail(params: ProcessEmailParams): Promise<ProcessEmailResult> {
   const { userId, userTier, from, subject, text, html, attachmentInfo, attachmentKeys, attachmentData, bodyItemId } = params
 
@@ -68,15 +86,21 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
 
     const parsed = parseSendGridPayload(fields)
 
+    // HTML-only or HTML-dominant emails (common for templated newsletters) can
+    // leave bodyText empty or near-empty while the real content — including
+    // links that only ever existed as <a href> — lives in bodyHtml. Fall back
+    // to a plain-text rendering of the HTML so detection/summarization see it.
+    const effectiveBodyText = resolveEffectiveBodyText(parsed.bodyText, parsed.bodyHtml ?? '')
+
     // Detect if body is primarily a URL
-    const detectedUrl = extractSingleUrl(parsed.bodyText)
+    const detectedUrl = extractSingleUrl(effectiveBodyText)
     const youtubeId = detectedUrl ? extractYouTubeId(detectedUrl) : null
 
     let sourceType: SourceType | null = null
     let sourceUrl: string | null = null
     let thumbnailUrl: string | null = null
     let summarizeSubject = parsed.subject
-    let summarizeBody = parsed.bodyText
+    let summarizeBody = effectiveBodyText
 
     if (detectedUrl && youtubeId) {
       sourceType = 'youtube'
