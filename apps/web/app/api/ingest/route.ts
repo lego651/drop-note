@@ -19,6 +19,7 @@ import { NextResponse } from 'next/server'
 import { Redis } from '@upstash/redis'
 import {
   parseFromAddress,
+  verifySenderAuth,
   isOverRateLimit,
   TIER_ITEM_LIMITS,
   TIER_ATTACHMENT_SIZE_MB,
@@ -128,6 +129,9 @@ export async function POST(request: Request) {
     const text = (formData.get('text') as string) ?? ''
     const html = (formData.get('html') as string) ?? ''
     const attachmentInfo = (formData.get('attachment-info') as string) ?? ''
+    // SendGrid Inbound Parse's default `dkim` field — used to verify the
+    // claimed `from` identity (see DRO-16). Never trust `from` alone.
+    const dkim = (formData.get('dkim') as string) ?? ''
 
     // MX is on the root domain — all mail to dropnote.me hits this endpoint.
     // Only process emails addressed to drop@dropnote.me; silently discard
@@ -156,6 +160,8 @@ export async function POST(request: Request) {
     if (!senderEmail) {
       return NextResponse.json({ ok: true }, { status: 200 })
     }
+
+    const senderVerified = verifySenderAuth(senderEmail, dkim) === 'pass'
 
     const supabase = supabaseAdmin
 
@@ -199,6 +205,18 @@ export async function POST(request: Request) {
         console.error('[ingest] Auto-block redis error:', err)
         // Continue — Redis failure must not prevent normal ingest flow
       }
+      return NextResponse.json({ ok: true }, { status: 200 })
+    }
+
+    // Reject before the sender is charged against the victim's rate limit or
+    // item quota — a spoofed `From` must not cost the real owner anything.
+    // See DRO-16/DRO-21.
+    if (!senderVerified) {
+      console.log(JSON.stringify({
+        event: 'ingest.rejected_unverified_sender',
+        userId: user.id,
+        total_handling_ms: Date.now() - startMs,
+      }))
       return NextResponse.json({ ok: true }, { status: 200 })
     }
 
