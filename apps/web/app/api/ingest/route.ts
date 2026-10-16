@@ -32,6 +32,7 @@ import { sendCapExceededEmail } from '../../../lib/emails/cap-exceeded'
 import { sendSaveLimitExceededEmail } from '../../../lib/emails/save-limit-exceeded'
 import { supabaseAdmin } from '../../../lib/supabase/admin'
 import { processEmail } from '../../../lib/ingest/process-email'
+import { log, withRouteLogging } from '../../../lib/observability/logger'
 
 function getRedis() {
   return new Redis({
@@ -102,7 +103,7 @@ redis.call('EXPIRE', key, ttl)
 return new
 `
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const startMs = Date.now()
 
   // Always 200 to SendGrid — never let it retry on error
@@ -202,7 +203,7 @@ export async function POST(request: Request) {
             )
         }
       } catch (err) {
-        console.error('[ingest] Auto-block redis error:', err)
+        log.error('ingest.auto_block_redis_failed', err)
         // Continue — Redis failure must not prevent normal ingest flow
       }
       return NextResponse.json({ ok: true }, { status: 200 })
@@ -212,11 +213,10 @@ export async function POST(request: Request) {
     // item quota — a spoofed `From` must not cost the real owner anything.
     // See DRO-16/DRO-21.
     if (!senderVerified) {
-      console.log(JSON.stringify({
-        event: 'ingest.rejected_unverified_sender',
+      log.warn('ingest.rejected_unverified_sender', {
         userId: user.id,
         total_handling_ms: Date.now() - startMs,
-      }))
+      })
       return NextResponse.json({ ok: true }, { status: 200 })
     }
 
@@ -254,7 +254,7 @@ export async function POST(request: Request) {
         currentCount: activeItems,
         tierLimit,
         emailSubject: subject,
-      }).catch((err) => console.error('[ingest] Failed to send cap-exceeded email:', err))
+      }).catch((err) => log.error('ingest.cap_exceeded_email_failed', err))
 
       return NextResponse.json({ ok: true }, { status: 200 })
     }
@@ -279,11 +279,11 @@ export async function POST(request: Request) {
             to: user.email,
             userId: user.id,
             month,
-          }).catch((err) => console.error('[ingest] Failed to send save-limit email:', err))
+          }).catch((err) => log.error('ingest.save_limit_email_failed', err))
         }
       } catch (err) {
         // Fail open: better to allow one extra email than silently discard it
-        console.error('[ingest] Redis save-limit check failed — allowing email through:', err)
+        log.error('ingest.save_limit_redis_failed', err, { action: 'allowed_through' })
       }
 
       if (!saveCheckPassed) {
@@ -305,7 +305,7 @@ export async function POST(request: Request) {
       .single()
 
     if (itemError || !item) {
-      console.error('[ingest] Failed to create item:', itemError?.message)
+      log.error('ingest.item_create_failed', itemError ?? new Error('no item returned'), { userId: user.id })
       return NextResponse.json({ ok: true }, { status: 200 })
     }
 
@@ -316,7 +316,7 @@ export async function POST(request: Request) {
         .from('usage_log')
         .insert({ user_id: user.id, action_type: 'save', month })
         .then(({ error }) => {
-          if (error) console.error('[ingest] usage_log write failed:', error.message)
+          if (error) log.error('ingest.usage_log_write_failed', error, { userId: user.id })
         })
     }
 
@@ -337,8 +337,8 @@ export async function POST(request: Request) {
     const totalMs = Date.now() - startMs
 
     // Structured log for p95 monitoring — field names are stable; do not rename
-    console.log(JSON.stringify({
-      event: 'ingest.completed',
+    const completedLog = result.status === 'failed' ? log.warn : log.info
+    completedLog('ingest.completed', {
       userId: user.id,
       itemId: item.id,
       status: result.status,
@@ -347,14 +347,13 @@ export async function POST(request: Request) {
       text_length: text.length,
       html_length: html.length,
       attachment_count: attachmentKeys.length,
-    }))
+    })
 
     return NextResponse.json({ ok: true }, { status: 200 })
   } catch (err) {
     const totalMs = Date.now() - startMs
-    console.error('[ingest] Unhandled error:', err)
-    console.log(JSON.stringify({
-      event: 'ingest.completed',
+    log.error('ingest.unhandled_error', err)
+    log.info('ingest.completed', {
       userId: null,
       itemId: null,
       status: 'error',
@@ -363,7 +362,9 @@ export async function POST(request: Request) {
       text_length: 0,
       html_length: 0,
       attachment_count: 0,
-    }))
+    })
     return NextResponse.json({ ok: true }, { status: 200 })
   }
 }
+
+export const POST = withRouteLogging('POST /api/ingest', handlePOST)

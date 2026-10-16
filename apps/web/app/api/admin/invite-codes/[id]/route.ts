@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
+import { withRouteLogging } from '@/lib/observability/logger'
 
-export async function DELETE(
+async function handleDELETE(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
@@ -30,3 +31,5 @@ export async function DELETE(
 
   return NextResponse.json({ ok: true })
 }
+
+export const DELETE = withRouteLogging('DELETE /api/admin/invite-codes/[id]', handleDELETE)

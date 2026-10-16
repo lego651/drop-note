@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient } from '../../../../../../lib/supabase/server'
 import { supabaseAdmin } from '../../../../../../lib/supabase/admin'
+import { log, withRouteLogging } from '@/lib/observability/logger'
 
 const VALID_TIERS = ['free', 'pro', 'power'] as const
 type ValidTier = typeof VALID_TIERS[number]
 
-export async function PATCH(
+async function handlePATCH(
   request: Request,
   { params }: { params: { userId: string } }
 ) {
@@ -52,7 +53,7 @@ export async function PATCH(
     .maybeSingle()
 
   if (error) {
-    console.error('[admin] Failed to update tier:', error.message)
+    log.error('admin.users.tier_update_failed', error)
     return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }
 
@@ -62,3 +63,5 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true, userId: data.id, tier: data.tier })
 }
+
+export const PATCH = withRouteLogging('PATCH /api/admin/users/[userId]/tier', handlePATCH)

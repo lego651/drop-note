@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
+import { withRouteLogging } from '@/lib/observability/logger'
 
-export async function PATCH(request: Request) {
+async function handlePATCH(request: Request) {
   const admin = await requireAdmin()
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
@@ -40,3 +41,5 @@ export async function PATCH(request: Request) {
 
   return NextResponse.json({ ok: true })
 }
+
+export const PATCH = withRouteLogging('PATCH /api/admin/settings', handlePATCH)

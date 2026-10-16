@@ -27,6 +27,7 @@ import { setItemProcessing, setItemDone, setItemFailed, setItemPending, upsertTa
 import { uploadAttachment } from './storage'
 import { summarizeEmailBody, describeImage } from './ai'
 import { extractPdfText } from './pdf'
+import { log } from '../observability/logger'
 
 export interface ProcessEmailParams {
   userId: string
@@ -109,7 +110,7 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
       const videoTitle = await fetchYouTubeTitle(detectedUrl)
       summarizeSubject = videoTitle ?? parsed.subject
       summarizeBody = `YouTube video: ${videoTitle ?? detectedUrl}`
-      console.log(`[ingest] Detected YouTube video: ${youtubeId} — "${summarizeSubject}"`)
+      log.info('ingest.detected_youtube', { youtubeId })
     } else if (detectedUrl) {
       sourceType = 'url'
       sourceUrl = detectedUrl
@@ -121,7 +122,7 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
           .join('\n\n') || summarizeBody
         thumbnailUrl = pageMetadata.imageUrl ?? null
       }
-      console.log(`[ingest] Detected URL: ${detectedUrl}`)
+      log.info('ingest.detected_url', { host: safeHost(detectedUrl) })
     } else {
       sourceType = 'email'
     }
@@ -214,12 +215,21 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
   } catch (err) {
     const aiMs = Date.now() - aiStart
     const msg = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[ingest] processEmail unexpected error:', msg)
+    log.error('ingest.process_email_failed', err)
     try {
       await setItemFailed(bodyItemId, msg)
     } catch {
       // best-effort
     }
     return { itemIds: [bodyItemId], status: 'failed', aiMs }
+  }
+}
+
+// Host only — full URLs can carry personal tokens in query strings.
+function safeHost(url: string): string | null {
+  try {
+    return new URL(url).host
+  } catch {
+    return null
   }
 }

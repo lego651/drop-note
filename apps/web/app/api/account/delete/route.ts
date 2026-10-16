@@ -2,13 +2,15 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { stripe } from '@/lib/stripe'
+import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
-export async function POST() {
+async function handlePOST() {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  setLogUser(user.id)
 
   // Get profile for Stripe info
   const { data: profile } = await supabaseAdmin
@@ -29,7 +31,7 @@ export async function POST() {
         await stripe.subscriptions.cancel(subscriptions.data[0].id)
       }
     } catch (err) {
-      console.error('[account/delete] Stripe cancel failed:', err)
+      log.error('account.delete.stripe_cancel_failed', err)
     }
   }
 
@@ -52,28 +54,28 @@ export async function POST() {
   // Delete items (cascades to item_tags via FK)
   const { error: itemsError } = await supabaseAdmin.from('items').delete().eq('user_id', user.id)
   if (itemsError) {
-    console.error('[account/delete] Failed to delete items:', itemsError.message)
+    log.error('account.delete.items_failed', itemsError)
     return NextResponse.json({ error: 'Failed to delete account data' }, { status: 500 })
   }
 
   // Delete tags
   const { error: tagsError } = await supabaseAdmin.from('tags').delete().eq('user_id', user.id)
   if (tagsError) {
-    console.error('[account/delete] Failed to delete tags:', tagsError.message)
+    log.error('account.delete.tags_failed', tagsError)
     return NextResponse.json({ error: 'Failed to delete account data' }, { status: 500 })
   }
 
   // Delete usage_log entries
   const { error: usageError } = await supabaseAdmin.from('usage_log').delete().eq('user_id', user.id)
   if (usageError) {
-    console.error('[account/delete] Failed to delete usage log:', usageError.message)
+    log.error('account.delete.usage_log_failed', usageError)
     return NextResponse.json({ error: 'Failed to delete account data' }, { status: 500 })
   }
 
   // Delete public.users row
   const { error: userRowError } = await supabaseAdmin.from('users').delete().eq('id', user.id)
   if (userRowError) {
-    console.error('[account/delete] Failed to delete user row:', userRowError.message)
+    log.error('account.delete.user_row_failed', userRowError)
     return NextResponse.json({ error: 'Failed to delete account data' }, { status: 500 })
   }
 
@@ -82,8 +84,10 @@ export async function POST() {
     user.id
   )
   if (deleteAuthError) {
-    console.error('[account/delete] Auth user delete failed:', deleteAuthError)
+    log.error('account.delete.auth_user_failed', deleteAuthError)
   }
 
   return NextResponse.json({ ok: true })
 }
+
+export const POST = withRouteLogging('POST /api/account/delete', handlePOST)

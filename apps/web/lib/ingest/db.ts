@@ -5,6 +5,7 @@
 import { supabaseAdmin } from '../supabase/admin'
 import { normalizeTags } from '@drop-note/shared'
 import type { SourceType } from '@drop-note/shared'
+import { log } from '../observability/logger'
 
 export async function setItemProcessing(itemId: string): Promise<void> {
   const { data, error } = await supabaseAdmin
@@ -103,7 +104,7 @@ export async function upsertTags(userId: string, itemId: string, tagNames: strin
   for (let i = 0; i < tagResults.length; i++) {
     const { data: tag, error: tagError } = tagResults[i]
     if (tagError || !tag) {
-      console.warn(`[ingest:db] Failed to upsert tag "${normalized[i]}":`, tagError?.message)
+      log.warn('ingest.tag_upsert_failed', { itemId }, tagError ?? undefined)
       continue
     }
     validTagIds.push(tag.id)
@@ -117,6 +118,6 @@ export async function upsertTags(userId: string, itemId: string, tagNames: strin
     .upsert(pairs, { onConflict: 'item_id,tag_id' })
 
   if (linkError) {
-    console.warn(`[ingest:db] Failed to upsert item_tags for item ${itemId}:`, linkError.message)
+    log.warn('ingest.item_tags_upsert_failed', { itemId }, linkError)
   }
 }

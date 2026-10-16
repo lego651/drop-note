@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server'
 import { createClient } from '../../../../lib/supabase/server'
 import { stripe } from '../../../../lib/stripe'
 import { supabaseAdmin } from '../../../../lib/supabase/admin'
+import { log, withRouteLogging } from '@/lib/observability/logger'
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   // Auth: require session
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -33,10 +34,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url: portalSession.url })
   } catch (err) {
-    console.error('[portal] Stripe error:', err instanceof Error ? err.message : err)
+    log.error('stripe.portal_failed', err)
     return NextResponse.json(
       { error: 'Failed to open billing portal. Please try again.' },
       { status: 502 }
     )
   }
 }
+
+export const POST = withRouteLogging('POST /api/stripe/portal', handlePOST)

@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server'
 import { createClient } from '../../../../lib/supabase/server'
 import { stripe } from '../../../../lib/stripe'
 import { getOrCreateStripeCustomer } from '../../../../lib/stripe-customer'
+import { log, withRouteLogging } from '@/lib/observability/logger'
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const VALID_PRICE_IDS = new Set([
     process.env.STRIPE_PRO_PRICE_ID,
     process.env.STRIPE_POWER_PRICE_ID,
@@ -49,10 +50,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url: session.url })
   } catch (err) {
-    console.error('[checkout] Stripe error:', err instanceof Error ? err.message : err)
+    log.error('stripe.checkout_failed', err)
     return NextResponse.json(
       { error: 'Failed to create checkout session. Please try again.' },
       { status: 502 }
     )
   }
 }
+
+export const POST = withRouteLogging('POST /api/stripe/checkout', handlePOST)

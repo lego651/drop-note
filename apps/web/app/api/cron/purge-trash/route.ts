@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { log, withRouteLogging } from '@/lib/observability/logger'
 
 // GET /api/cron/purge-trash
 // Vercel cron job — runs daily at 03:00 UTC
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
 
     if (!cronSecret) {
-      console.warn('[purge-trash] CRON_SECRET env var is not configured — skipping purge')
+      log.warn('cron.purge_trash.skipped_no_secret')
       return NextResponse.json({ skipped: true }, { status: 200 })
     }
 
@@ -28,15 +29,17 @@ export async function GET(request: NextRequest) {
       .select('id')
 
     if (error) {
-      console.error('[purge-trash] Error:', error.message)
+      log.error('cron.purge_trash.delete_failed', error)
       return NextResponse.json({ error: 'Purge failed' }, { status: 500 })
     }
 
     const purged = data?.length ?? 0
-    console.log(`[purge-trash] Purged ${purged} items`)
+    log.info('cron.purge_trash.completed', { purged })
     return NextResponse.json({ purged })
   } catch (err) {
-    console.error('[GET /api/cron/purge-trash]', err instanceof Error ? err.message : err)
+    log.error('cron.purge_trash_failed', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export const GET = withRouteLogging('GET /api/cron/purge-trash', handleGET)

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { buildDayBuckets, countDistinctUsers, type DayBucket, type TrendPoint } from '@/lib/admin/stats'
+import { withRouteLogging } from '@/lib/observability/logger'
 
 // Matches supabase/config.toml's PostgREST max_rows; pagination must stop before this cap.
 const USAGE_LOG_PAGE_SIZE = 1000
@@ -42,7 +43,7 @@ async function fetchUsageLogUserIds(sinceISO: string): Promise<{ user_id: string
   return rows
 }
 
-export async function GET() {
+async function handleGET() {
   const admin = await requireAdmin()
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
@@ -101,3 +102,5 @@ export async function GET() {
     wauProxy: countDistinctUsers(usageLast7Days),
   })
 }
+
+export const GET = withRouteLogging('GET /api/admin/stats', handleGET)

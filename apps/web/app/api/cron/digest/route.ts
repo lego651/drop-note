@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendWeeklyDigestEmail } from '@/lib/email'
+import { log, withRouteLogging } from '@/lib/observability/logger'
 
 // GET /api/cron/digest
 // Vercel cron job — runs every Monday at 09:00 UTC
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
 
     if (!cronSecret) {
-      console.warn('[cron/digest] CRON_SECRET env var is not configured — skipping digest')
+      log.warn('cron.digest.skipped_no_secret')
       return NextResponse.json({ skipped: true }, { status: 200 })
     }
 
@@ -28,12 +29,12 @@ export async function GET(request: NextRequest) {
       .eq('digest_enabled', true)
 
     if (usersError) {
-      console.error('[cron/digest] Failed to fetch users:', usersError.message)
+      log.error('cron.digest.fetch_users_failed', usersError)
       return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
     }
 
     if (!users || users.length === 0) {
-      console.log('[cron/digest] No users with digest enabled')
+      log.info('cron.digest.no_recipients')
       return NextResponse.json({ ok: true, processed: 0, skipped: 0 })
     }
 
@@ -85,7 +86,7 @@ export async function GET(request: NextRequest) {
         // Get user email from auth
         const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId)
         if (authError || !authUser.user?.email) {
-          console.error('[cron/digest] Failed to get email for user', userId, authError?.message)
+          log.error('cron.digest.get_email_failed', authError ?? new Error('no email'), { userId })
           return { userId, sent: false }
         }
 
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
           resurfaceItems,
         })
 
-        console.log('[cron/digest] sent', { userId, weekItems: weekItems.length, resurface: resurfaceItems.length })
+        log.info('cron.digest.sent', { userId, weekItems: weekItems.length, resurface: resurfaceItems.length })
         return { userId, sent: true }
       })
     )
@@ -109,13 +110,15 @@ export async function GET(request: NextRequest) {
         }
       } else {
         failed++
-        console.error('[cron/digest] User digest failed:', result.reason)
+        log.error('cron.digest.user_failed', result.reason)
       }
     }
 
     return NextResponse.json({ ok: true, processed, skipped, failed })
   } catch (err) {
-    console.error('[GET /api/cron/digest]', err instanceof Error ? err.message : err)
+    log.error('cron.digest_failed', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export const GET = withRouteLogging('GET /api/cron/digest', handleGET)

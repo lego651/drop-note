@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { deleteItem } from '@/lib/items'
+import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
-export async function PATCH(
+async function handlePATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -11,6 +12,7 @@ export async function PATCH(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    setLogUser(user.id)
 
     let body: Record<string, unknown>
     try {
@@ -104,12 +106,12 @@ export async function PATCH(
 
     return NextResponse.json(item)
   } catch (err) {
-    console.error('[PATCH /api/items/[id]]', err instanceof Error ? err.message : err)
+    log.error('items.update_failed', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function DELETE(
+async function handleDELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -117,6 +119,7 @@ export async function DELETE(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    setLogUser(user.id)
 
     // Get user's tier
     const { data: userData } = await supabaseAdmin
@@ -130,7 +133,10 @@ export async function DELETE(
     const result = await deleteItem(params.id, user.id, tier)
     return NextResponse.json(result)
   } catch (err) {
-    console.error('[DELETE /api/items/[id]]', err instanceof Error ? err.message : err)
+    log.error('items.delete_one_failed', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export const PATCH = withRouteLogging('PATCH /api/items/[id]', handlePATCH)
+export const DELETE = withRouteLogging('DELETE /api/items/[id]', handleDELETE)

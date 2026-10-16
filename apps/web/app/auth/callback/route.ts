@@ -2,8 +2,9 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
 import { supabaseAdmin } from '../../../lib/supabase/admin'
+import { log, withRouteLogging } from '@/lib/observability/logger'
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? ''
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
           .update({ welcome_email_sent: true })
           .eq('id', user.id)
           .then(({ error }) => {
-            if (error) console.error('[auth] welcome_email_sent update failed:', error.message)
+            if (error) log.error('auth.callback.welcome_flag_update_failed', error)
           })
       }
 
@@ -86,3 +87,5 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.redirect(`${origin}/login?error=auth`)
 }
+
+export const GET = withRouteLogging('GET /auth/callback', handleGET)

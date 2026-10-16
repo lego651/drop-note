@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRedis } from '@/lib/redis'
 import { createClient } from '@/lib/supabase/server'
+import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
 // GET /api/items/search?q=<keyword>
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const q = searchParams.get('q') ?? ''
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    setLogUser(user.id)
 
     // Rate limit: 20 requests/min per user
     const key = `search:${user.id}`
@@ -31,7 +33,7 @@ export async function GET(request: NextRequest) {
       if (count === 1) await redis.expire(key, 60)
       if (count > 20) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
     } catch (err) {
-      console.error('[search] Redis unavailable, skipping rate limit:', err instanceof Error ? err.message : err)
+      log.error('items.search.rate_limit_redis_failed', err, { action: 'skipped_rate_limit' })
       // fail open — continue to search
     }
 
@@ -40,13 +42,15 @@ export async function GET(request: NextRequest) {
     })
 
     if (error) {
-      console.error('[search] RPC error:', error.message)
+      log.error('items.search.rpc_failed', error)
       return NextResponse.json({ error: 'Search failed' }, { status: 500 })
     }
 
     return NextResponse.json(items ?? [])
   } catch (err) {
-    console.error('[GET /api/items/search]', err instanceof Error ? err.message : err)
+    log.error('items.search_failed', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export const GET = withRouteLogging('GET /api/items/search', handleGET)
