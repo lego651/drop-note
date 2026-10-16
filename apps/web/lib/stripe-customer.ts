@@ -1,5 +1,6 @@
 import { stripe } from './stripe'
 import { supabaseAdmin } from './supabase/admin'
+import { log } from '@/lib/observability/logger'
 
 /**
  * Returns the Stripe customer ID for a user, creating one if it doesn't exist.
@@ -39,7 +40,7 @@ export async function getOrCreateStripeCustomer(userId: string): Promise<string>
 
   // Another concurrent caller already wrote — discard our Stripe customer and re-read
   // Log so we can track orphaned customers in production
-  console.warn('[stripe-customer] Race: orphaned Stripe customer created:', customer.id, 'for user:', userId)
+  log.warn('stripe.customer.orphaned_race', { stripeCustomerId: customer.id, userId })
 
   const { data: current } = await supabaseAdmin
     .from('users')

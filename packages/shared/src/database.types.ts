@@ -187,6 +187,54 @@ export type Database = {
           },
         ]
       }
+      request_logs: {
+        Row: {
+          correlation_id: string | null
+          created_at: string
+          duration_ms: number | null
+          event: string
+          id: number
+          kind: string
+          level: string
+          message: string | null
+          meta: Json
+          method: string | null
+          route: string | null
+          status: number | null
+          user_id: string | null
+        }
+        Insert: {
+          correlation_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          event: string
+          id?: never
+          kind: string
+          level: string
+          message?: string | null
+          meta?: Json
+          method?: string | null
+          route?: string | null
+          status?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          correlation_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          event?: string
+          id?: never
+          kind?: string
+          level?: string
+          message?: string | null
+          meta?: Json
+          method?: string | null
+          route?: string | null
+          status?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           key: string

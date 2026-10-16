@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
+import { log, withRouteLogging } from '@/lib/observability/logger'
 
-export async function DELETE(
+async function handleDELETE(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
@@ -13,9 +14,11 @@ export async function DELETE(
   const { error } = await supabaseAdmin.from('block_list').delete().eq('id', id)
 
   if (error) {
-    console.error('[admin/blocks] delete error:', error.message)
+    log.error('admin.blocks.delete_failed', error)
     return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })
 }
+
+export const DELETE = withRouteLogging('DELETE /api/admin/blocks/[id]', handleDELETE)

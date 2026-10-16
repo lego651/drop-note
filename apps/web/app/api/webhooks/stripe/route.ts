@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { priceIdToTier } from '@drop-note/shared'
 import { stripe } from '../../../../lib/stripe'
 import { supabaseAdmin } from '../../../../lib/supabase/admin'
+import { log, withRouteLogging } from '@/lib/observability/logger'
 
 async function updateUserTier(userId: string, tier: 'free' | 'pro' | 'power') {
   const { data, error } = await supabaseAdmin
@@ -19,7 +20,7 @@ async function updateUserTier(userId: string, tier: 'free' | 'pro' | 'power') {
   }
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const rawBody = await request.text()
   const sig = request.headers.get('stripe-signature')
 
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     )
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[webhook] Signature verification failed:', message)
+    log.warn('stripe.webhook.signature_invalid', { reason: message })
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
         const subscriptionId = session.subscription as string
 
         if (!userId || !subscriptionId) {
-          console.error('[webhook] checkout.session.completed missing userId or subscriptionId')
+          log.error('stripe.webhook.checkout_missing_ids', new Error('checkout.session.completed missing userId or subscriptionId'))
           return NextResponse.json({ error: 'Missing required fields' }, { status: 500 })
         }
 
@@ -62,12 +63,12 @@ export async function POST(request: Request) {
 
         if (!tier) {
           // Unrecognized price in a real completed checkout — this is a bug
-          console.error('[webhook] checkout.session.completed: unrecognized priceId:', priceId, 'for user:', userId)
+          log.error('stripe.webhook.unknown_price', new Error('unrecognized priceId'), { priceId, userId })
           return NextResponse.json({ error: 'Unrecognized price ID' }, { status: 500 })
         }
 
         await updateUserTier(userId, tier)
-        console.log(`[webhook] checkout.session.completed: user ${userId} → ${tier}`)
+        log.info('stripe.webhook.checkout_completed', { userId, tier })
         break
       }
 
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
         const userId = subscription.metadata?.supabase_user_id
 
         if (!userId) {
-          console.warn('[webhook] customer.subscription.updated: missing supabase_user_id in metadata')
+          log.warn('stripe.webhook.subscription_updated_missing_user')
           return NextResponse.json({ received: true })
         }
 
@@ -85,12 +86,12 @@ export async function POST(request: Request) {
 
         if (!tier) {
           // Could be a proration event or unknown price — skip, do NOT reset to free
-          console.warn('[webhook] customer.subscription.updated: unknown priceId:', priceId, '— skipping')
+          log.warn('stripe.webhook.subscription_updated_unknown_price', { priceId })
           return NextResponse.json({ received: true })
         }
 
         await updateUserTier(userId, tier)
-        console.log(`[webhook] customer.subscription.updated: user ${userId} → ${tier}`)
+        log.info('stripe.webhook.subscription_updated', { userId, tier })
         break
       }
 
@@ -99,12 +100,12 @@ export async function POST(request: Request) {
         const userId = subscription.metadata?.supabase_user_id
 
         if (!userId) {
-          console.warn('[webhook] customer.subscription.deleted: missing supabase_user_id in metadata')
+          log.warn('stripe.webhook.subscription_deleted_missing_user')
           return NextResponse.json({ received: true })
         }
 
         await updateUserTier(userId, 'free')
-        console.log(`[webhook] customer.subscription.deleted: user ${userId} → free`)
+        log.info('stripe.webhook.subscription_deleted', { userId, tier: 'free' })
         break
       }
 
@@ -116,8 +117,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true })
   } catch (err) {
     // Infrastructure failure (DB error, Stripe API error) — return 500 so Stripe retries
-    const message = err instanceof Error ? err.message : 'Unknown error'
-    console.error('[webhook] Infrastructure failure:', message)
+    log.error('stripe.webhook.infrastructure_failed', err)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
+
+export const POST = withRouteLogging('POST /api/webhooks/stripe', handlePOST)

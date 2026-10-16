@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import { getRedis } from '@/lib/redis'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { log, withRouteLogging } from '@/lib/observability/logger'
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   // Rate limit: 5 attempts per IP per hour
   try {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 })
     }
   } catch (err) {
-    console.error('[oauth-init] Redis rate-limit check failed, continuing:', err instanceof Error ? err.message : err)
+    log.error('auth.oauth_init.rate_limit_redis_failed', err, { action: 'continued' })
   }
 
   let body: { code?: string }
@@ -64,3 +65,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true })
 }
+
+export const POST = withRouteLogging('POST /api/auth/oauth-init', handlePOST)

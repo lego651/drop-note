@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
 // POST /api/items/bulk-tag
 // Body: { ids: string[], tag: string }
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    setLogUser(user.id)
 
     let body: { ids?: string[]; tag?: string }
     try {
@@ -76,7 +78,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ tagged: ownedItems.length })
   } catch (err) {
-    console.error('[POST /api/items/bulk-tag]', err instanceof Error ? err.message : err)
+    log.error('items.bulk_tag_failed', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export const POST = withRouteLogging('POST /api/items/bulk-tag', handlePOST)

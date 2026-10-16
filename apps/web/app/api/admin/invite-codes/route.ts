@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
+import { log, withRouteLogging } from '@/lib/observability/logger'
 
 function generateInviteCode(): string {
   const raw = randomUUID().replace(/-/g, '').toUpperCase().slice(0, 12)
   return `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}`
 }
 
-export async function POST() {
+async function handlePOST() {
   const admin = await requireAdmin()
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
@@ -21,9 +22,11 @@ export async function POST() {
     .single()
 
   if (error || !data) {
-    console.error('[admin/invite-codes] insert error:', error?.message)
+    log.error('admin.invite_codes.insert_failed', error ?? new Error('no row returned'))
     return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }
 
   return NextResponse.json({ code: { ...data, used_by_email: null } }, { status: 201 })
 }
+
+export const POST = withRouteLogging('POST /api/admin/invite-codes', handlePOST)

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
+import { log, withRouteLogging } from '@/lib/observability/logger'
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -14,7 +15,7 @@ function isValidIP(ip: string): boolean {
   return ipv4.test(ip) || ipv6.test(ip)
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const admin = await requireAdmin()
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
@@ -60,9 +61,11 @@ export async function POST(request: Request) {
     .single()
 
   if (error || !block) {
-    console.error('[admin/blocks] insert error:', error?.message)
+    log.error('admin.blocks.insert_failed', error ?? new Error('no row returned'))
     return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }
 
   return NextResponse.json({ block }, { status: 201 })
 }
+
+export const POST = withRouteLogging('POST /api/admin/blocks', handlePOST)

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
 // POST /api/items/[id]/restore
-export async function POST(
+async function handlePOST(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -11,6 +12,7 @@ export async function POST(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    setLogUser(user.id)
 
     // Paid tier required
     const { data: userData } = await supabaseAdmin
@@ -37,7 +39,9 @@ export async function POST(
     if (!restored) return NextResponse.json({ error: 'Item not found in trash' }, { status: 404 })
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error('[POST /api/items/[id]/restore]', err instanceof Error ? err.message : err)
+    log.error('items.restore_failed', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export const POST = withRouteLogging('POST /api/items/[id]/restore', handlePOST)

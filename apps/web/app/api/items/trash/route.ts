@@ -1,15 +1,17 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
 // DELETE /api/items/trash
 // Hard-deletes all trashed items (deleted_at IS NOT NULL) for the current user.
 // Requires auth (401) and a paid tier (403).
-export async function DELETE() {
+async function handleDELETE() {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    setLogUser(user.id)
 
     // Paid tier required
     const { data: userData } = await supabaseAdmin
@@ -39,7 +41,9 @@ export async function DELETE() {
 
     return NextResponse.json({ deleted: deleted?.length ?? 0 })
   } catch (err) {
-    console.error('[DELETE /api/items/trash]', err instanceof Error ? err.message : err)
+    log.error('items.trash_empty_failed', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export const DELETE = withRouteLogging('DELETE /api/items/trash', handleDELETE)
