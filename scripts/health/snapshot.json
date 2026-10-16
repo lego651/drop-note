@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-11T20:28:18.876Z",
+  "coverageLinesPct": 63.52,
+  "asCastCount": 92,
+  "duplicationPct": 5.850521527723316,
+  "bundleSizesKb": {
+    "/": 161,
+    "/dashboard": 158,
+    "/login": 232,
+    "/settings": 253
+  },
+  "todoCount": 0
+}
