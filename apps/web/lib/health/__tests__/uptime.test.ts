@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { barLevel, buildUptime, lastDays, overallState } from '../uptime'
+import { barLevel, buildUptime, isStale, lastDays, overallState } from '../uptime'
 
 const NOW = new Date('2026-10-16T12:00:00Z')
 
@@ -44,5 +44,18 @@ describe('overallState', () => {
     expect(overallState(['up', 'up'])).toBe('operational')
     expect(overallState(['up', 'degraded', null])).toBe('degraded')
     expect(overallState(['degraded', 'down'])).toBe('outage')
+  })
+
+  it('reports stale results instead of their last-known status', () => {
+    expect(overallState(['up', 'up'], true)).toBe('stale')
+    expect(overallState([null], true)).toBe('nodata')
+  })
+})
+
+describe('isStale', () => {
+  it('flags a newest check older than 15 minutes', () => {
+    expect(isStale('2026-10-16T11:50:00Z', NOW)).toBe(false)
+    expect(isStale('2026-10-16T11:40:00Z', NOW)).toBe(true)
+    expect(isStale(undefined, NOW)).toBe(false)
   })
 })

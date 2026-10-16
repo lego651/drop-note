@@ -162,14 +162,32 @@ async function checkStorage(): Promise<CheckResult> {
   return result('storage', ms > SLOW_MS ? 'degraded' : 'up', ms, `${value.data.length} bucket(s)`)
 }
 
-async function checkAi(): Promise<CheckResult> {
+// Each probe lists models: proves the key is accepted without spending tokens.
+const AI_PROBES: Record<string, { label: string; keyEnv: string; url: string; headers: (key: string) => Record<string, string> }> = {
+  openai: {
+    label: 'OpenAI', keyEnv: 'OPENAI_API_KEY', url: 'https://api.openai.com/v1/models',
+    headers: (key) => ({ authorization: `Bearer ${key}` }),
+  },
+  anthropic: {
+    label: 'Anthropic', keyEnv: 'ANTHROPIC_API_KEY', url: 'https://api.anthropic.com/v1/models',
+    headers: (key) => ({ 'x-api-key': key, 'anthropic-version': '2023-06-01' }),
+  },
+  gemini: {
+    label: 'Gemini', keyEnv: 'GEMINI_API_KEY', url: 'https://generativelanguage.googleapis.com/v1beta/models',
+    headers: (key) => ({ 'x-goog-api-key': key }),
+  },
+}
+
+export async function checkAi(): Promise<CheckResult> {
+  // Mirrors the provider selection in @drop-note/shared ai-provider.ts.
   const provider = process.env.AI_PROVIDER ?? 'openai'
-  if (provider !== 'openai') return result('ai', 'up', 0, `provider "${provider}" — key check not implemented`)
-  const key = process.env.OPENAI_API_KEY
-  if (!key) return result('ai', 'down', 0, 'OPENAI_API_KEY missing')
-  const r = await probe('https://api.openai.com/v1/models', { headers: { authorization: `Bearer ${key}` } })
+  const target = AI_PROBES[provider]
+  if (!target) return result('ai', 'down', 0, `unknown AI_PROVIDER "${provider}"`)
+  const key = process.env[target.keyEnv]
+  if (!key) return result('ai', 'down', 0, `${target.keyEnv} missing`)
+  const r = await probe(target.url, { headers: target.headers(key) })
   const status = r.status === 429 ? 'degraded' : classifyHttp(r.status, r.ms, [200])
-  return result('ai', status, r.ms, `OpenAI /v1/models → ${r.status}`)
+  return result('ai', status, r.ms, `${target.label} models → ${r.status}`)
 }
 
 async function checkEmailSending(): Promise<CheckResult> {

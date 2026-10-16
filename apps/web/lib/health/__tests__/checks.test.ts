@@ -1,9 +1,9 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 
 vi.mock('@/lib/supabase/admin', () => ({ supabaseAdmin: {} }))
 vi.mock('@/lib/redis', () => ({ getRedis: vi.fn() }))
 
-import { classifyHttp, worst, COMPONENTS, SLOW_MS } from '../checks'
+import { checkAi, classifyHttp, worst, COMPONENTS, SLOW_MS } from '../checks'
 
 describe('classifyHttp', () => {
   it('is up for an expected status that answered quickly', () => {
@@ -35,5 +35,30 @@ describe('COMPONENTS', () => {
     const keys = COMPONENTS.map((c) => c.key)
     expect(new Set(keys).size).toBe(keys.length)
     for (const r of COMPONENTS.flatMap((c) => c.routes)) expect(r).toMatch(/^(GET|POST|PATCH|PUT|DELETE) \//)
+  })
+})
+
+describe('checkAi', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('probes the configured provider instead of assuming it is up', async () => {
+    vi.stubEnv('AI_PROVIDER', 'anthropic')
+    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 401 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const r = await checkAi()
+    expect(fetchMock).toHaveBeenCalledWith('https://api.anthropic.com/v1/models', expect.anything())
+    expect(r.status).toBe('down')
+  })
+
+  it('reports a missing key or unknown provider as down', async () => {
+    vi.stubEnv('AI_PROVIDER', 'gemini')
+    vi.stubEnv('GEMINI_API_KEY', '')
+    expect((await checkAi()).status).toBe('down')
+    vi.stubEnv('AI_PROVIDER', 'nope')
+    expect((await checkAi()).detail).toContain('unknown AI_PROVIDER')
   })
 })

@@ -29,7 +29,11 @@ async function handlePOST(request: Request) {
   const { error } = await supabaseAdmin
     .from('health_checks')
     .insert(results.map((r) => ({ ...r, run_id: runId })))
-  if (error) log.error('health.store_failed', error, { runId })
+  if (error) {
+    // Unstored results never reach /status, so the run must not look successful.
+    log.error('health.store_failed', error, { runId })
+    return NextResponse.json({ runId, error: 'Results could not be stored', results }, { status: 500 })
+  }
 
   const down = results.filter((r) => r.status === 'down').map((r) => r.component)
   const degraded = results.filter((r) => r.status === 'degraded').map((r) => r.component)

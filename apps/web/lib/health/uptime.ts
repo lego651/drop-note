@@ -65,11 +65,21 @@ export function buildUptime(rows: DailyCounts[], component: string, days = 90, n
   return { bars, uptimePct: total === 0 ? null : round2((available / total) * 100) }
 }
 
-export type OverallState = 'operational' | 'degraded' | 'outage' | 'nodata'
+export type OverallState = 'operational' | 'degraded' | 'outage' | 'nodata' | 'stale'
 
-export function overallState(latest: (HealthStatus | null)[]): OverallState {
+/** Checks run every 5 minutes; a newest result older than this means monitoring has stopped. */
+export const STALE_MS = 15 * 60 * 1000
+
+export function isStale(lastCheckedAt: string | null | undefined, now: Date = new Date()): boolean {
+  if (!lastCheckedAt) return false
+  return now.getTime() - new Date(lastCheckedAt).getTime() > STALE_MS
+}
+
+/** Old results must not keep the page green: `stale` wins over any last-known status. */
+export function overallState(latest: (HealthStatus | null)[], stale = false): OverallState {
   const known = latest.filter((s): s is HealthStatus => s !== null)
   if (known.length === 0) return 'nodata'
+  if (stale) return 'stale'
   if (known.includes('down')) return 'outage'
   if (known.includes('degraded')) return 'degraded'
   return 'operational'

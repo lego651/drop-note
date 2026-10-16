@@ -3,7 +3,7 @@ import { CheckCircle2, AlertTriangle, XCircle, CircleDashed, Search } from 'luci
 import { formatDistanceToNowStrict } from 'date-fns'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { COMPONENTS, type HealthStatus } from '@/lib/health/checks'
-import { buildUptime, overallState, type BarLevel, type DailyCounts, type OverallState } from '@/lib/health/uptime'
+import { buildUptime, isStale, overallState, type BarLevel, type DailyCounts, type OverallState } from '@/lib/health/uptime'
 import { STATUS_COOKIE, hasStatusSession } from '@/lib/health/access'
 import { StatusActions, StatusLogin } from './StatusClient'
 
@@ -29,6 +29,7 @@ const BANNER: Record<OverallState, { text: string; color: string }> = {
   degraded: { text: 'Degraded Performance', color: 'hsl(var(--color-status-processing))' },
   outage: { text: 'Partial Outage', color: 'hsl(var(--color-status-failed))' },
   nodata: { text: 'Waiting for the first health check', color: 'hsl(var(--muted-foreground))' },
+  stale: { text: 'Health checks have stopped — results are out of date', color: 'hsl(var(--color-status-processing))' },
 }
 const STATUS_LABEL: Record<HealthStatus, string> = { up: 'Normal', degraded: 'Degraded', down: 'Down' }
 
@@ -83,9 +84,10 @@ export default async function StatusPage({ searchParams }: { searchParams: { cid
   const cid = searchParams.cid && CID_RE.test(searchParams.cid) ? searchParams.cid : null
   const { daily, latestByComponent, summary, errors, lookup, loadError } = await loadDashboard(cid)
 
-  const latestStatuses = COMPONENTS.map((c) => (latestByComponent.get(c.key)?.status as HealthStatus | undefined) ?? null)
-  const banner = BANNER[overallState(latestStatuses)]
   const lastRun = [...latestByComponent.values()][0]?.checked_at
+  const stale = isStale(lastRun)
+  const latestStatuses = COMPONENTS.map((c) => (latestByComponent.get(c.key)?.status as HealthStatus | undefined) ?? null)
+  const banner = BANNER[overallState(latestStatuses, stale)]
 
   return (
     <main className="min-h-screen bg-canvas">
@@ -120,7 +122,7 @@ export default async function StatusPage({ searchParams }: { searchParams: { cid
           <div className="grid grid-cols-1 overflow-hidden rounded-xl border border-border bg-card md:grid-cols-2">
             {COMPONENTS.map((c) => {
               const latest = latestByComponent.get(c.key)
-              const status = (latest?.status as HealthStatus | undefined) ?? null
+              const status = stale ? null : (latest?.status as HealthStatus | undefined) ?? null
               const uptime = buildUptime(daily, c.key, DAYS)
               const traffic = summary.filter((s) => c.routes.includes(s.route))
               const requests = traffic.reduce((n, s) => n + Number(s.requests), 0)
