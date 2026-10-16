@@ -34,7 +34,7 @@ drop-note/
 | Auth | Supabase Auth (Google OAuth only) |
 | File Storage | Supabase Storage |
 | Email Inbound | SendGrid Inbound Parse → `/api/ingest` |
-| Queue | None — AI runs synchronously in `/api/ingest` (D11); Upstash Redis for rate limiting |
+| Queue | None — AI runs synchronously in `/api/ingest` (D11). Rate limits / counters live in Postgres (`rate_counters`, `lib/counters.ts`); Upstash Redis was removed 2026-10-16 |
 | AI | OpenAI GPT-4o-mini; provider/model configurable via `AI_PROVIDER` / `AI_MODEL` env |
 | Email Sending | Resend |
 | Payments | Stripe (Sprint 3) |

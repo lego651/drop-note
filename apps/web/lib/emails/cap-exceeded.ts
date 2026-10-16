@@ -1,5 +1,6 @@
 import { escapeHtml } from '@drop-note/shared'
-import { getResend, getRedis } from './shared'
+import { getResend } from './shared'
+import { claimOnce } from '../counters'
 
 interface CapExceededParams {
   to: string
@@ -18,14 +19,8 @@ export async function sendCapExceededEmail({
   tierLimit,
   emailSubject,
 }: CapExceededParams): Promise<void> {
-  const redis = getRedis()
-  const suppressKey = `cap-exceeded:${userId}`
-
   // Rate-limit: send at most once per hour per user
-  const suppressed = await redis.exists(suppressKey)
-  if (suppressed) return
-
-  await redis.set(suppressKey, '1', { ex: 3600 })
+  if (!(await claimOnce(`cap-exceeded:${userId}`, 3600))) return
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://dropnote.me'
 

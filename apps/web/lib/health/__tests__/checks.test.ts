@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 
 vi.mock('@/lib/supabase/admin', () => ({ supabaseAdmin: {} }))
-vi.mock('@/lib/redis', () => ({ getRedis: vi.fn() }))
+vi.mock('@/lib/counters', () => ({ incrementCounter: vi.fn() }))
 
 import { checkAi, classifyHttp, worst, COMPONENTS, SLOW_MS } from '../checks'
 

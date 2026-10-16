@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
-import { getRedis } from '@/lib/redis'
+import { incrementCounter } from '@/lib/counters'
 import { HEALTH_CHECK_USER_AGENT } from '@/lib/observability/logger'
 
 // Synthetic health checks shown on /status. Each check probes one user-facing
@@ -61,7 +61,7 @@ export const COMPONENTS: ComponentDef[] = [
     description: 'Resend (welcome / digest / limit emails) accepts our key.',
     routes: ['GET /api/cron/digest'],
   },
-  { key: 'rate_limit', name: 'Rate limiting', description: 'Upstash Redis answers PING.', routes: [] },
+  { key: 'rate_limit', name: 'Rate limiting', description: 'Postgres rate-limit counters accept an increment.', routes: [] },
 ]
 
 const TIMEOUT_MS = 8000
@@ -201,9 +201,9 @@ async function checkEmailSending(): Promise<CheckResult> {
   return result('email_sending', status, r.ms, `Resend /domains → ${r.status}${restricted ? ' (sending-only key: ok)' : ''}`)
 }
 
-async function checkRedis(): Promise<CheckResult> {
-  const { value, ms } = await timed(() => getRedis().ping())
-  return result('rate_limit', value === 'PONG' ? (ms > 1000 ? 'degraded' : 'up') : 'down', ms, `PING → ${value}`)
+async function checkCounters(): Promise<CheckResult> {
+  const { value, ms } = await timed(() => incrementCounter('health:probe', 600))
+  return result('rate_limit', value > 0 ? (ms > 1000 ? 'degraded' : 'up') : 'down', ms, `counter_incr → ${value}`)
 }
 
 const RUNNERS: Record<string, (origin: string) => Promise<CheckResult>> = {
@@ -223,7 +223,7 @@ const RUNNERS: Record<string, (origin: string) => Promise<CheckResult>> = {
   storage: checkStorage,
   ai: checkAi,
   email_sending: checkEmailSending,
-  rate_limit: checkRedis,
+  rate_limit: checkCounters,
 }
 
 /** Run every check in parallel. A check that throws is reported as down. */

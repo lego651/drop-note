@@ -1,5 +1,6 @@
 import { SAVE_ACTIONS_FREE_LIMIT } from '@drop-note/shared'
-import { getResend, getRedis } from './shared'
+import { getResend } from './shared'
+import { claimOnce } from '../counters'
 
 interface SaveLimitParams {
   to: string
@@ -12,14 +13,8 @@ export async function sendSaveLimitExceededEmail({
   userId,
   month,
 }: SaveLimitParams): Promise<void> {
-  const redis = getRedis()
-  const suppressKey = `save-limit-exceeded:${userId}:${month}`
-
   // Rate-limit: send at most once per month per user (key expires with the month)
-  const suppressed = await redis.exists(suppressKey)
-  if (suppressed) return
-
-  await redis.set(suppressKey, '1', { ex: 35 * 86400 })
+  if (!(await claimOnce(`save-limit-exceeded:${userId}:${month}`, 35 * 86400))) return
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://dropnote.me'
 
