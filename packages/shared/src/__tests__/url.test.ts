@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { extractSingleUrl, extractYouTubeId, getYouTubeThumbnailUrl, fetchYouTubeTitle } from '../url'
+import {
+  extractSingleUrl,
+  extractYouTubeId,
+  getYouTubeThumbnailUrl,
+  fetchYouTubeTitle,
+} from '../url'
 
 describe('extractSingleUrl', () => {
   it('returns null for empty string', () => {
@@ -174,6 +179,7 @@ describe('getYouTubeThumbnailUrl', () => {
 describe('fetchYouTubeTitle', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it('returns the title from a successful oEmbed response', async () => {
@@ -214,3 +220,6 @@ describe('fetchYouTubeTitle', () => {
     expect(result).toBeNull()
   })
 })
+
+// fetchPageMetadata now lives in ../page-metadata (server-only) — see
+// ../__tests__/page-metadata.test.ts for its tests.

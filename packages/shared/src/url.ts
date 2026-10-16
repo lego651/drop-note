@@ -129,3 +129,6 @@ export async function fetchYouTubeTitle(videoUrl: string): Promise<string | null
     return null
   }
 }
+
+// fetchPageMetadata lives in `./page-metadata` (server-only; imports node:dns) and
+// is deliberately not re-exported here — see that file's header comment.
