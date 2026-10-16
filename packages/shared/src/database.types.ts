@@ -476,6 +476,29 @@ export type Database = {
           subject: string
         }[]
       }
+      usage_daily: {
+        Args: { p_days?: number }
+        Returns: {
+          active_users: number
+          day: string
+          emails: number
+          failed_items: number
+          items: number
+          new_users: number
+          total_users: number
+        }[]
+      }
+      usage_top_users: {
+        Args: { p_days?: number; p_limit?: number }
+        Returns: {
+          email: string
+          emails: number
+          items: number
+          last_item_at: string
+          tier: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       block_list_entry_type: "email" | "ip"

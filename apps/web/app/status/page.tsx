@@ -6,6 +6,7 @@ import { COMPONENTS, type HealthStatus } from '@/lib/health/checks'
 import { buildUptime, isStale, overallState, type BarLevel, type DailyCounts, type OverallState } from '@/lib/health/uptime'
 import { STATUS_COOKIE, hasStatusSession } from '@/lib/health/access'
 import { StatusActions, StatusLogin } from './StatusClient'
+import { StatusNav } from './StatusNav'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Status — drop-note', robots: { index: false, follow: false } }
@@ -100,7 +101,10 @@ export default async function StatusPage({ searchParams }: { searchParams: { cid
               {lastRun ? ` · last run ${formatDistanceToNowStrict(new Date(lastRun))} ago` : ''}
             </p>
           </div>
-          <StatusActions />
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusNav active="/status" />
+            <StatusActions />
+          </div>
         </header>
 
         <div className="flex items-center gap-3 rounded-lg px-5 py-4 text-lg font-semibold shadow-sm"
