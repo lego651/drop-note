@@ -6,8 +6,9 @@ import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
 async function handlePATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -34,7 +35,7 @@ async function handlePATCH(
     const { data: existing } = await supabase
       .from('items')
       .select('id')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .single()
 
@@ -51,7 +52,7 @@ async function handlePATCH(
       await supabase
         .from('items')
         .update(updates)
-        .eq('id', params.id)
+        .eq('id', id)
         .eq('user_id', user.id)
     }
 
@@ -89,10 +90,10 @@ async function handlePATCH(
       }
 
       // 2 queries: replace item_tags
-      await supabase.from('item_tags').delete().eq('item_id', params.id)
+      await supabase.from('item_tags').delete().eq('item_id', id)
       if (tagIds.length > 0) {
         await supabase.from('item_tags').insert(
-          tagIds.map(tag_id => ({ item_id: params.id, tag_id }))
+          tagIds.map(tag_id => ({ item_id: id, tag_id }))
         )
       }
     }
@@ -101,7 +102,7 @@ async function handlePATCH(
     const { data: item } = await supabase
       .from('items')
       .select('*, item_tags(tags(id, name))')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     return NextResponse.json(item)
@@ -113,8 +114,9 @@ async function handlePATCH(
 
 async function handleDELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -130,7 +132,7 @@ async function handleDELETE(
 
     const tier = (userData?.tier ?? 'free') as 'free' | 'pro' | 'power'
 
-    const result = await deleteItem(params.id, user.id, tier)
+    const result = await deleteItem(id, user.id, tier)
     return NextResponse.json(result)
   } catch (err) {
     log.error('items.delete_one_failed', err)

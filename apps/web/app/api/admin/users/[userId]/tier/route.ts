@@ -8,7 +8,7 @@ type ValidTier = typeof VALID_TIERS[number]
 
 async function handlePATCH(
   request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   // Auth: require session
   const supabase = await createServerClient()
@@ -43,7 +43,7 @@ async function handlePATCH(
   }
 
   const tier = body.tier as ValidTier
-  const { userId } = params
+  const { userId } = await params
 
   // Update tier — direct DB override, no Stripe side effects
   const { data, error } = await supabaseAdmin

@@ -19,7 +19,7 @@ async function handlePOST(request: Request) {
   const token = bearer ? await getOpsSecret('health_check_token') : null
   const authorized =
     (token !== null && bearer.length > 0 && safeEqual(bearer, token)) ||
-    (await hasStatusSession(cookies().get(STATUS_COOKIE)?.value))
+    (await hasStatusSession((await cookies()).get(STATUS_COOKIE)?.value))
   if (!authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const origin = new URL(request.url).origin
