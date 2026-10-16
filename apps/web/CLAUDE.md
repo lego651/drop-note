@@ -1,6 +1,6 @@
 # drop-note — apps/web CLAUDE.md
 
-> Web app (Next.js 14 App Router). Deployed to Vercel. Part of the drop-note monorepo.
+> Web app (Next.js 15 App Router). Deployed to Vercel. Part of the drop-note monorepo.
 > See repo-root CLAUDE.md for full conventions. This file adds web-specific notes.
 
 ---

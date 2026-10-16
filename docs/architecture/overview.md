@@ -16,7 +16,7 @@ flowchart LR
     GmailUser["User's email client"]
     Google["Google OAuth"]
     SendGrid["SendGrid Inbound Parse"]
-    Vercel["Vercel — Next.js 14 app<br/>(apps/web)"]
+    Vercel["Vercel — Next.js 15 app<br/>(apps/web)"]
     Supabase["Supabase<br/>Postgres + RLS, Auth, Storage"]
     OpenAI["OpenAI GPT-4o-mini<br/>(AI_PROVIDER-configurable)"]
     Resend["Resend<br/>(transactional email)"]

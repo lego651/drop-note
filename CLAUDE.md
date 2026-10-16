@@ -15,7 +15,7 @@ drop-note is an email-to-dashboard content saver. Users email anything to `drop@
 ```
 drop-note/
 ├── apps/
-│   └── web/          # Next.js 14 dashboard — deployed to Vercel
+│   └── web/          # Next.js 15 dashboard — deployed to Vercel
 ├── packages/
 │   └── shared/       # Shared TypeScript types, helpers, AI prompts
 ├── supabase/
@@ -29,7 +29,7 @@ drop-note/
 
 | Layer | Choice |
 |---|---|
-| Frontend | Next.js 14 (App Router) + TypeScript + shadcn/ui + Tailwind |
+| Frontend | Next.js 15 (App Router) + TypeScript + shadcn/ui + Tailwind |
 | Database | Supabase (Postgres + RLS) |
 | Auth | Supabase Auth (Google OAuth only) |
 | File Storage | Supabase Storage |

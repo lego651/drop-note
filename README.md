@@ -90,7 +90,7 @@ Everything below is **done and live at [dropnote.me](https://dropnote.me)**.
 
 | Layer | Choice |
 |---|---|
-| Frontend | Next.js 14 App Router + TypeScript + shadcn/ui + Tailwind |
+| Frontend | Next.js 15 App Router + TypeScript + shadcn/ui + Tailwind |
 | DB / Auth / Storage | Supabase (Postgres + RLS, Google OAuth) |
 | Email in / out | SendGrid Inbound Parse / Resend |
 | AI | OpenAI GPT-4o-mini (synchronous in `/api/ingest`) |
