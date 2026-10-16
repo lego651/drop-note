@@ -78,11 +78,12 @@ async function loadDashboard(cid: string | null) {
   }
 }
 
-export default async function StatusPage({ searchParams }: { searchParams: { cid?: string } }) {
-  const authed = await hasStatusSession(cookies().get(STATUS_COOKIE)?.value).catch(() => false)
+export default async function StatusPage({ searchParams }: { searchParams: Promise<{ cid?: string }> }) {
+  const authed = await hasStatusSession((await cookies()).get(STATUS_COOKIE)?.value).catch(() => false)
   if (!authed) return <StatusLogin />
 
-  const cid = searchParams.cid && CID_RE.test(searchParams.cid) ? searchParams.cid : null
+  const { cid: rawCid } = await searchParams
+  const cid = rawCid && CID_RE.test(rawCid) ? rawCid : null
   const { daily, latestByComponent, summary, errors, lookup, loadError } = await loadDashboard(cid)
 
   const lastRun = [...latestByComponent.values()][0]?.checked_at

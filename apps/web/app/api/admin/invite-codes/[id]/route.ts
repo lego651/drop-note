@@ -5,12 +5,12 @@ import { withRouteLogging } from '@/lib/observability/logger'
 
 async function handleDELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const admin = await requireAdmin()
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { id } = params
+  const { id } = await params
 
   // Only delete unused codes
   const { data: code } = await supabaseAdmin

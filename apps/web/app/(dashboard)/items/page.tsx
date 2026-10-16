@@ -11,7 +11,7 @@ import type { SourceFilter } from '@/components/items/FiltersButton'
 export const metadata = { title: 'Items — drop-note' }
 
 interface ItemsPageProps {
-  searchParams?: {
+  searchParams?: Promise<{
     page?: string
     tag?: string
     year?: string
@@ -19,7 +19,7 @@ interface ItemsPageProps {
     q?: string
     sort?: string
     source?: string
-  }
+  }>
 }
 
 export default async function ItemsPage({ searchParams }: ItemsPageProps) {
@@ -32,7 +32,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     redirect('/login')
   }
 
-  const params = searchParams ?? {}
+  const params = (await searchParams) ?? {}
 
   const tagId = params.tag
   const year = params.year

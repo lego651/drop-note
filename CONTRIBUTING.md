@@ -75,7 +75,7 @@ All three must pass — Vercel runs them on every push and a failure blocks the 
 ```
 drop-note/
 ├── apps/
-│   └── web/       # Next.js 14 App Router dashboard — deployed to Vercel
+│   └── web/       # Next.js 15 App Router dashboard — deployed to Vercel
 │                  # AI processing runs synchronously in /api/ingest (no separate worker)
 ├── packages/
 │   └── shared/    # Shared TypeScript types, helpers, and AI prompts

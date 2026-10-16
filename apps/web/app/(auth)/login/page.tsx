@@ -8,12 +8,13 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
+  const params = await searchParams
   return (
     <LoginForm
-      deleted={searchParams?.deleted === '1'}
-      authError={searchParams?.error === 'auth'}
+      deleted={params?.deleted === '1'}
+      authError={params?.error === 'auth'}
     />
   )
 }

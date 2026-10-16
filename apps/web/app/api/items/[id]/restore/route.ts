@@ -6,8 +6,9 @@ import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 // POST /api/items/[id]/restore
 async function handlePOST(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -29,7 +30,7 @@ async function handlePOST(
     const { data: restored, error: restoreError } = await supabase
       .from('items')
       .update({ deleted_at: null })
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .not('deleted_at', 'is', null)
       .select('id')

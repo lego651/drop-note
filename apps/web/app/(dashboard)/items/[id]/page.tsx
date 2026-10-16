@@ -9,21 +9,23 @@ import { ExternalLink } from 'lucide-react'
 import { extractYouTubeId } from '@drop-note/shared'
 
 export async function generateMetadata(
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<Metadata> {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { title: 'Item — drop-note' }
   const { data } = await supabase
     .from('items')
     .select('subject')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user.id)
     .single()
   return { title: `${data?.subject ?? 'Item'} — drop-note` }
 }
 
-export default async function ItemDetailPage({ params }: { params: { id: string } }) {
+export default async function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -31,7 +33,7 @@ export default async function ItemDetailPage({ params }: { params: { id: string 
   const { data: item } = await supabase
     .from('items')
     .select('*, item_tags(tags(id, name))')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user.id)
     .is('deleted_at', null)
     .single()

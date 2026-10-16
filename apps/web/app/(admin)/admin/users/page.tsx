@@ -5,11 +5,11 @@ import { UserTierSelect } from './UserTierSelect'
 export const metadata = { title: 'Users — Admin' }
 
 interface UsersPageProps {
-  searchParams?: { page?: string }
+  searchParams?: Promise<{ page?: string }>
 }
 
 export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
-  const params = await Promise.resolve(searchParams ?? {})
+  const params = (await searchParams) ?? {}
   const page = Math.max(1, parseInt(params.page ?? '1') || 1)
   const offset = (page - 1) * 50
 
