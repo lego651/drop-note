@@ -42,6 +42,60 @@ describe('extractSingleUrl', () => {
     expect(extractSingleUrl('  https://example.com  ')).toBe('https://example.com')
   })
 
+  it('detects a schemeless mp.weixin.qq.com link (WeChat in-app "copy link")', () => {
+    expect(extractSingleUrl('mp.weixin.qq.com/s/AbCdEfGhIjKlMnOpQrSt12')).toBe(
+      'https://mp.weixin.qq.com/s/AbCdEfGhIjKlMnOpQrSt12'
+    )
+  })
+
+  it('detects a mp.weixin.qq.com link behind a long Chinese title/teaser (> 60 chars)', () => {
+    const text =
+      '【重磅】最新研究显示每天走路八千步就能显著改善健康状况,快来看看这篇文章吧,非常值得一读: https://mp.weixin.qq.com/s?__biz=MzI1NDQ4MTM0MA==&mid=2247483848&idx=1&sn=a1b2c3d4e5f60718293a4b5c6d7e8f90&chksm=abcdefg1234567890#rd'
+    expect(extractSingleUrl(text)).toBe(
+      'https://mp.weixin.qq.com/s?__biz=MzI1NDQ4MTM0MA==&mid=2247483848&idx=1&sn=a1b2c3d4e5f60718293a4b5c6d7e8f90&chksm=abcdefg1234567890#rd'
+    )
+  })
+
+  it('does not regress xiaohongshu.com links: still subject to the 60-char heuristic', () => {
+    const longPrefix = 'a'.repeat(61)
+    expect(extractSingleUrl(`${longPrefix} https://www.xiaohongshu.com/explore/abc123`)).toBeNull()
+    expect(extractSingleUrl('Check this out: https://www.xiaohongshu.com/explore/abc123')).toBe(
+      'https://www.xiaohongshu.com/explore/abc123'
+    )
+  })
+
+  it('prefers a schemeless WeChat link over another URL elsewhere in the text', () => {
+    expect(
+      extractSingleUrl('mp.weixin.qq.com/s/AbCdEfGhIjKl\n\n--\nSent from https://example.com/sig')
+    ).toBe('https://mp.weixin.qq.com/s/AbCdEfGhIjKl')
+  })
+
+  it('prefers a scheme-ful WeChat link over an earlier URL in the text', () => {
+    expect(
+      extractSingleUrl('see https://example.com then https://mp.weixin.qq.com/s/AbCdEfGhIjKl')
+    ).toBe('https://mp.weixin.qq.com/s/AbCdEfGhIjKl')
+  })
+
+  it('stops a schemeless WeChat link at glued-on Chinese punctuation/text', () => {
+    expect(extractSingleUrl('看这篇mp.weixin.qq.com/s/AbCdEfGhIjKl,写得很好。')).toBe(
+      'https://mp.weixin.qq.com/s/AbCdEfGhIjKl'
+    )
+  })
+
+  it('stops a scheme-ful WeChat link at glued-on Chinese punctuation/text', () => {
+    expect(extractSingleUrl('看这篇https://mp.weixin.qq.com/s/AbCdEfGhIjKl,写得很好。')).toBe(
+      'https://mp.weixin.qq.com/s/AbCdEfGhIjKl'
+    )
+  })
+
+  it('does not treat a look-alike host (evilmp.weixin.qq.com) as a WeChat link', () => {
+    const longPrefix = 'a'.repeat(61)
+    expect(extractSingleUrl(`${longPrefix} https://evilmp.weixin.qq.com/s/AbCd`)).toBeNull()
+    expect(extractSingleUrl('Check this out: https://evilmp.weixin.qq.com/s/AbCd')).toBe(
+      'https://evilmp.weixin.qq.com/s/AbCd'
+    )
+  })
+
   it('detects a twitter.com link even behind a long reaction preamble (> 60 chars)', () => {
     const text =
       'Wow, this is a wild thread about the economy and why everyone is wrong about the recession: https://twitter.com/someuser/status/1234567890123456789'
