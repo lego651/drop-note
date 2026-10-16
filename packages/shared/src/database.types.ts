@@ -235,6 +235,24 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_counters: {
+        Row: {
+          count: number
+          expires_at: string
+          key: string
+        }
+        Insert: {
+          count: number
+          expires_at: string
+          key: string
+        }
+        Update: {
+          count?: number
+          expires_at?: string
+          key?: string
+        }
+        Relationships: []
+      }
       request_logs: {
         Row: {
           correlation_id: string | null
@@ -400,6 +418,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      counter_incr: {
+        Args: {
+          p_by?: number
+          p_key: string
+          p_limit?: number
+          p_ttl_seconds: number
+        }
+        Returns: number
+      }
       get_month_counts: {
         Args: never
         Returns: {

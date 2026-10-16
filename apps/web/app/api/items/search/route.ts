@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRedis } from '@/lib/redis'
+import { incrementCounter } from '@/lib/counters'
 import { createClient } from '@/lib/supabase/server'
 import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
@@ -28,12 +28,10 @@ async function handleGET(request: NextRequest) {
     // Rate limit: 20 requests/min per user
     const key = `search:${user.id}`
     try {
-      const redis = getRedis()
-      const count = await redis.incr(key)
-      if (count === 1) await redis.expire(key, 60)
+      const count = await incrementCounter(key, 60)
       if (count > 20) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
     } catch (err) {
-      log.error('items.search.rate_limit_redis_failed', err, { action: 'skipped_rate_limit' })
+      log.error('items.search.rate_limit_counter_failed', err, { action: 'skipped_rate_limit' })
       // fail open — continue to search
     }
 

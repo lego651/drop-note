@@ -16,7 +16,6 @@ export const maxDuration = 60
 export const runtime = 'nodejs'
 
 import { NextResponse } from 'next/server'
-import { Redis } from '@upstash/redis'
 import {
   parseFromAddress,
   verifySenderAuth,
@@ -31,15 +30,9 @@ import { timingSafeEqual } from 'crypto'
 import { sendCapExceededEmail } from '../../../lib/emails/cap-exceeded'
 import { sendSaveLimitExceededEmail } from '../../../lib/emails/save-limit-exceeded'
 import { supabaseAdmin } from '../../../lib/supabase/admin'
+import { incrementCounter } from '../../../lib/counters'
 import { processEmail } from '../../../lib/ingest/process-email'
 import { log, setLogUser, withRouteLogging } from '../../../lib/observability/logger'
-
-function getRedis() {
-  return new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  })
-}
 
 function timingSafeCompare(a: string, b: string): boolean {
   try {
@@ -88,20 +81,6 @@ function countIncomingItems(
 
   return count
 }
-
-// Lua script for atomic check-and-increment (prevents race conditions)
-// Returns -1 if limit would be exceeded, otherwise returns new total
-const ATOMIC_SAVE_INCR_SCRIPT = `
-local key = KEYS[1]
-local incoming = tonumber(ARGV[1])
-local limit = tonumber(ARGV[2])
-local ttl = tonumber(ARGV[3])
-local current = tonumber(redis.call('GET', key) or 0)
-if current + incoming > limit then return -1 end
-local new = redis.call('INCRBY', key, incoming)
-redis.call('EXPIRE', key, ttl)
-return new
-`
 
 async function handlePOST(request: Request) {
   const startMs = Date.now()
@@ -188,12 +167,7 @@ async function handlePOST(request: Request) {
     if (!user) {
       // Track unknown sender attempts; auto-block after 10 within 24h
       try {
-        const abuseRedis = getRedis()
-        const abuseKey = `abuse:unknown_sender:${senderEmail}`
-        const attempts = await abuseRedis.incr(abuseKey)
-        if (attempts === 1) {
-          await abuseRedis.expire(abuseKey, 86400) // 24hr TTL on first increment
-        }
+        const attempts = await incrementCounter(`abuse:unknown_sender:${senderEmail}`, 86400) // 24h window
         if (attempts >= 10) {
           await supabase
             .from('block_list')
@@ -203,8 +177,8 @@ async function handlePOST(request: Request) {
             )
         }
       } catch (err) {
-        log.error('ingest.auto_block_redis_failed', err)
-        // Continue — Redis failure must not prevent normal ingest flow
+        log.error('ingest.auto_block_counter_failed', err)
+        // Continue — a counter failure must not prevent normal ingest flow
       }
       return NextResponse.json({ ok: true }, { status: 200 })
     }
@@ -222,16 +196,17 @@ async function handlePOST(request: Request) {
 
     setLogUser(user.id)
 
-    // Rate limit (hourly)
-    const redis = getRedis()
-    const rateLimitKey = `ratelimit:email:${user.id}`
-    const pipeline = redis.pipeline()
-    pipeline.incr(rateLimitKey)
-    pipeline.expire(rateLimitKey, 3600)
-    const results = await pipeline.exec()
-    const count = results[0] as number
+    // Rate limit (hourly). Fail open: SendGrid never retries, so throwing here
+    // would silently lose the email (DRO-60).
+    let overRateLimit = false
+    try {
+      const count = await incrementCounter(`ratelimit:email:${user.id}`, 3600)
+      overRateLimit = isOverRateLimit(count, user.tier)
+    } catch (err) {
+      log.error('ingest.rate_limit_counter_failed', err, { action: 'allowed_through' })
+    }
 
-    if (isOverRateLimit(count, user.tier)) {
+    if (overRateLimit) {
       return NextResponse.json({ ok: true }, { status: 200 })
     }
 
@@ -269,11 +244,10 @@ async function handlePOST(request: Request) {
 
       let saveCheckPassed = true
       try {
-        const newTotal = await redis.eval(
-          ATOMIC_SAVE_INCR_SCRIPT,
-          [saveKey],
-          [incomingCount, SAVE_ACTIONS_FREE_LIMIT, TTL_35_DAYS],
-        ) as number
+        const newTotal = await incrementCounter(saveKey, TTL_35_DAYS, {
+          by: incomingCount,
+          limit: SAVE_ACTIONS_FREE_LIMIT,
+        })
 
         if (newTotal === -1) {
           saveCheckPassed = false
@@ -285,7 +259,7 @@ async function handlePOST(request: Request) {
         }
       } catch (err) {
         // Fail open: better to allow one extra email than silently discard it
-        log.error('ingest.save_limit_redis_failed', err, { action: 'allowed_through' })
+        log.error('ingest.save_limit_counter_failed', err, { action: 'allowed_through' })
       }
 
       if (!saveCheckPassed) {

@@ -32,7 +32,7 @@ export function isOverItemCap(currentCount: number, incomingCount: number, tier:
  * Returns true if processing this email would exceed the free tier monthly save limit.
  * Only applies to free tier — callers should skip this check for paid tiers.
  *
- * @param currentMonthCount - Save actions already used this month (from Redis)
+ * @param currentMonthCount - Save actions already used this month (from the rate_counters table)
  * @param incomingCount - Items this email would create
  */
 export function isOverSaveLimit(currentMonthCount: number, incomingCount: number): boolean {
@@ -40,7 +40,7 @@ export function isOverSaveLimit(currentMonthCount: number, incomingCount: number
 }
 
 /**
- * Returns the current month as 'YYYY-MM' for use as a Redis key segment.
+ * Returns the current month as 'YYYY-MM' for use as a counter key segment.
  * Pure function — testable without mocking Date.
  */
 export function getCurrentMonth(now: Date = new Date()): string {

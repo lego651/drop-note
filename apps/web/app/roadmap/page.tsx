@@ -41,7 +41,7 @@ const SHIPPED = [
   },
   {
     label: 'Rate limiting + abuse protection',
-    detail: 'Per-user and per-IP limits via Upstash Redis',
+    detail: 'Per-user and per-IP limits',
   },
   {
     label: 'Admin panel',

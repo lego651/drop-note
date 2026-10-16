@@ -20,7 +20,6 @@ flowchart LR
     Supabase["Supabase<br/>Postgres + RLS, Auth, Storage"]
     OpenAI["OpenAI GPT-4o-mini<br/>(AI_PROVIDER-configurable)"]
     Resend["Resend<br/>(transactional email)"]
-    Upstash["Upstash Redis<br/>(REST — rate limits, counters)"]
     Sentry["Sentry<br/>(error monitoring)"]
     Stripe["Stripe<br/>(scaffolded, tiers disabled)"]
 
@@ -31,11 +30,10 @@ flowchart LR
     GmailUser -- "email to drop@dropnote.me" --> SendGrid
     SendGrid -- "POST /api/ingest" --> Vercel
 
-    Vercel -- "Postgres queries, RPCs,<br/>Realtime subscribe" --> Supabase
+    Vercel -- "Postgres queries, RPCs (incl. rate-limit counters),<br/>Realtime subscribe" --> Supabase
     Vercel -- "Storage upload/read<br/>(attachments bucket)" --> Supabase
     Vercel -- "summarize / describe / tag" --> OpenAI
     Vercel -- "welcome / cap / digest emails" --> Resend
-    Vercel -- "rate limits, save counters,<br/>abuse counters" --> Upstash
     Vercel -- "exceptions, traces" --> Sentry
     Vercel -. "checkout/portal/webhook routes exist<br/>but tiers are disabled" .-> Stripe
 
@@ -123,7 +121,6 @@ sequenceDiagram
     actor Sender as User's email client
     participant SG as SendGrid Inbound Parse
     participant Ing as POST /api/ingest
-    participant Redis as Upstash Redis (REST)
     participant DB as Postgres (public.items/tags/item_tags)
     participant AI as OpenAI (or configured provider)
     participant Storage as Supabase Storage (attachments bucket)
@@ -139,11 +136,11 @@ sequenceDiagram
     Ing->>DB: block_list lookup by sender email
     Ing->>DB: users lookup by sender email (v1: shared inbox, FROM-based)
     alt sender unknown
-        Ing->>Redis: INCR abuse:unknown_sender:<email> (auto-block at 10/24h)
+        Ing->>DB: counter_incr abuse:unknown_sender:<email> (auto-block at 10/24h)
         Ing-->>SG: 200 (always 200 — prevents SendGrid retry storms)
     end
-    Ing->>Redis: INCR/EXPIRE hourly rate-limit key for user
-    Ing->>DB: count active items (tier cap check) + Redis Lua INCR (free-tier monthly save cap)
+    Ing->>DB: counter_incr hourly rate-limit key for user (fail-open)
+    Ing->>DB: count active items (tier cap check) + counter_incr with limit (free-tier monthly save cap)
     Ing->>DB: INSERT items (status='processing') -> bodyItemId
     Ing->>DB: fire-and-forget INSERT usage_log (free tier)
 
@@ -187,7 +184,6 @@ sequenceDiagram
     actor U as User
     participant UI as Items dashboard (search box)
     participant API as GET /api/items/search
-    participant Redis as Upstash Redis
     participant SB as Supabase (RLS, as authenticated user)
     participant RPC as search_items(query) RPC
 
@@ -195,7 +191,7 @@ sequenceDiagram
     UI->>API: GET /api/items/search?q=...
     API->>API: validate: 2-200 chars (else 400, or [] if <2 chars)
     API->>SB: auth.getUser() (401 if not signed in)
-    API->>Redis: INCR search:<userId> (20 req/min, fail-open if Redis errors)
+    API->>SB: counter_incr search:<userId> (20 req/min, fail-open on error)
     API->>RPC: supabase.rpc('search_items', {query})
     RPC->>RPC: SECURITY INVOKER — auth.uid() scopes rows, RLS still applies
     RPC-->>API: rows matching websearch_to_tsquery(search_vector) OR tag name ILIKE match
@@ -283,7 +279,7 @@ drop-note/
 │   │   ├── supabase/{client,server,middleware,admin}.ts — the 4 Supabase client factories
 │   │   ├── items.ts                              — deleteItem/deleteItems tier-aware logic (2.4)
 │   │   ├── email.ts, emails/*                     — Resend sends (welcome, cap, save-limit)
-│   │   ├── redis.ts, stripe.ts, stripe-customer.ts, design-tokens.ts, utils.ts
+│   │   ├── counters.ts, stripe.ts, stripe-customer.ts, design-tokens.ts, utils.ts
 │   │   └── auth/require-admin.ts
 │   ├── components/
 │   │   ├── items/*        — ItemsPageClient + card layouts (grid/list/gallery), filters, bulk actions
@@ -320,7 +316,7 @@ no tables have been added or removed since alpha.
 | `site_settings` | Key/value: `registration_mode` (open/invite), `open_slots` | — |
 | `block_list` | Email/IP blocklist, admin-managed or auto (unknown-sender abuse) | `type` promoted text→ENUM, UNIQUE(type, value), `created_by` (nullable = system-added) |
 | `invite_codes` | Invite-code gate once registration passes 50 users (or `site_settings` forces invite mode) | — |
-| `usage_log` | Monthly free-tier save-action tracking (admin reporting; the actual cap check lives in Redis) | CHECK on `month` format `YYYY-MM` |
+| `usage_log` | Monthly free-tier save-action tracking (admin reporting; the actual cap check is `counter_incr` on `rate_counters`) | CHECK on `month` format `YYYY-MM` |
 
 RLS model: every table restricts rows to `auth.uid()` (directly, or via an `EXISTS` join
 through `items`/`tags` for `item_tags`), except `block_list`/`invite_codes`/`site_settings`
@@ -379,8 +375,9 @@ through the service-role key (`supabaseAdmin`) from the ingest pipeline.
   warning and return `{ skipped: true }` with HTTP 200 — they don't error, and nothing pages
   anyone. An unset `CRON_SECRET` would mean trash quietly stops being purged (or digests stop
   sending) with no visible failure in Vercel's cron dashboard.
-- **`REDIS_URL`/BullMQ in `.env.example`** is a leftover from the pre-D11 worker architecture;
-  the live app only uses `@upstash/redis` (REST). Not wrong, just stale.
+- **Upstash Redis was removed 2026-10-16.** Its database had been deleted, and the unguarded
+  hourly rate-limit call made every ingest fail silently. Counters now live in
+  `public.rate_counters` (atomic `counter_incr()` RPC, `lib/counters.ts`), and all callers fail open.
 
 ---
 

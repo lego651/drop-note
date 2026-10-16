@@ -5,23 +5,14 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockFrom } = vi.hoisted(() => ({ mockFrom: vi.fn() }))
+const { mockFrom, mockIncrement } = vi.hoisted(() => ({ mockFrom: vi.fn(), mockIncrement: vi.fn() }))
 
 vi.mock('../../../../lib/supabase/admin', () => ({
   supabaseAdmin: { from: mockFrom },
 }))
 
-vi.mock('@upstash/redis', () => ({
-  Redis: vi.fn().mockImplementation(function RedisMock(this: Record<string, unknown>) {
-    this.pipeline = () => ({
-      incr: vi.fn(),
-      expire: vi.fn(),
-      exec: vi.fn().mockResolvedValue([1]),
-    })
-    this.eval = vi.fn().mockResolvedValue(1)
-    this.incr = vi.fn().mockResolvedValue(1)
-    this.expire = vi.fn().mockResolvedValue(undefined)
-  }),
+vi.mock('../../../../lib/counters', () => ({
+  incrementCounter: mockIncrement,
 }))
 
 vi.mock('../../../../lib/emails/cap-exceeded', () => ({
@@ -88,6 +79,7 @@ describe('POST /api/ingest — sender verification (DRO-16/DRO-21)', () => {
     vi.clearAllMocks()
     process.env.SENDGRID_INGEST_SECRET = 'test-secret'
     mockFrom.mockImplementation((table: string) => makeChain(table))
+    mockIncrement.mockResolvedValue(1)
   })
 
   it('rejects a spoofed sender (DKIM fails) without creating an item or touching quota', async () => {
@@ -137,5 +129,15 @@ describe('POST /api/ingest — sender verification (DRO-16/DRO-21)', () => {
 
     expect(await response.json()).toEqual({ ok: true })
     expect(processEmail).not.toHaveBeenCalled()
+  })
+
+  it('still saves the email when the rate-limit counter store is down (DRO-60)', async () => {
+    mockIncrement.mockRejectedValue(new Error('counter store unreachable'))
+    const request = makeRequest({ ...baseFields, dkim: '{@example.com : pass}' })
+
+    const response = await POST(request)
+
+    expect(await response.json()).toEqual({ ok: true })
+    expect(processEmail).toHaveBeenCalledTimes(1)
   })
 })

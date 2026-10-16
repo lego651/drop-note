@@ -17,7 +17,7 @@ function** (D11, 2026-05-26) — there is no separate worker process or queue la
 
 | Layer | Choice | Notes |
 |---|---|---|
-| Queue | **~~BullMQ~~ removed 2026-05-26 (D11)** — synchronous AI inside `/api/ingest` | Upstash Redis retained for rate-limit / abuse / save-limit counters |
+| Queue | **~~BullMQ~~ removed 2026-05-26 (D11)** — synchronous AI inside `/api/ingest` | Rate-limit / abuse / save-limit counters live in Postgres (`rate_counters` + `counter_incr`, `lib/counters.ts`); Upstash Redis removed 2026-10-16 |
 | AI processing | Synchronous in `/api/ingest` — OpenAI GPT-4o-mini called inline | Must log `total_handling_ms` + `ai_processing_ms` per request (Sentry breadcrumb + structured log) |
 | Railway | **Removed 2026-05-26 (D11)** — `apps/worker/` deleted | No worker deploy, no BullMQ |
 

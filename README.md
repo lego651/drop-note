@@ -60,7 +60,7 @@ Everything below is **done and live at [dropnote.me](https://dropnote.me)**.
 
 ### 7. Admin & abuse controls ✅
 - Admin panel: users + tier, block list, invite codes, stats, site settings
-- Upstash Redis rate limiting / abuse / save-limit counters
+- Postgres rate limiting / abuse / save-limit counters (`rate_counters`)
 - Account self-delete (`/api/account/delete`)
 
 ### 8. UI redesign, brand & content ✅
@@ -94,7 +94,7 @@ Everything below is **done and live at [dropnote.me](https://dropnote.me)**.
 | DB / Auth / Storage | Supabase (Postgres + RLS, Google OAuth) |
 | Email in / out | SendGrid Inbound Parse / Resend |
 | AI | OpenAI GPT-4o-mini (synchronous in `/api/ingest`) |
-| Queue | None — sync AI; Upstash Redis for rate limiting |
+| Queue | None — sync AI; rate-limit counters in Postgres |
 | Payments | Stripe (dormant) |
 | Deploy | Vercel (auto-deploy on push to `main`) |
 

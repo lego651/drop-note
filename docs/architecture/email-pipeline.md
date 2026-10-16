@@ -18,8 +18,8 @@ POST /api/ingest  (Next.js on Vercel, maxDuration=60)
     ├─ auth: shared secret in ?key= query param
     ├─ user lookup: from address → public.users (Supabase)
     ├─ block list: public.block_list (Supabase)
-    ├─ rate limit: Redis INCR/EXPIRE (Upstash REST)
-    ├─ save action limit: Redis atomic Lua INCR (Upstash REST, free tier)
+    ├─ rate limit: counter_incr() hourly counter (Supabase, fails open)
+    ├─ save action limit: counter_incr() with limit, atomic (Supabase, free tier)
     ├─ item cap check: public.items count (Supabase)
     ├─ create item: public.items status=processing (Supabase)
     │
@@ -53,8 +53,7 @@ POST /api/ingest  (Next.js on Vercel, maxDuration=60)
 |---|---|
 | **SendGrid Inbound Parse** | Receives inbound email, parses MIME, delivers structured POST to `/api/ingest` |
 | **Vercel** | Hosts Next.js app including `/api/ingest` serverless function (maxDuration=60) |
-| **Upstash Redis** | Rate limiting + save action counters via `@upstash/redis` REST client |
-| **Supabase** | Postgres DB (items, tags, users), Storage (attachments), RLS auth |
+| **Supabase** | Postgres DB (items, tags, users), Storage (attachments), RLS auth, rate-limit/save counters (`rate_counters`) |
 | **OpenAI GPT-4o-mini** | Default AI provider — summarizes email body + PDFs, describes images |
 | **Resend** | Sends notification emails (cap exceeded, save limit, welcome) |
 
@@ -68,9 +67,10 @@ eliminates the operational footprint entirely. Vercel's 60s maxDuration comforta
 typical email processing. The `processEmail()` function is decoupled from the HTTP layer so
 a QStash async wrapper is a future swap, not a rewrite.
 
-**Single Redis client — why `@upstash/redis` REST only?**
-No persistent TCP connection needed without BullMQ. `@upstash/redis` works in Vercel
-serverless and stays within the Upstash free tier.
+**Why counters in Postgres, not Redis?** (2026-10-16)
+The Upstash database was deleted and the hourly rate-limit call had no fallback, so every
+ingest silently failed. At beta scale a `rate_counters` table + atomic `counter_incr()`
+RPC is plenty, and removes a service. Every counter caller fails open.
 
 **Why always return HTTP 200 from `/api/ingest`?**
 SendGrid retries any non-200 response. Unknown senders, blocked addresses, and rate-limited

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createHash } from 'crypto'
-import { getRedis } from '@/lib/redis'
+import { incrementCounter } from '@/lib/counters'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { log, withRouteLogging } from '@/lib/observability/logger'
 
@@ -13,14 +13,12 @@ async function handlePOST(request: Request) {
     const hour = Math.floor(Date.now() / 3_600_000)
     const hashedIp = createHash('sha256').update(ip).digest('hex').slice(0, 16)
     const rateLimitKey = `oauth-init:${hashedIp}:${hour}`   // distinct key from old register route
-    const redis = getRedis()
-    const attempts = await redis.incr(rateLimitKey)
-    if (attempts === 1) await redis.expire(rateLimitKey, 3600)
+    const attempts = await incrementCounter(rateLimitKey, 3600)
     if (attempts > 5) {
       return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 })
     }
   } catch (err) {
-    log.error('auth.oauth_init.rate_limit_redis_failed', err, { action: 'continued' })
+    log.error('auth.oauth_init.rate_limit_counter_failed', err, { action: 'continued' })
   }
 
   let body: { code?: string }
