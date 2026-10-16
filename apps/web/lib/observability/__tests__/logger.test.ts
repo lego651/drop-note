@@ -112,6 +112,25 @@ describe('withRouteLogging', () => {
     expect(getCorrelationId()).toBeNull()
   })
 
+  it('persists events from fire-and-forget work that finishes after the response', async () => {
+    let release!: () => void
+    const gate = new Promise<void>((r) => { release = r })
+    let late!: Promise<void>
+    await withRouteLogging('POST /api/x', async () => {
+      setLogUser('user-1')
+      late = gate.then(() => log.warn('x.late_failure', { n: 1 }))
+      return Response.json({ ok: true })
+    })(req({ [CORRELATION_HEADER]: 'corr-late0001' }))
+
+    expect(written).toHaveLength(1)
+    release()
+    await late
+    await new Promise((r) => setTimeout(r, 0))
+    expect(written[1]).toMatchObject({
+      kind: 'event', event: 'x.late_failure', correlation_id: 'corr-late0001', user_id: 'user-1',
+    })
+  })
+
   it('still answers when the log sink fails', async () => {
     setLogSinkForTests(async () => {
       throw new Error('db down')

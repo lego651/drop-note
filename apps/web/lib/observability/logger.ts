@@ -35,6 +35,8 @@ interface RequestContext {
   method: string
   userId: string | null
   events: LogRow[]
+  /** Set once the request's rows are written; later events (fire-and-forget work) persist on their own. */
+  flushed: boolean
 }
 
 const storage = new AsyncLocalStorage<RequestContext>()
@@ -158,8 +160,9 @@ function emit(level: LogLevel, event: string, meta: LogMeta, err?: unknown): voi
     message,
     meta: safeMeta,
   }
-  // Inside a request: flushed together with the request row. Outside: written now.
-  if (ctx) ctx.events.push(row)
+  // Inside a request: flushed together with the request row. Outside, or after the
+  // request already flushed (e.g. a .catch on un-awaited work): written now.
+  if (ctx && !ctx.flushed) ctx.events.push(row)
   else void persist([row])
 }
 
@@ -209,6 +212,7 @@ export function withRouteLogging<Args extends [Request, ...unknown[]]>(
       method: request.method,
       userId: null,
       events: [],
+      flushed: false,
     }
     const start = Date.now()
 
@@ -242,6 +246,7 @@ export function withRouteLogging<Args extends [Request, ...unknown[]]>(
         duration_ms: durationMs,
       }))
 
+      ctx.flushed = true
       await persist([
         {
           correlation_id: ctx.correlationId,

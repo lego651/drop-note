@@ -32,7 +32,7 @@ import { sendCapExceededEmail } from '../../../lib/emails/cap-exceeded'
 import { sendSaveLimitExceededEmail } from '../../../lib/emails/save-limit-exceeded'
 import { supabaseAdmin } from '../../../lib/supabase/admin'
 import { processEmail } from '../../../lib/ingest/process-email'
-import { log, withRouteLogging } from '../../../lib/observability/logger'
+import { log, setLogUser, withRouteLogging } from '../../../lib/observability/logger'
 
 function getRedis() {
   return new Redis({
@@ -219,6 +219,8 @@ async function handlePOST(request: Request) {
       })
       return NextResponse.json({ ok: true }, { status: 200 })
     }
+
+    setLogUser(user.id)
 
     // Rate limit (hourly)
     const redis = getRedis()

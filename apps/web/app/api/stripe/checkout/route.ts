@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '../../../../lib/supabase/server'
 import { stripe } from '../../../../lib/stripe'
 import { getOrCreateStripeCustomer } from '../../../../lib/stripe-customer'
-import { log, withRouteLogging } from '@/lib/observability/logger'
+import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
 async function handlePOST(request: Request) {
   const VALID_PRICE_IDS = new Set([
@@ -16,6 +16,7 @@ async function handlePOST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  setLogUser(user.id)
 
   // Parse and validate request body
   let body: { priceId?: string }

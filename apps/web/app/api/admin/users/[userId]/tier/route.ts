@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient } from '../../../../../../lib/supabase/server'
 import { supabaseAdmin } from '../../../../../../lib/supabase/admin'
-import { log, withRouteLogging } from '@/lib/observability/logger'
+import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
 const VALID_TIERS = ['free', 'pro', 'power'] as const
 type ValidTier = typeof VALID_TIERS[number]
@@ -17,6 +17,7 @@ async function handlePATCH(
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  setLogUser(user.id)
 
   // Admin check
   const { data: caller } = await supabaseAdmin
