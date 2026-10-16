@@ -41,6 +41,9 @@ interface RequestContext {
 
 const storage = new AsyncLocalStorage<RequestContext>()
 
+/** User-agent sent by the synthetic health checks (lib/health/checks.ts). */
+export const HEALTH_CHECK_USER_AGENT = 'drop-note-health-check'
+
 // ---------------------------------------------------------------------------
 // Redaction: never persist PII or secrets. Keys are matched case-insensitively.
 // ---------------------------------------------------------------------------
@@ -246,8 +249,10 @@ export function withRouteLogging<Args extends [Request, ...unknown[]]>(
         duration_ms: durationMs,
       }))
 
+      // Synthetic probes from /api/health/run would drown out real-user traffic stats.
+      const isHealthProbe = request.headers.get('user-agent') === HEALTH_CHECK_USER_AGENT
       ctx.flushed = true
-      await persist([
+      await persist(isHealthProbe ? ctx.events : [
         {
           correlation_id: ctx.correlationId,
           kind: 'request',
