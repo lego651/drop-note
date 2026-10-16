@@ -225,13 +225,20 @@ async function handlePOST(request: Request) {
     // Rate limit (hourly)
     const redis = getRedis()
     const rateLimitKey = `ratelimit:email:${user.id}`
-    const pipeline = redis.pipeline()
-    pipeline.incr(rateLimitKey)
-    pipeline.expire(rateLimitKey, 3600)
-    const results = await pipeline.exec()
-    const count = results[0] as number
+    let rateLimitExceeded = false
+    try {
+      const pipeline = redis.pipeline()
+      pipeline.incr(rateLimitKey)
+      pipeline.expire(rateLimitKey, 3600)
+      const results = await pipeline.exec()
+      const count = results[0] as number
+      rateLimitExceeded = isOverRateLimit(count, user.tier)
+    } catch (err) {
+      // Fail open: better to allow one extra email than silently discard it
+      log.error('ingest.rate_limit_redis_failed', err, { action: 'allowed_through' })
+    }
 
-    if (isOverRateLimit(count, user.tier)) {
+    if (rateLimitExceeded) {
       return NextResponse.json({ ok: true }, { status: 200 })
     }
 
