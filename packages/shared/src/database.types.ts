@@ -38,6 +38,36 @@ export type Database = {
         }
         Relationships: []
       }
+      health_checks: {
+        Row: {
+          checked_at: string
+          component: string
+          detail: string | null
+          id: number
+          latency_ms: number | null
+          run_id: string
+          status: string
+        }
+        Insert: {
+          checked_at?: string
+          component: string
+          detail?: string | null
+          id?: never
+          latency_ms?: number | null
+          run_id: string
+          status: string
+        }
+        Update: {
+          checked_at?: string
+          component?: string
+          detail?: string | null
+          id?: never
+          latency_ms?: number | null
+          run_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       invite_codes: {
         Row: {
           code: string
@@ -186,6 +216,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ops_secrets: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
       }
       request_logs: {
         Row: {
@@ -365,6 +413,27 @@ export type Database = {
           id: string
           item_count: number
           name: string
+        }[]
+      }
+      health_daily: {
+        Args: { p_days?: number }
+        Returns: {
+          component: string
+          day: string
+          degraded: number
+          down: number
+          total: number
+          up: number
+        }[]
+      }
+      request_log_summary: {
+        Args: { p_hours?: number }
+        Returns: {
+          client_errors: number
+          p95_ms: number
+          requests: number
+          route: string
+          server_errors: number
         }[]
       }
       search_items: {
