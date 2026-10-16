@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>drop-note · Light theme B — Airmail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+/* ===== Theme tokens (same names as apps/web/app/globals.css :root) ===== */
+:root{
+  --background: 0 0% 100%;
+  --foreground: 226 58% 14%;
+  --content-bg: 222 45% 95.5%;
+  --card: 0 0% 100%;
+  --card-foreground: 226 58% 14%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 226 58% 14%;
+  --primary: 228 78% 47%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 222 45% 92%;
+  --secondary-foreground: 226 58% 14%;
+  --muted: 222 40% 94%;
+  --muted-foreground: 225 22% 36%;
+  --accent: 228 92% 94%;
+  --accent-foreground: 228 78% 36%;
+  --destructive: 356 78% 46%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 224 30% 85%;
+  --input: 226 58% 14%;
+  --ring: 228 78% 47%;
+  --radius: 0.625rem;
+  --color-success: 152 65% 28%;
+  --color-tag-blue: 222 80% 42%;
+  --color-tag-purple: 268 55% 44%;
+  --color-tag-pink: 334 72% 41%;
+  --color-tag-green: 152 65% 26%;
+  --color-tag-yellow: 34 95% 30%;
+  --color-tag-orange: 16 88% 39%;
+  --color-tag-teal: 188 82% 26%;
+  --color-tag-indigo: 244 58% 50%;
+  --color-source-email: 228 78% 47%;
+  --color-source-youtube: 356 80% 50%;
+  --color-source-article: 152 65% 28%;
+  --color-source-note: 268 55% 44%;
+  --color-source-default: 225 15% 50%;
+  --color-pin: 356 80% 50%;
+  --color-status-done: 152 65% 30%;
+  --color-status-processing: 34 95% 36%;
+  --color-status-failed: 356 78% 46%;
+  --color-stat-total: 226 58% 14%;
+  --color-stat-week: 152 65% 28%;
+  --color-stat-processing: 34 95% 32%;
+  --color-stat-tag: 356 80% 46%;
+  --hero-gradient-rose: 356 80% 50%;
+  --hero-gradient-violet: 228 78% 47%;
+  --font-sans: "Archivo", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-display: "Archivo", "Noto Sans SC", "PingFang SC", sans-serif;
+  --font-mono: "JetBrains Mono", "Noto Sans SC", ui-monospace, monospace;
+}
+/* ===== Shared inbox layout (mirrors the real components) ===== */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--font-sans);background:hsl(var(--content-bg));color:hsl(var(--foreground));font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.app{display:grid;grid-template-columns:var(--sidebar-w,248px) minmax(0,1fr);min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;background:hsl(var(--background));border-right:1px solid hsl(var(--border));min-width:0}
+.brand{height:64px;display:flex;align-items:center;gap:10px;padding:0 18px;border-bottom:1px solid hsl(var(--border));flex-shrink:0}
+.logo{width:28px;height:28px;display:grid;place-items:center;border-radius:calc(var(--radius) - 2px);background:hsl(var(--primary));color:hsl(var(--primary-foreground))}
+.logo .i{width:16px;height:16px}
+.wordmark{font-weight:600;font-size:15px;letter-spacing:-.01em}
+.sidenav{flex:1;overflow-y:auto;padding:16px 12px;scrollbar-width:thin}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--muted-foreground));padding:0 10px 6px}
+.nav-group+.nav-group{margin-top:22px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:calc(var(--radius) - 2px);font-size:14px}
+.nav-item:hover{background:hsl(var(--muted))}
+.nav-item .label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-item .count{font-size:12px;color:hsl(var(--muted-foreground));font-variant-numeric:tabular-nums}
+.nav-item.active{background:hsl(var(--accent));color:hsl(var(--accent-foreground));font-weight:600}
+.tag-link .i{width:15px;height:15px;color:hsl(var(--muted-foreground))}
+.tag-link .dot{display:none}
+.side-foot{border-top:1px solid hsl(var(--border));padding:10px 12px;flex-shrink:0}
+.topbar{display:none}
+.canvas{min-width:0;display:flex;flex-direction:column}
+.wrap{width:100%;max-width:1220px;margin:0 auto;padding:36px 40px 48px;flex:1}
+.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+h1{font-family:var(--font-display);font-size:30px;line-height:1.1;font-weight:700;letter-spacing:-.01em}
+.sub{color:hsl(var(--muted-foreground));margin-top:6px;font-size:15px}
+.updated{font-size:12px;color:hsl(var(--muted-foreground));white-space:nowrap;padding-top:8px;display:flex;align-items:center;gap:6px}
+.updated .live{display:none}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:28px}
+.stat-in{height:100%;background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:calc(var(--radius) + 4px);padding:20px}
+.stat-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.stat-label{font-size:14px;font-weight:500;color:hsl(var(--muted-foreground))}
+.stat-icon{width:36px;height:36px;border-radius:999px;display:grid;place-items:center;background:hsl(var(--a) / .12);color:hsl(var(--a));flex-shrink:0}
+.stat-icon .i{width:16px;height:16px}
+.stat-value{margin-top:20px;font-size:26px;font-weight:700;line-height:1;font-family:var(--font-display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat-sub{margin-top:8px;font-size:12px;color:hsl(var(--muted-foreground))}
+.searchrow{display:flex;gap:12px;margin-top:20px}
+.search{flex:1;min-width:0;display:flex;align-items:center;gap:10px;height:44px;padding:0 16px;background:hsl(var(--card));border:1px solid hsl(var(--input));border-radius:999px;color:hsl(var(--muted-foreground));font-size:14px}
+.search span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 18px;border:1px solid hsl(var(--input));background:hsl(var(--card));border-radius:999px;font-weight:500;font-size:14px;white-space:nowrap}
+.chips{display:flex;gap:8px;margin-top:16px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 6px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;height:34px;padding:0 14px;display:inline-flex;align-items:center;gap:6px;border:1px solid hsl(var(--border));border-radius:999px;background:hsl(var(--card));font-size:14px;white-space:nowrap}
+.chip .n{opacity:.6;font-variant-numeric:tabular-nums}
+.chip.active{background:hsl(var(--primary));color:hsl(var(--primary-foreground));border-color:hsl(var(--primary))}
+.listhead{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:12px}
+.count-label{font-size:15px;color:hsl(var(--muted-foreground));white-space:nowrap}
+.count-label b{color:hsl(var(--foreground));font-weight:700}
+.controls{display:flex;gap:10px;align-items:center}
+.sort{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border:1px solid hsl(var(--input));background:hsl(var(--card));border-radius:999px;font-weight:500}
+.sort .i{width:16px;height:16px}
+.seg{display:flex;padding:3px;gap:2px;border:1px solid hsl(var(--input));border-radius:calc(var(--radius) + 2px);background:hsl(var(--card))}
+.seg button{width:34px;height:30px;display:grid;place-items:center;border:0;background:none;color:hsl(var(--muted-foreground));border-radius:var(--radius)}
+.seg button .i{width:16px;height:16px}
+.seg .on{background:hsl(var(--primary));color:hsl(var(--primary-foreground))}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 20px;margin-top:16px}
+.card{display:flex;flex-direction:column;background:hsl(var(--card));border-radius:calc(var(--radius) * 2);overflow:hidden;min-width:0;transition:box-shadow .15s,transform .15s,border-color .15s}
+.play{position:absolute;inset:0;margin:auto;width:48px;height:48px;border-radius:999px;background:rgb(0 0 0 / .6);display:grid;place-items:center;color:#fff;z-index:2}
+.play .pl{width:20px;height:20px;fill:currentColor;margin-left:3px}
+.body{display:flex;flex-direction:column;gap:8px;padding:16px;flex:1;min-width:0}
+.title{font-size:15px;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta{display:flex;align-items:center;gap:6px;font-size:12px;color:hsl(var(--muted-foreground));min-width:0;white-space:nowrap}
+.yt{width:16px;height:12px;border-radius:3px;background:hsl(var(--color-source-youtube));display:grid;place-items:center;flex-shrink:0}
+.yt svg{width:10px;height:10px;fill:#fff}
+.summary{font-size:12.5px;line-height:1.5;color:hsl(var(--muted-foreground));display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tags{display:flex;gap:4px;overflow:hidden;flex-wrap:nowrap;-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent)}
+.tag{flex-shrink:0;font-size:11px;font-weight:600;padding:3px 6px;border-radius:calc(var(--radius) - 4px);background:hsl(var(--t) / var(--tag-tint,.12));color:hsl(var(--t));line-height:1.25;white-space:nowrap}
+.date{margin-top:auto;border-top:1px solid hsl(var(--border));padding-top:12px;font-size:12px;color:hsl(var(--muted-foreground))}
+.date .short{display:none}
+.foot{border-top:1px solid hsl(var(--border));padding:18px 40px;font-size:12px;color:hsl(var(--muted-foreground));display:flex;gap:8px 24px;flex-wrap:wrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:1240px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:980px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .sidebar{display:none}
+  .topbar{display:flex;align-items:center;gap:10px;height:56px;padding:0 12px 0 8px;background:hsl(var(--background));border-bottom:1px solid hsl(var(--border));position:sticky;top:0;z-index:5}
+  .topbar .menu{width:40px;height:40px;display:grid;place-items:center;border:0;background:none}
+  .topbar .avatar{margin-left:auto;width:32px;height:32px;border-radius:999px;display:grid;place-items:center;font-size:12px;font-weight:700;background:hsl(var(--color-tag-teal) / .15);color:hsl(var(--color-tag-teal))}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .wrap{padding:20px 16px 32px}
+  h1{font-size:26px}
+  .sub{font-size:14px}
+  .updated{display:none}
+  .stats{gap:10px;margin-top:20px}
+  .stat-in{padding:14px}
+  .stat-label{font-size:13px}
+  .stat-icon{width:30px;height:30px}
+  .stat-value{font-size:22px;margin-top:12px}
+  .searchrow{gap:8px;margin-top:16px}
+  .btn .lbl{display:none}
+  .btn{width:44px;padding:0}
+  .chips{margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px}
+  .count-label{font-size:14px}
+  .controls{gap:6px}
+  .sort{height:36px;padding:0 10px;gap:6px;font-size:13px}
+  .sort .chev{display:none}
+  .seg button{width:30px;height:28px}
+  .grid{grid-template-columns:minmax(0,1fr);gap:20px}
+  .foot{padding:16px}
+}
+
+/* ===== Thumbnail stand-ins (image content, not theme) ===== */
+
+.media{position:relative;aspect-ratio:16/10;overflow:hidden;background:#141414;isolation:isolate}
+.media .frame{position:absolute;top:0;bottom:0;left:50%;width:44%;transform:translateX(-50%)}
+.media::before{content:"";position:absolute;inset:0;z-index:-1}
+.cap{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;font:700 9px/1.3 "Noto Sans SC",sans-serif;color:#fff;padding:2px 5px;letter-spacing:0}
+.cap-top{top:12%}.cap-bot{bottom:9%}
+.th1{background:#2a0b2e}.th1::before{background:linear-gradient(90deg,#1b0620,#3a0f3a 30%,#3a0f3a 70%,#1b0620)}
+.th1 .frame{background:radial-gradient(60% 45% at 50% 62%,#e8458b 0,#7a1f8a 55%,transparent 75%),radial-gradient(30% 20% at 30% 20%,#ffcc4d,transparent 70%),linear-gradient(#3b1460,#a11a4d)}
+.th1 .cap-top{background:#c8102e;color:#ffe14d;font-size:11px;border:1px solid #ffe14d}
+.th1 .cap-bot{font-size:8px}
+.th2::before{background:linear-gradient(90deg,#2d2d2d,#4a4a48 35%,#4a4a48 65%,#2d2d2d)}
+.th2 .frame{background:linear-gradient(#5c5d5a,#3b3b39)}
+.th2 .cup{position:absolute;left:50%;top:52%;width:62%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#f3d27a 0 30%,#f6f1e4 32% 58%,#d9d4c7 60% 66%,transparent 68%)}
+.th3::before{background:linear-gradient(90deg,#0b0b0b,#111 30%,#111 70%,#0b0b0b)}
+.th3 .frame{background:linear-gradient(#2140b8 0 30%,#2f8fd6 30% 62%,#1f8a5a 62%)}
+.th3 .court{position:absolute;left:12%;right:12%;bottom:18%;height:28%;border:2px solid #fff;border-top:0;opacity:.75}
+.th3 .cap-top{background:#d6182c;font-size:8px;top:6%}
+.th4::before{background:linear-gradient(90deg,#1c1a18,#2a2622 30%,#2a2622 70%,#1c1a18)}
+.th4 .frame{background:linear-gradient(#3a3631,#24211e)}
+.th4 .box{position:absolute;left:22%;right:18%;top:38%;bottom:12%;border-radius:4px;background:linear-gradient(135deg,#f4f4f2,#c9c8c3)}
+.th4 .cap-top{background:#1a3c8f;font-size:7px;top:5%}
+.th5::before{background:repeating-conic-gradient(#2b2724 0 25%,#4b4540 0 50%) 0 0/36px 36px}
+.th5 .frame{background:linear-gradient(#3a3330,#221d1b)}
+.th5 .bowl{position:absolute;left:50%;top:48%;width:78%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#c23a1f 0 22%,#e1a35a 24% 46%,#f2efe6 48% 60%,transparent 62%)}
+.th5 .cap-bot{font-size:7px}
+.th6{background:#101010}.th6::before{background:radial-gradient(70% 90% at 50% 62%,#1c1c1c,#050505)}
+.th6 .plate{position:absolute;left:50%;top:58%;width:70%;aspect-ratio:1.5;transform:translate(-50%,-50%);border-radius:50%;background:repeating-radial-gradient(circle at 45% 50%,#f6c240 0 3px,#d99a1f 3px 5px,#f3d27a 5px 7px);box-shadow:0 0 0 10px #161616}
+.th6 .costco{position:absolute;left:4%;top:7%;font:900 italic 15px/1 Arial,sans-serif;color:#e31837;background:#fff;padding:2px 5px;transform:rotate(-6deg);letter-spacing:-.5px}
+.th6 .cap-br{left:auto;right:5%;bottom:7%;transform:none;font-size:13px;font-family:"Noto Serif SC",serif;text-shadow:0 1px 3px #000}
+.th7::before,.th8::before{background:linear-gradient(90deg,#2a1608,#4a2a12 30%,#4a2a12 70%,#2a1608)}
+.th7 .frame,.th8 .frame{background:linear-gradient(#6e6a66,#3c3a38)}
+.th7 .soup,.th8 .soup{position:absolute;left:50%;top:46%;width:84%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 46% 44%,#f08a2a 0 18%,#c7461c 40%,#7e2410 58%,#b9b4ae 61% 67%,transparent 69%)}
+.th7 .cap-bot,.th8 .cap-bot{font:600 10px/1.2 "Noto Serif SC",serif;color:#fff}
+
+/* ===== Theme B — Airmail: surface & shape language ===== */
+
+body{background-image:radial-gradient(hsl(var(--foreground) / .10) 1px,transparent 1.3px);background-size:20px 20px}
+.count:empty{display:none}
+.sidebar{border-right:1.5px solid hsl(var(--foreground))}
+.sidebar::before{content:"";height:8px;flex-shrink:0;background:repeating-linear-gradient(-45deg,hsl(var(--color-pin)) 0 12px,hsl(var(--card)) 12px 18px,hsl(var(--primary)) 18px 30px,hsl(var(--card)) 30px 36px)}
+.brand{border-bottom:1.5px solid hsl(var(--foreground));height:60px}
+.logo{border-radius:999px;box-shadow:0 0 0 2px hsl(var(--card)),0 0 0 3.5px hsl(var(--foreground))}
+.wordmark{font-stretch:125%;font-weight:800;font-size:16px;letter-spacing:-.01em}
+.eyebrow{font-family:var(--font-mono);font-weight:700;font-size:10.5px;letter-spacing:.14em;color:hsl(var(--foreground))}
+.nav-item{border:1.5px solid transparent;border-radius:8px;font-weight:500;padding:6px 9px}
+.nav-item:hover{background:hsl(var(--muted))}
+.nav-item.active{border-color:hsl(var(--foreground));box-shadow:2px 2px 0 hsl(var(--foreground))}
+.nav-item .count{font-family:var(--font-mono);font-size:11px;padding:0 6px;border-radius:999px;border:1px solid hsl(var(--border));background:hsl(var(--card))}
+.nav-item.active .count{border-color:hsl(var(--foreground));color:hsl(var(--foreground))}
+.tag-link .i{color:hsl(var(--t))}
+.side-foot{border-top:1.5px solid hsl(var(--foreground))}
+h1{font-stretch:125%;font-weight:800;font-size:42px;letter-spacing:-.025em}
+h1 em{font-style:normal;color:hsl(var(--primary))}
+.sub{color:hsl(var(--foreground));font-size:15px}
+.updated{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;border:1.5px dashed hsl(var(--foreground) / .55);border-radius:999px;padding:6px 12px;color:hsl(var(--foreground));background:hsl(var(--card))}
+.stats{gap:22px;margin-top:30px}
+.stat{filter:drop-shadow(3px 3px 0 hsl(var(--foreground)))}
+.stat:nth-child(2){transform:rotate(-1.2deg)}.stat:nth-child(4){transform:rotate(.9deg)}
+.stat-in{border:0;border-radius:0;padding:22px;background:linear-gradient(hsl(var(--a) / .07),hsl(var(--a) / .07)),hsl(var(--card));
+  box-shadow:inset 0 0 0 9px hsl(var(--card)),inset 0 0 0 10.5px hsl(var(--a) / .55);
+  -webkit-mask:linear-gradient(#000 0 0) center/calc(100% - 14px) calc(100% - 14px) no-repeat,radial-gradient(circle 4.5px at 7px 7px,#0000 96%,#000) -7px -7px/14px 14px round;
+  mask:linear-gradient(#000 0 0) center/calc(100% - 14px) calc(100% - 14px) no-repeat,radial-gradient(circle 4.5px at 7px 7px,#0000 96%,#000) -7px -7px/14px 14px round}
+.stat-label{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:hsl(var(--foreground));font-weight:700}
+.stat-icon{border:1.5px dashed hsl(var(--a));background:hsl(var(--card));color:hsl(var(--a))}
+.stat-value{font-stretch:125%;font-weight:900;font-size:36px;letter-spacing:-.02em;margin-top:16px}
+.stat-sub{font-family:var(--font-mono);font-size:11px}
+.search,.btn,.sort,.seg{border:1.5px solid hsl(var(--foreground));box-shadow:3px 3px 0 hsl(var(--foreground));border-radius:10px}
+.searchrow{margin-top:26px;gap:14px}
+.chips{margin-top:18px;padding:2px 4px 8px 2px}
+.chip{border:1.5px solid hsl(var(--foreground));font-weight:600;height:32px;padding:0 12px}
+.chip .h{color:hsl(var(--t));font-weight:800}
+.chip .n{font-family:var(--font-mono);font-size:12px}
+.chip.active{box-shadow:2px 2px 0 hsl(var(--foreground));border-color:hsl(var(--foreground))}
+.chip.active .n{opacity:.85}
+.count-label{font-family:var(--font-mono);font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:hsl(var(--foreground))}
+.count-label b{font-family:var(--font-sans);font-stretch:125%;font-size:22px;font-weight:900;margin-right:4px;letter-spacing:0}
+.seg{border-radius:10px}.seg button{border-radius:6px}
+.grid{gap:32px 24px;margin-top:20px}
+.card{border:1.5px solid hsl(var(--foreground));border-radius:12px;box-shadow:4px 4px 0 hsl(var(--foreground))}
+.card:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 hsl(var(--foreground))}
+.media{border-bottom:1.5px solid hsl(var(--foreground))}
+.play{background:hsl(var(--primary));box-shadow:0 0 0 2.5px hsl(var(--card));width:46px;height:46px}
+.title{font-size:15.5px;font-weight:700}
+.meta{font-family:var(--font-mono);font-size:11px}
+.tag{border-radius:999px;--tag-tint:.08;box-shadow:inset 0 0 0 1px hsl(var(--t) / .45);padding:3px 8px}
+.date{border-top:1.5px dashed hsl(var(--foreground) / .35);font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;display:flex;justify-content:space-between;align-items:center}
+.date::after{content:"";width:30px;height:7px;border-radius:1px;background:repeating-linear-gradient(-45deg,hsl(var(--color-pin)) 0 4px,hsl(var(--card)) 4px 6px,hsl(var(--primary)) 6px 10px,hsl(var(--card)) 10px 12px)}
+.date .long{display:none}.date .short{display:inline}
+.foot{border-top:1.5px solid hsl(var(--foreground));font-family:var(--font-mono);font-size:11px;background:hsl(var(--background))}
+@media (max-width:980px){
+  .topbar{border-bottom:1.5px solid hsl(var(--foreground));padding-top:5px;height:61px;background:repeating-linear-gradient(-45deg,hsl(var(--color-pin)) 0 12px,hsl(var(--card)) 12px 18px,hsl(var(--primary)) 18px 30px,hsl(var(--card)) 30px 36px) top/100% 5px no-repeat,hsl(var(--background))}
+}
+@media (max-width:640px){
+  h1{font-size:32px}
+  .stats{gap:16px}
+  .stat-in{padding:18px}
+  .stat-value{font-size:28px;margin-top:10px}
+  .stat-label{font-size:10px}
+  .stat-tag .stat-value{font-size:21px;font-stretch:100%;padding-top:7px}
+}
+
+</style>
+</head>
+<body class="theme-b">
+<div class="app">
+  <aside class="sidebar" aria-label="Sidebar">
+    <div class="brand"><span class="logo"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></span><span class="wordmark">drop-note</span></div>
+    <nav class="sidenav">
+      <div class="nav-group"><p class="eyebrow">Navigation</p><a href="#" class="nav-item active"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><span class="label">All Items</span><span class="count">45</span></a><a href="#" class="nav-item"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg><span class="label">Pinned</span><span class="count">4</span></a><a href="#" class="nav-item"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg><span class="label">Archive</span><span class="count"></span></a></div>
+      <div class="nav-group"><p class="eyebrow">Tags</p><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-pink)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">cooking</span><span class="count">6</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-blue)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">recipe</span><span class="count">4</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-purple)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">美食教程</span><span class="count">4</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-pink)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">cooking tips</span><span class="count">3</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-yellow)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">fitness</span><span class="count">3</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-indigo)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">搞笑</span><span class="count">3</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-orange)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">美食</span><span class="count">3</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-blue)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">exercise</span><span class="count">2</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-yellow)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">family meals</span><span class="count">2</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-green)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">home cooking</span><span class="count">2</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-green)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">recipes</span><span class="count">2</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-yellow)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">technology</span><span class="count">2</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-orange)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">健康飲食</span><span class="count">2</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-pink)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">家常菜</span><span class="count">2</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-yellow)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">教程</span><span class="count">2</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-teal)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">簡單食材</span><span class="count">2</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-indigo)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">羅宋湯</span><span class="count">2</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-purple)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">app</span><span class="count">1</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-indigo)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">art</span><span class="count">1</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-yellow)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">beverages</span><span class="count">1</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-indigo)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">boxing</span><span class="count">1</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-orange)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">budgetmeals</span><span class="count">1</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-pink)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">buoyancy</span><span class="count">1</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-green)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">calgary</span><span class="count">1</span></a><a href="#" class="nav-item tag-link" style="--t:var(--color-tag-orange)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg><span class="dot"></span><span class="label">chaoshan</span><span class="count">1</span></a></div>
+    </nav>
+    <div class="side-foot">
+      <a href="#" class="nav-item"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="label">Settings</span></a>
+      <a href="#" class="nav-item"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span class="label">Collapse</span></a>
+    </div>
+  </aside>
+  <div class="canvas">
+    <header class="topbar"><button class="menu" aria-label="Open menu"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button><span class="logo"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></span><span class="wordmark">drop-note</span><span class="avatar">JL</span></header>
+    <main class="wrap">
+      <div class="page-head">
+        <div><h1>Your <em>inbox</em></h1><p class="sub">Everything you've saved, organized by AI</p></div>
+        <p class="updated"><span class="live"></span>Updated just now</p>
+      </div>
+      <section class="stats" aria-label="Stats"><div class="stat stat-total" style="--a:var(--color-stat-total)"><div class="stat-in"><div class="stat-top"><span class="stat-label">Total saved</span><span class="stat-icon"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span></div><p class="stat-value">45</p><p class="stat-sub">all time</p></div></div><div class="stat stat-week" style="--a:var(--color-stat-week)"><div class="stat-in"><div class="stat-top"><span class="stat-label">This week</span><span class="stat-icon"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span></div><p class="stat-value">1</p><p class="stat-sub">+1 vs last week</p></div></div><div class="stat stat-processing" style="--a:var(--color-stat-processing)"><div class="stat-in"><div class="stat-top"><span class="stat-label">Processing</span><span class="stat-icon"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span></div><p class="stat-value">1</p><p class="stat-sub">arriving now</p></div></div><div class="stat stat-tag" style="--a:var(--color-stat-tag)"><div class="stat-in"><div class="stat-top"><span class="stat-label">Top tag</span><span class="stat-icon"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg></span></div><p class="stat-value">#cooking</p><p class="stat-sub">6 items</p></div></div></section>
+      <div class="searchrow">
+        <label class="search"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span>Search items, summaries, tags...</span></label>
+        <button class="btn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg><span class="lbl">Filters</span></button>
+      </div>
+      <div class="chips" role="toolbar" aria-label="Filter by tag"><button class="chip active">All <span class="n">45</span></button><button class="chip" style="--t:var(--color-tag-pink)"><span class="h">#</span> cooking <span class="n">6</span></button><button class="chip" style="--t:var(--color-tag-blue)"><span class="h">#</span> recipe <span class="n">4</span></button><button class="chip" style="--t:var(--color-tag-purple)"><span class="h">#</span> 美食教程 <span class="n">4</span></button><button class="chip" style="--t:var(--color-tag-pink)"><span class="h">#</span> cooking tips <span class="n">3</span></button><button class="chip" style="--t:var(--color-tag-yellow)"><span class="h">#</span> fitness <span class="n">3</span></button><button class="chip" style="--t:var(--color-tag-indigo)"><span class="h">#</span> 搞笑 <span class="n">3</span></button><button class="chip" style="--t:var(--color-tag-orange)"><span class="h">#</span> 美食 <span class="n">3</span></button><button class="chip" style="--t:var(--color-tag-blue)"><span class="h">#</span> exercise <span class="n">2</span></button><button class="chip" style="--t:var(--color-tag-yellow)"><span class="h">#</span> family meals <span class="n">2</span></button><button class="chip" style="--t:var(--color-tag-green)"><span class="h">#</span> home cooking <span class="n">2</span></button><button class="chip" style="--t:var(--color-tag-green)"><span class="h">#</span> recipes <span class="n">2</span></button><button class="chip" style="--t:var(--color-tag-yellow)"><span class="h">#</span> technology <span class="n">2</span></button></div>
+      <div class="listhead">
+        <p class="count-label"><b>25</b> saved items</p>
+        <div class="controls">
+          <button class="sort"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg><span>Newest</span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <div class="seg" role="group" aria-label="View"><button class="on" aria-label="Grid"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></button><button aria-label="List"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><path d="M14 4h7"/><path d="M14 9h7"/><path d="M14 15h7"/><path d="M14 20h7"/></svg></button><button aria-label="Compact"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M21 9H3"/><path d="M21 15H3"/></svg></button></div>
+        </div>
+      </div>
+      <section class="grid" aria-label="Saved items"><article class="card"><div class="media th1"><div class="frame"><span class="cap cap-top">是否穿得太短了?</span><span class="cap cap-bot">都是大家怎麼看呢?</span></div><span class="play"><svg class="pl" viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4"/></svg></span></div><div class="body"><h3 class="title">Watch &quot;LE SSERAFIM《Spaghetti》舞台「穿得是否太短了？」引发热议&quot; on YouTube</h3><div class="meta"><span class="yt" aria-hidden="true"><svg viewBox="0 0 24 24"><polygon points="9 7 17 12 9 17"/></svg></span><span>youtube.com</span><span aria-hidden="true">·</span><span>1 min read</span></div><p class="summary">The performance of LE SSERAFIM&#x27;s song &#x27;Spaghetti&#x27; has sparked debate over the stage outfits and choreography.</p><div class="tags"><span class="tag" style="--t:var(--color-tag-green)">#le sserafim</span><span class="tag" style="--t:var(--color-tag-purple)">#spaghetti</span><span class="tag" style="--t:var(--color-tag-pink)">#kpop</span><span class="tag" style="--t:var(--color-tag-blue)">#fashion</span></div><div class="date"><time class="long">October 16, 2026</time><time class="short">Oct 16, 2026</time></div></div></article><article class="card"><div class="media th2"><div class="frame"><span class="cup"></span></div><span class="play"><svg class="pl" viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4"/></svg></span></div><div class="body"><h3 class="title">(no subject)</h3><div class="meta"><span class="yt" aria-hidden="true"><svg viewBox="0 0 24 24"><polygon points="9 7 17 12 9 17"/></svg></span><span>youtube.com</span><span aria-hidden="true">·</span><span>1 min read</span></div><p class="summary">The video showcases a unique and delicious way to enjoy instant noodles with a creamy pork bone broth.</p><div class="tags"><span class="tag" style="--t:var(--color-tag-orange)">#instant noodles</span><span class="tag" style="--t:var(--color-tag-indigo)">#pork bone broth</span><span class="tag" style="--t:var(--color-tag-pink)">#food hacks</span></div><div class="date"><time class="long">August 2, 2026</time><time class="short">Aug 2, 2026</time></div></div></article><article class="card"><div class="media th3"><div class="frame"><span class="cap cap-top">超級聯賽</span><span class="court"></span></div><span class="play"><svg class="pl" viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4"/></svg></span></div><div class="body"><h3 class="title">Watch &quot;怪不得他們都腰細腿長呢#排球#運動#帥哥&quot; on YouTube</h3><div class="meta"><span class="yt" aria-hidden="true"><svg viewBox="0 0 24 24"><polygon points="9 7 17 12 9 17"/></svg></span><span>youtube.com</span><span aria-hidden="true">·</span><span>1 min read</span></div><p class="summary">This YouTube video explores the physical attributes of volleyball players and their training routines.</p><div class="tags"><span class="tag" style="--t:var(--color-tag-orange)">#排球</span><span class="tag" style="--t:var(--color-tag-blue)">#運動</span><span class="tag" style="--t:var(--color-tag-pink)">#帥哥</span><span class="tag" style="--t:var(--color-tag-blue)">#健身</span><span class="tag" style="--t:var(--color-tag-teal)">#體育</span></div><div class="date"><time class="long">July 24, 2026</time><time class="short">Jul 24, 2026</time></div></div></article><article class="card"><div class="media th4"><div class="frame"><span class="cap cap-top">男子展示用風扇做的空調</span><span class="box"></span></div><span class="play"><svg class="pl" viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4"/></svg></span></div><div class="body"><h3 class="title">Watch &quot;男子展示用風扇和泡沫做的空調！冷知識：冰袋灌水更持久&quot; on YouTube</h3><div class="meta"><span class="yt" aria-hidden="true"><svg viewBox="0 0 24 24"><polygon points="9 7 17 12 9 17"/></svg></span><span>youtube.com</span><span aria-hidden="true">·</span><span>1 min read</span></div><p class="summary">A man demonstrates a homemade air conditioner made from a fan and foam box filled with ice.</p><div class="tags"><span class="tag" style="--t:var(--color-tag-teal)">#diy</span><span class="tag" style="--t:var(--color-tag-green)">#cooling</span><span class="tag" style="--t:var(--color-tag-pink)">#life hacks</span><span class="tag" style="--t:var(--color-tag-pink)">#invention</span></div><div class="date"><time class="long">July 21, 2026</time><time class="short">Jul 21, 2026</time></div></div></article><article class="card"><div class="media th5"><div class="frame"><span class="bowl"></span><span class="cap cap-bot">倒入半罐冰鎮的雪碧</span></div><span class="play"><svg class="pl" viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4"/></svg></span></div><div class="body"><h3 class="title">Watch &quot;雪碧拌面教程 #美食教程 #美食分享日常 #美食制作 #美食&quot; on YouTube</h3><div class="meta"><span class="yt" aria-hidden="true"><svg viewBox="0 0 24 24"><polygon points="9 7 17 12 9 17"/></svg></span><span>youtube.com</span><span aria-hidden="true">·</span><span>1 min read</span></div><p class="summary">该视频介绍了雪碧拌面的一种创新食谱，帮助观众学习如何将雪碧与面条结合，做出酸甜爽口的拌面。</p><div class="tags"><span class="tag" style="--t:var(--color-tag-orange)">#美食</span><span class="tag" style="--t:var(--color-tag-indigo)">#料理</span><span class="tag" style="--t:var(--color-tag-yellow)">#教程</span><span class="tag" style="--t:var(--color-tag-indigo)">#雪碧拌面</span><span class="tag" style="--t:var(--color-tag-purple)">#分享</span></div><div class="date"><time class="long">July 18, 2026</time><time class="short">Jul 18, 2026</time></div></div></article><article class="card"><div class="media th6"><span class="costco">COSTCO</span><span class="plate"></span><span class="cap cap-br">蟹肉面</span><span class="play"><svg class="pl" viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4"/></svg></span></div><div class="body"><h3 class="title">Watch &quot;用Costco的罐装蟹肉做番茄蟹肉面，连吃两次，太好吃了&quot; on YouTube</h3><div class="meta"><span class="yt" aria-hidden="true"><svg viewBox="0 0 24 24"><polygon points="9 7 17 12 9 17"/></svg></span><span>youtu.be</span><span aria-hidden="true">·</span><span>1 min read</span></div><p class="summary">This YouTube video presents a delicious recipe for tomato crab meat noodles using canned crab from Costco.</p><div class="tags"><span class="tag" style="--t:var(--color-tag-pink)">#cooking</span><span class="tag" style="--t:var(--color-tag-blue)">#recipe</span><span class="tag" style="--t:var(--color-tag-purple)">#seafood</span><span class="tag" style="--t:var(--color-tag-yellow)">#noodles</span></div><div class="date"><time class="long">July 12, 2026</time><time class="short">Jul 12, 2026</time></div></div></article><article class="card"><div class="media th7"><div class="frame"><span class="soup"></span><span class="cap cap-bot">无水罗宋汤</span></div><span class="play"><svg class="pl" viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4"/></svg></span></div><div class="body"><h3 class="title">Watch &quot;不用水不用油就能做出美味的羅宋湯，用最簡單的食材&quot; on YouTube</h3><div class="meta"><span class="yt" aria-hidden="true"><svg viewBox="0 0 24 24"><polygon points="9 7 17 12 9 17"/></svg></span><span>youtube.com</span><span aria-hidden="true">·</span><span>1 min read</span></div><p class="summary">這段美食教程由澳洲主廚Neil主持，展示了如何在不使用水和油的情況下，利用簡單食材做出羅宋湯。</p><div class="tags"><span class="tag" style="--t:var(--color-tag-indigo)">#羅宋湯</span><span class="tag" style="--t:var(--color-tag-purple)">#美食教程</span><span class="tag" style="--t:var(--color-tag-teal)">#簡單食材</span><span class="tag" style="--t:var(--color-tag-yellow)">#創意</span></div><div class="date"><time class="long">July 9, 2026</time><time class="short">Jul 9, 2026</time></div></div></article><article class="card"><div class="media th8"><div class="frame"><span class="soup"></span><span class="cap cap-bot">无水罗宋汤</span></div><span class="play"><svg class="pl" viewBox="0 0 24 24" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4"/></svg></span></div><div class="body"><h3 class="title">Watch &quot;不用水不用油就能做出美味的羅宋湯，用最簡單的食材&quot; on YouTube</h3><div class="meta"><span class="yt" aria-hidden="true"><svg viewBox="0 0 24 24"><polygon points="9 7 17 12 9 17"/></svg></span><span>youtube.com</span><span aria-hidden="true">·</span><span>1 min read</span></div><p class="summary">This cooking tutorial by Chef Neil from Australia demonstrates how to make borscht without water or oil.</p><div class="tags"><span class="tag" style="--t:var(--color-tag-indigo)">#羅宋湯</span><span class="tag" style="--t:var(--color-tag-purple)">#美食教程</span><span class="tag" style="--t:var(--color-tag-orange)">#健康飲食</span><span class="tag" style="--t:var(--color-tag-teal)">#簡單食材</span></div><div class="date"><time class="long">July 9, 2026</time><time class="short">Jul 9, 2026</time></div></div></article></section>
+    </main>
+    <footer class="foot"><span>© 2026 drop-note</span><a href="#">Roadmap</a><a href="#">Privacy Policy</a><a href="#">Terms of Service</a><a href="#">Acceptable Use</a></footer>
+  </div>
+</div>
+</body>
+</html>
