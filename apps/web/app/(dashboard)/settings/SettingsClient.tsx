@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,7 @@ import {
   LayoutGrid,
   List,
   ExternalLink,
+  CheckCircle2,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -178,7 +180,7 @@ export function SettingsClient({
         </div>
 
         {/* Card A — Primary address */}
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+        <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-5 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
@@ -193,12 +195,13 @@ export function SettingsClient({
               </div>
             </div>
             <span
-              className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium text-success"
               style={{
-                backgroundColor: 'hsl(var(--color-status-done) / 0.12)',
-                color: 'hsl(var(--color-status-done))',
+                backgroundColor: 'hsl(var(--color-success) / 0.08)',
+                borderColor: 'hsl(var(--color-success) / 0.45)',
               }}
             >
+              <CheckCircle2 size={12} />
               Active
             </span>
           </div>
@@ -225,7 +228,7 @@ export function SettingsClient({
         </div>
 
         {/* Card B — Address aliases */}
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+        <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-5 space-y-3">
           <div className="flex items-start justify-between gap-2">
             <div>
               <h3 className="text-sm font-semibold text-foreground">Address aliases</h3>
@@ -270,7 +273,7 @@ export function SettingsClient({
         </div>
 
         {/* Card C — Quick usage guide */}
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+        <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-5 space-y-3">
           <h3 className="text-sm font-semibold text-foreground">Quick usage guide</h3>
           <ol className="space-y-2.5">
             {[
@@ -302,7 +305,7 @@ export function SettingsClient({
           </p>
         </div>
 
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-5">
+        <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-5 space-y-5">
           {/* Group: Item Processing */}
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -392,7 +395,7 @@ export function SettingsClient({
         </div>
 
         {/* Theme card */}
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+        <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-5 space-y-3">
           <div>
             <h3 className="text-sm font-semibold text-foreground">Theme</h3>
             <p className="text-xs text-muted-foreground mt-0.5">Choose your preferred color scheme.</p>
@@ -407,22 +410,25 @@ export function SettingsClient({
               return (
                 <button
                   key={value}
+                  type="button"
+                  aria-pressed={isSelected}
                   onClick={() => setSelectedTheme(value)}
-                  className="flex flex-col items-center gap-2 rounded-xl border p-3 text-center transition-colors"
-                  style={
+                  className={cn(
+                    'relative flex flex-col items-center gap-2 rounded-[10px] border-stroke p-3 text-center transition-colors',
                     isSelected
-                      ? {
-                          outline: '2px solid hsl(var(--color-pin))',
-                          outlineOffset: '1px',
-                          backgroundColor: 'hsl(var(--color-tag-yellow) / 0.06)',
-                          borderColor: 'transparent',
-                        }
-                      : { borderColor: 'hsl(var(--border))' }
-                  }
+                      ? 'border-primary bg-accent shadow-ink-sm'
+                      : 'border-ink bg-card',
+                  )}
                 >
-                  <Icon size={18} className="text-muted-foreground" />
+                  {isSelected && (
+                    <Check size={14} className="absolute right-2 top-2 text-primary" />
+                  )}
+                  <Icon
+                    size={18}
+                    className={isSelected ? 'text-accent-foreground' : 'text-muted-foreground'}
+                  />
                   <span className="text-xs font-medium text-foreground">{label}</span>
-                  <span className="text-[10px] text-muted-foreground leading-tight">{desc}</span>
+                  <span className="text-[11px] text-muted-foreground leading-tight">{desc}</span>
                 </button>
               )
             })}
@@ -430,7 +436,7 @@ export function SettingsClient({
         </div>
 
         {/* Density card */}
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+        <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-5 space-y-3">
           <div>
             <h3 className="text-sm font-semibold text-foreground">Dashboard density</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -446,22 +452,25 @@ export function SettingsClient({
               return (
                 <button
                   key={value}
+                  type="button"
+                  aria-pressed={isSelected}
                   onClick={() => setSelectedDensity(value as 'comfortable' | 'compact')}
-                  className="flex flex-col items-center gap-2 rounded-xl border p-3 text-center transition-colors"
-                  style={
+                  className={cn(
+                    'relative flex flex-col items-center gap-2 rounded-[10px] border-stroke p-3 text-center transition-colors',
                     isSelected
-                      ? {
-                          outline: '2px solid hsl(var(--color-pin))',
-                          outlineOffset: '1px',
-                          backgroundColor: 'hsl(var(--color-tag-yellow) / 0.06)',
-                          borderColor: 'transparent',
-                        }
-                      : { borderColor: 'hsl(var(--border))' }
-                  }
+                      ? 'border-primary bg-accent shadow-ink-sm'
+                      : 'border-ink bg-card',
+                  )}
                 >
-                  <Icon size={18} className="text-muted-foreground" />
+                  {isSelected && (
+                    <Check size={14} className="absolute right-2 top-2 text-primary" />
+                  )}
+                  <Icon
+                    size={18}
+                    className={isSelected ? 'text-accent-foreground' : 'text-muted-foreground'}
+                  />
                   <span className="text-xs font-medium text-foreground">{label}</span>
-                  <span className="text-[10px] text-muted-foreground leading-tight">{desc}</span>
+                  <span className="text-[11px] text-muted-foreground leading-tight">{desc}</span>
                 </button>
               )
             })}
@@ -474,7 +483,6 @@ export function SettingsClient({
             onClick={handleSaveAppearance}
             disabled={appearanceSaved}
             className="gap-1.5"
-            style={{ backgroundColor: 'hsl(var(--color-pin))', color: '#fff' }}
           >
             {appearanceSaved ? <Check size={13} /> : null}
             {appearanceSaved ? 'Saved' : 'Save appearance'}
@@ -496,7 +504,7 @@ export function SettingsClient({
         </div>
 
         {/* Card A — Profile */}
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+        <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-5 space-y-4">
           <div className="flex items-center gap-3">
             <div
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-semibold"
@@ -537,7 +545,7 @@ export function SettingsClient({
         </div>
 
         {/* Card B — Google account */}
-        <div className="bg-card rounded-2xl border border-border p-5">
+        <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               {/* Google G logo */}
@@ -582,14 +590,14 @@ export function SettingsClient({
         </div>
 
         {/* Card C — Sign out */}
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+        <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-5 space-y-3">
           <div>
             <h3 className="text-sm font-semibold text-foreground">Sign out</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               You will be redirected to the landing page. Your data is not affected.
             </p>
           </div>
-          {signOutError && <p className="text-xs text-destructive">{signOutError}</p>}
+          {signOutError && <p className="text-xs text-destructive-text">{signOutError}</p>}
           <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-1.5">
             <LogOut size={13} />
             Sign out
@@ -603,12 +611,7 @@ export function SettingsClient({
     return (
       <div className="space-y-4">
         <div>
-          <h2
-            className="text-base font-semibold"
-            style={{ color: 'hsl(var(--color-pin))' }}
-          >
-            Danger Zone
-          </h2>
+          <h2 className="text-base font-semibold text-destructive-text">Danger Zone</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Irreversible actions. Read carefully before proceeding.
           </p>
@@ -616,21 +619,21 @@ export function SettingsClient({
 
         {/* Warning banner */}
         <div
-          className="flex items-start gap-3 rounded-lg border p-3"
+          className="flex items-start gap-3 rounded-[10px] border-stroke p-3"
           style={{
-            backgroundColor: 'hsl(var(--color-pin) / 0.08)',
-            borderColor: 'hsl(var(--color-pin) / 0.3)',
+            backgroundColor: 'hsl(var(--destructive) / 0.08)',
+            borderColor: 'hsl(var(--destructive) / 0.45)',
           }}
         >
-          <AlertTriangle size={16} style={{ color: 'hsl(var(--color-pin))' }} className="mt-0.5 shrink-0" />
-          <p className="text-xs text-muted-foreground">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0 text-destructive-text" />
+          <p className="text-xs text-foreground">
             Actions on this page cannot be undone. If you want to pause your account instead, you
             can disable your drop address from the Drop Address panel.
           </p>
         </div>
 
         {/* Export all data */}
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+        <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-5 space-y-4">
           <div className="flex items-start gap-3">
             <div
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
@@ -665,20 +668,18 @@ export function SettingsClient({
 
         {/* Delete account */}
         <div
-          className="bg-card rounded-2xl border p-5 space-y-4"
-          style={{ borderColor: 'hsl(var(--color-pin) / 0.4)' }}
+          className="rounded-xl border-stroke bg-card shadow-ink-lg p-5 space-y-4"
+          style={{ borderColor: 'hsl(var(--destructive))' }}
         >
           <div className="flex items-start gap-3">
             <div
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-              style={{ backgroundColor: 'hsl(var(--color-pin) / 0.12)' }}
+              style={{ backgroundColor: 'hsl(var(--destructive) / 0.08)' }}
             >
-              <Trash2 size={16} style={{ color: 'hsl(var(--color-pin))' }} />
+              <Trash2 size={16} className="text-destructive-text" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold" style={{ color: 'hsl(var(--color-pin))' }}>
-                Delete account
-              </h3>
+              <h3 className="text-sm font-semibold text-destructive-text">Delete account</h3>
               <p className="text-xs text-muted-foreground">
                 Permanently delete your drop-note account and all associated data — items,
                 summaries, tags, and aliases. This action is irreversible and takes effect
@@ -692,9 +693,7 @@ export function SettingsClient({
                   'Data cannot be recovered after deletion',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                    <span style={{ color: 'hsl(var(--color-pin))' }} className="shrink-0 mt-0.5">
-                      ✕
-                    </span>
+                    <span className="shrink-0 mt-0.5 text-destructive-text">✕</span>
                     <span className="font-medium">{item}</span>
                   </li>
                 ))}
@@ -702,20 +701,17 @@ export function SettingsClient({
             </div>
           </div>
 
-          {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
+          {deleteError && <p className="text-xs text-destructive-text">{deleteError}</p>}
 
           <div className="border-t border-border" />
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
+                variant="outline"
                 size="sm"
                 disabled={deleting}
-                className="gap-1.5"
-                style={{
-                  backgroundColor: 'hsl(var(--color-pin))',
-                  color: '#fff',
-                }}
+                className="gap-1.5 text-destructive-text"
               >
                 <Trash2 size={13} />
                 {deleting ? 'Deleting…' : 'Delete my account'}
@@ -733,7 +729,7 @@ export function SettingsClient({
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDeleteAccount}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  className={buttonVariants({ variant: 'destructive' })}
                 >
                   Delete my account
                 </AlertDialogAction>
