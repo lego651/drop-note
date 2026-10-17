@@ -3,6 +3,8 @@
 > The single source of truth for how drop-note's UI is built. **All new UI code must follow this.**
 > Goal: one cohesive product + theming that changes in **one place**.
 > Source of truth for values: `apps/web/app/globals.css` (`:root` + `.dark`) and `apps/web/tailwind.config.ts`.
+>
+> **Visual direction: Airmail** (board decision 2026-10-16). See [`docs/design/AIRMAIL.md`](design/AIRMAIL.md) for how things should look.
 
 ---
 

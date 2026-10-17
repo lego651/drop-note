@@ -99,6 +99,7 @@ pnpm gen:types                        # regenerate Supabase TypeScript types (ru
 
 ## Code conventions
 
+- **UI design system:** [`docs/design/AIRMAIL.md`](docs/design/AIRMAIL.md) — the adopted visual direction (ink outlines, hard ink shadows, postal motifs, Archivo/JetBrains Mono + Noto Sans SC). Read it with the style guide.
 - **UI style guide (read before any UI work):** [`docs/STYLE_GUIDE.md`](docs/STYLE_GUIDE.md) — token-driven styling, card/pill/loading/optimistic conventions, full color-token list. All new UI must follow it. Theme changes happen in `globals.css` only.
 - **No passwords** — Google OAuth only (no magic links)
 - **No raw Tailwind color classes** — always use semantic tokens (`bg-background`, `text-muted-foreground`, etc.). All color decisions go through CSS variables in `globals.css`.
@@ -149,6 +150,7 @@ Historical ticket breakdowns and sprint reviews are frozen in `docs/archive/alph
 | File | Purpose |
 |---|---|
 | `docs/STYLE_GUIDE.md` | UI styling standard — read before any UI work |
+| `docs/design/AIRMAIL.md` | Visual design system ("Airmail", adopted 2026-10-16) — the look, tokens, motifs, components; read with STYLE_GUIDE before any UI work |
 | `docs/google-oauth-setup.md` | One-time Google OAuth + Supabase setup runbook |
 | `docs/architecture/overview.md` | System context, request-flow diagrams, module map, data model |
 | `docs/architecture/email-pipeline.md` | Current email → ingest → AI → DB data flow |

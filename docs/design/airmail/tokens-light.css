@@ -1,0 +1,71 @@
+/* drop-note light theme — Airmail (adopted 2026-10-16, DRO-69)
+   Paste the :root block over the :root block in apps/web/app/globals.css.
+   --font-* are wired via next/font in the app; the @import is for the static mockup only. */
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap");
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 226 58% 14%;
+  --content-bg: 222 45% 95.5%;
+  --card: 0 0% 100%;
+  --card-foreground: 226 58% 14%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 226 58% 14%;
+  --primary: 228 78% 47%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 222 45% 92%;
+  --secondary-foreground: 226 58% 14%;
+  --muted: 222 40% 94%;
+  --muted-foreground: 225 22% 36%;
+  --accent: 228 92% 94%;
+  --accent-foreground: 228 78% 36%;
+  --destructive: 356 78% 46%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 224 30% 85%;
+  --input: 226 58% 14%;
+  --ring: 228 78% 47%;
+  --radius: 0.625rem;
+  --color-success: 152 65% 28%;
+  --color-tag-blue: 222 80% 42%;
+  --color-tag-purple: 268 55% 44%;
+  --color-tag-pink: 334 72% 41%;
+  --color-tag-green: 152 65% 26%;
+  --color-tag-yellow: 34 95% 30%;
+  --color-tag-orange: 16 88% 39%;
+  --color-tag-teal: 188 82% 26%;
+  --color-tag-indigo: 244 58% 50%;
+  --color-source-email: 228 78% 47%;
+  --color-source-youtube: 356 80% 50%;
+  --color-source-article: 152 65% 28%;
+  --color-source-note: 268 55% 44%;
+  --color-source-default: 225 15% 50%;
+  --color-pin: 356 80% 50%;
+  --color-status-done: 152 65% 30%;
+  --color-status-processing: 34 95% 36%;
+  --color-status-failed: 356 78% 46%;
+  --color-stat-total: 226 58% 14%;
+  --color-stat-week: 152 65% 28%;
+  --color-stat-processing: 34 95% 32%;
+  --color-stat-tag: 356 80% 46%;
+  --hero-gradient-rose: 356 80% 50%;
+  --hero-gradient-violet: 228 78% 47%;
+
+  --font-sans: "Archivo", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-display: "Archivo", "Noto Sans SC", "PingFang SC", sans-serif;
+  --font-mono: "JetBrains Mono", "Noto Sans SC", ui-monospace, monospace;
+
+  /* Airmail tokens (AIRMAIL.md § 3.2) */
+  --ink: 226 58% 14%;
+  --stroke: 1.5px;
+  --shadow-color: 226 58% 14%;
+  --stripe-gap: 0 0% 100%;
+  --badge-ring: 0 0% 100%;
+  --grid-alpha: .10;
+  --shadow-sm: 2px 2px 0 hsl(var(--shadow-color));
+  --shadow-md: 3px 3px 0 hsl(var(--shadow-color));
+  --shadow-lg: 4px 4px 0 hsl(var(--shadow-color));
+  --shadow-hover: 6px 6px 0 hsl(var(--shadow-color));
+  --shadow-stamp: drop-shadow(3px 3px 0 hsl(var(--shadow-color)));
+  --stripe: repeating-linear-gradient(-45deg, hsl(var(--color-pin)) 0 12px, hsl(var(--stripe-gap)) 12px 18px, hsl(var(--primary)) 18px 30px, hsl(var(--stripe-gap)) 30px 36px);
+  --stripe-mini: repeating-linear-gradient(-45deg, hsl(var(--color-pin)) 0 4px, hsl(var(--stripe-gap)) 4px 6px, hsl(var(--primary)) 6px 10px, hsl(var(--stripe-gap)) 10px 12px);
+}

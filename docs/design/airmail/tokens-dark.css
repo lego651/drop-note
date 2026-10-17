@@ -1,0 +1,71 @@
+/* drop-note dark theme — Airmail "Night Mail" (adopted 2026-10-16, DRO-70)
+   Navy paper, cream ink. Outline and shadow are the same cream (--ink = --shadow-color).
+   Paste the .dark block over the .dark block in apps/web/app/globals.css.
+   Same token names and order as tokens-light.css. --font-* and --radius don't change. */
+
+.dark {
+  --background: 226 44% 11%;
+  --foreground: 40 52% 91%;
+  --content-bg: 227 48% 7.5%;
+  --card: 226 40% 13.5%;
+  --card-foreground: 40 52% 91%;
+  --popover: 226 40% 13.5%;
+  --popover-foreground: 40 52% 91%;
+  --primary: 229 86% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 226 34% 19%;
+  --secondary-foreground: 40 52% 91%;
+  --muted: 226 34% 18%;
+  --muted-foreground: 36 16% 72%;
+  --accent: 229 52% 23%;
+  --accent-foreground: 229 100% 85%;
+  --destructive: 356 74% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 226 26% 25%;
+  --input: 40 40% 82%;
+  --ring: 229 100% 72%;
+  --color-success: 150 52% 58%;
+
+  /* Tag palette (dark): light tones so 11px pill text passes AA on the 8% tint */
+  --color-tag-blue: 218 92% 74%;
+  --color-tag-purple: 268 80% 80%;
+  --color-tag-pink: 334 82% 76%;
+  --color-tag-green: 150 52% 62%;
+  --color-tag-yellow: 40 88% 64%;
+  --color-tag-orange: 18 92% 70%;
+  --color-tag-teal: 184 62% 58%;
+  --color-tag-indigo: 242 88% 80%;
+
+  --color-source-email: 229 100% 74%;
+  --color-source-youtube: 356 84% 58%;
+  --color-source-article: 150 52% 58%;
+  --color-source-note: 268 80% 80%;
+  --color-source-default: 226 14% 62%;
+
+  --color-pin: 356 88% 62%;
+  --color-status-done: 150 52% 58%;
+  --color-status-processing: 40 88% 62%;
+  --color-status-failed: 356 90% 70%;
+  --color-stat-total: 40 40% 82%;
+  --color-stat-week: 150 52% 58%;
+  --color-stat-processing: 40 88% 62%;
+  --color-stat-tag: 356 92% 68%;
+  --hero-gradient-rose: 356 88% 62%;
+  --hero-gradient-violet: 229 86% 60%;
+
+  /* Airmail tokens (AIRMAIL.md § 3.2). --stroke and --radius are the same as light. */
+  --ink: 40 40% 82%;
+  --stroke: 1.5px;
+  --shadow-color: 40 40% 82%;   /* hard-shadow color; = --ink unless the variant splits them */
+  --stripe-gap: 40 52% 91%;   /* the 'white' bands of the airmail stripe */
+  --badge-ring: 40 40% 82%;   /* ring around the play badge (= --ink on dark) */
+  --grid-alpha: .09;   /* dot-grid opacity on the canvas */
+
+  --shadow-sm: 2px 2px 0 hsl(var(--shadow-color));
+  --shadow-md: 3px 3px 0 hsl(var(--shadow-color));
+  --shadow-lg: 4px 4px 0 hsl(var(--shadow-color));
+  --shadow-hover: 6px 6px 0 hsl(var(--shadow-color));
+  --shadow-stamp: drop-shadow(3px 3px 0 hsl(var(--shadow-color)));
+  --stripe: repeating-linear-gradient(-45deg, hsl(var(--color-pin)) 0 12px, hsl(var(--stripe-gap)) 12px 18px, hsl(var(--primary)) 18px 30px, hsl(var(--stripe-gap)) 30px 36px);
+  --stripe-mini: repeating-linear-gradient(-45deg, hsl(var(--color-pin)) 0 4px, hsl(var(--stripe-gap)) 4px 6px, hsl(var(--primary)) 6px 10px, hsl(var(--stripe-gap)) 10px 12px);
+}
