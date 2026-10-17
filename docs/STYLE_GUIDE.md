@@ -20,7 +20,7 @@
 
 If a color you need doesn't have a token, **add a token to `globals.css` (light + dark) first**, then use it. Never inline a hex.
 
-Light theme is the product default. Dark tokens exist in `.dark` but component-level dark polish is out of scope unless a task says otherwise — still, never hardcode a color that would break theming.
+Light (Airmail) and dark (Night Mail) are both first-class. Check every UI change in both themes. Token values are copied from `docs/design/airmail/tokens-{light,dark}.css`.
 
 ---
 
@@ -31,18 +31,20 @@ Use as Tailwind tokens (`bg-x`, `text-x`) where wired in `tailwind.config.ts`, o
 ### Surfaces
 | Token | Value (light) | Use |
 |---|---|---|
-| `--background` | `0 0% 100%` white | app base, sidebar, top nav |
-| `--card` | `0 0% 100%` white | every card/panel surface (`bg-card`) |
-| `--content-bg` | `0 0% 96.9%` = **#f7f7f7** | dashboard content canvas — Tailwind `bg-canvas` (on `<main>`) |
-| `--muted` / `--muted-foreground` | light gray / `215 16% 47%` | subtle fills, secondary text |
-| `--border` | `214 32% 91%` | hairlines, dividers |
-| `--foreground` | near-black | primary text |
+| `--background` | white | app base, sidebar, top nav |
+| `--card` | white | every card/panel/input surface (`bg-card`) |
+| `--content-bg` | `#EEF1F9` | dashboard content canvas — `bg-canvas bg-dot-grid` (on `<main>`) |
+| `--muted` / `--muted-foreground` | pale blue-grey / `#485270` | subtle fills, secondary text |
+| `--border` | `#CDD3E4` | hairlines **inside** a container only |
+| `--foreground` | navy `#0F1938` | text only — never outlines |
+| `--ink` | navy (light) / cream (dark) | outlines — Tailwind `border-ink` |
+| `--primary` | cobalt `#1A40D5` | the main action + current selection |
 
 ### Accents
 | Token | Hue | Use |
 |---|---|---|
-| `--color-pin` | rose `346 77% 60%` | pinned state (ring / left accent), pin badge |
-| `--destructive` | red `0 84% 60%` | delete / danger / failed |
+| `--color-pin` | airmail red `#E61927` | pinned state (card outline color), pin badge, stripe |
+| `--destructive` | red `#D11A26` | delete / danger / failed |
 | `--color-success` / `--color-status-done` | green | success, "Active" badge, done |
 | `--color-status-processing` | amber | processing/pending |
 | `--color-status-failed` | red | failed |
@@ -50,14 +52,14 @@ Use as Tailwind tokens (`bg-x`, `text-x`) where wired in `tailwind.config.ts`, o
 ### Palettes (cycled by hash via helpers)
 - **Tags** — `--color-tag-{blue,purple,pink,green,yellow,orange,teal,indigo}`
 - **Source dots** — `--color-source-{email,youtube,article,note,default}`
-- **Stat cards** — `--color-stat-{total(gray),week(green),processing(amber),tag(violet)}`
+- **Stat cards** — `--color-stat-{total(ink),week(green),processing(amber),tag(red)}`
 - **Hero wash** — `--hero-gradient-{rose,violet}` (very subtle radial only)
 
 ### Helpers — `apps/web/lib/design-tokens.ts`
 | Helper | Returns | Use |
 |---|---|---|
 | `colorForTag(name)` | `'var(--color-tag-…)'` | deterministic tag color as a CSS var string |
-| `colorForTagHsl(name)` | `'214 89% 52%'` (raw channels) | when you need `hsl(${x} / 0.12)` tints or inline avatars/placeholders |
+| `colorForTagHsl(name)` | `'var(--color-tag-…)'` (theme-aware channels) | when you need `hsl(${x} / 0.08)` tints or inline avatars/placeholders |
 | `SOURCE_DOT[type]` | `'hsl(var(--color-source-…))'` | source dot fill |
 | `STATUS_DOT[status]` / `STAT_CARD_ACCENT[key]` | var refs | status dots / stat icons |
 | `TAG_PALETTE` | array of tag var strings | — |
@@ -68,28 +70,38 @@ Use as Tailwind tokens (`bg-x`, `text-x`) where wired in `tailwind.config.ts`, o
 
 ## 2. Component conventions (match these exactly)
 
+### Airmail utilities (from `tailwind.config.ts` + `globals.css`)
+| Class | What |
+|---|---|
+| `border-stroke` / `border-b-stroke` … | the one 1.5px outline width — pair with `border-ink` |
+| `shadow-ink-sm/md/lg/hover` | hard offset shadows (nav/chip, controls, cards, hover) — never write a box-shadow by hand |
+| `lift` | card hover: −2px lift + `shadow-ink-hover`, reduced-motion safe |
+| `type-display` | Archivo 125% display cut — H1, big numbers (≥ 22px only) |
+| `type-label` | mono uppercase section label — sidebar groups, stat labels only |
+| `font-mono` | metadata: dates, counts, domains, read time |
+| `bg-dot-grid`, `stripe-top`, `stripe-mini`, `stamp` + `stamp-in` | the postal motifs (AIRMAIL § 6) |
+
+`cn()` (`lib/utils.ts`) knows these classes — always merge classes through it.
+
 ### Cards / panels
-- `rounded-2xl bg-card shadow-sm` — **no border** (white-on-canvas + soft shadow separates them).
-- Hover (clickable): `transition-shadow hover:shadow-md`.
-- **Pinned** item: rose accent, never a gray border —
-  - grid/list card: `style={{ boxShadow: '0 0 0 2px hsl(var(--color-pin))' }}` (ring)
-  - compact row: `style={{ boxShadow: 'inset 2px 0 0 0 hsl(var(--color-pin)), 0 1px 2px rgb(0 0 0 / 0.04)' }}` (narrow left accent)
-- Failed: `boxShadow: '0 0 0 1px hsl(var(--destructive))'`.
+- `rounded-xl border-stroke border-ink bg-card shadow-ink-lg`, clickable cards add `lift`.
+- **Pinned** item: outline turns pin red — `style={{ borderColor: 'hsl(var(--color-pin))' }}`.
+- Failed: `style={{ borderColor: 'hsl(var(--destructive))' }}`.
 
 ### Dashboard layout
-- `<main>` content canvas = `bg-canvas`; sidebar + top nav stay `bg-background` (white).
+- `<main>` content canvas = `bg-canvas bg-dot-grid`; sidebar + top nav stay `bg-background` with an ink edge and the airmail stripe on top.
 - Top nav height `h-16` (matches sidebar logo header). Inbox content wrapper: `mx-auto max-w-6xl px-8 py-6 space-y-5`.
 
 ### Tag pills (inside cards)
-- `#`-prefixed, **no border**, ~`text-[11px]`, tinted: `bg = hsl(${hsl} / 0.12)`, `text = hsl(${hsl})` via `colorForTagHsl`.
-- The **filter bar** pills (`TagFilterBar`) are the exception: larger `text-sm` rounded-full, active = `bg-foreground text-background`, inactive = `bg-card` + `border-border`.
+- `#`-prefixed `rounded-full text-[11px] font-semibold`, tinted: `bg = hsl(${hsl} / 0.08)`, `border = hsl(${hsl} / 0.45)`, `text = hsl(${hsl})` via `colorForTagHsl`.
+- The **filter bar** chips (`TagFilterBar`): `text-sm` pill with `border-stroke border-ink`, `#` in the tag color, mono count; active = `bg-primary text-primary-foreground shadow-ink-sm`.
 
 ### Controls
-- Sort = rounded-full pill (`SortDropdown`); view switch = segmented control, active = `bg-foreground text-background` (`ViewSwitcher`); filters = rounded-full pill, active = filled `bg-foreground` + label + `X` clear (`FiltersButton`).
-- Icon-in-circle pattern (stat cards, settings, features): `flex h-9 w-9 items-center justify-center rounded-full` with `bg = hsl(${accent} / 0.12)`, icon `color = hsl(${accent})`.
+- Buttons/inputs come from `components/ui` and already carry the ink outline + `shadow-ink-md` (10px radius). Sort, Filters and the view switch use them; active/selected = `bg-primary text-primary-foreground`.
+- Icon-in-circle pattern (stat cards): `h-9 w-9 rounded-full border-stroke border-dashed bg-card`, border + icon in `hsl(${accent})` (a postmark).
 
 ### Media / placeholders
-- Thumbnails `object-cover`, `rounded-xl`/`rounded-2xl`; no-image placeholder = tinted square (`hsl(${colorForTagHsl(subject)} / 0.12)`) + `FileText` icon in the same hue.
+- Thumbnails `object-cover`, closed off by an ink edge (`border-b-stroke border-ink` in cards); never dimmed. Play badge = `bg-primary text-primary-foreground` circle with a `--badge-ring` ring. No-image placeholder = tinted square (`hsl(${colorForTagHsl(subject)} / 0.12)`) + `FileText` icon in the same hue.
 
 ### Loading & mutations
 - Navigation that re-renders the server page (sort / filter / tag via `router.push`) must be wrapped in `useTransition`; show pending (dim/disable controls) + a skeleton. Route-level `loading.tsx` covers hard loads.
@@ -102,9 +114,9 @@ Use as Tailwind tokens (`bg-x`, `text-x`) where wired in `tailwind.config.ts`, o
 
 ## 3. Sizing / typography
 
-- Radius: cards `rounded-2xl` (16px), media/inner `rounded-xl` (12px), pills `rounded-full`, small chips `rounded-md`.
+- Radius: cards/dialogs `rounded-xl` (12px), controls `rounded-[10px]`, nav items `rounded-lg`, pills `rounded-full`.
 - Prefer the Tailwind spacing scale; arbitrary values (`h-[104px]`, `text-[15px]`) are allowed only for deliberate one-offs that match an approved design — colors are **never** arbitrary.
-- Type: page H1 `text-2xl/3xl font-bold`; panel headings `text-base font-semibold`; card titles `text-[15px] font-semibold`; body/meta `text-sm`/`text-xs text-muted-foreground`; eyebrow labels `text-[11px] uppercase tracking-wider text-muted-foreground`.
+- Type (Archivo / JetBrains Mono / Noto Sans SC via `next/font`): page H1 `type-display text-[32px] sm:text-[42px]`; panel headings `text-base font-semibold`; card titles `text-[15px] font-semibold`; body `text-sm`; meta `font-mono text-[11px] text-muted-foreground`; section labels `type-label`.
 
 ---
 
@@ -121,7 +133,9 @@ Use as Tailwind tokens (`bg-x`, `text-x`) where wired in `tailwind.config.ts`, o
 
 - [ ] Zero hardcoded hex / raw Tailwind colors — everything via tokens or `lib/design-tokens.ts` helpers.
 - [ ] New color? Added to `globals.css` (light **and** dark), wired in `tailwind.config.ts` if used as a class.
-- [ ] Cards = `rounded-2xl bg-card shadow-sm`; pinned uses `--color-pin`; canvas = `bg-canvas`.
+- [ ] Cards = `rounded-xl border-stroke border-ink bg-card shadow-ink-lg`; pinned uses `--color-pin`; canvas = `bg-canvas bg-dot-grid`.
+- [ ] Outlines use `border-ink` (never `border-foreground`); no hand-written box-shadows.
+- [ ] Checked in light **and** dark, and with a long Chinese title.
 - [ ] Sort/filter/tag changes show loading (`useTransition` + skeleton); mutations are optimistic.
 - [ ] Lint + typecheck + build + tests all green.
 

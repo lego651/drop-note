@@ -60,14 +60,10 @@ function CompactRow({
   const row = (
     <article
       className={cn(
-        'group flex items-center gap-3 rounded-2xl bg-card px-3 py-3.5 shadow-sm transition-shadow hover:shadow-md',
-        isSelected && 'ring-2 ring-ring',
+        'group flex items-center gap-3 rounded-[10px] border-stroke border-ink bg-card px-3 py-3.5 shadow-ink-md transition-colors hover:bg-accent/40',
+        isSelected && 'ring-2 ring-ring ring-offset-2',
       )}
-      style={
-        item.pinned
-          ? { boxShadow: `inset 2px 0 0 0 ${PIN}, 0 1px 2px rgb(0 0 0 / 0.04)` }
-          : undefined
-      }
+      style={item.pinned ? { borderColor: PIN } : undefined}
     >
       {isBulkMode && (
         <Checkbox
@@ -79,7 +75,7 @@ function CompactRow({
       )}
 
       {/* Media — 40px */}
-      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
+      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border-stroke border-ink bg-muted">
         {isDone && item.thumbnail_url ? (
           <Image
             src={item.thumbnail_url}
@@ -113,7 +109,7 @@ function CompactRow({
         </div>
 
         {/* Meta row: domain · read time · tag */}
-        <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="flex min-w-0 items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
           <span className="truncate">{sourceLabel(item)}</span>
           {readMin && (
             <>
@@ -126,9 +122,10 @@ function CompactRow({
           )}
           {firstTag && (
             <span
-              className="ml-0.5 shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-none"
+              className="ml-0.5 shrink-0 rounded-full border px-1.5 py-[3px] font-sans text-[11px] font-semibold leading-none"
               style={{
-                backgroundColor: `hsl(${tagHsl} / 0.12)`,
+                backgroundColor: `hsl(${tagHsl} / 0.08)`,
+                borderColor: `hsl(${tagHsl} / 0.45)`,
                 color: `hsl(${tagHsl})`,
               }}
             >
@@ -157,7 +154,7 @@ export function CompactListLayout({
   onSelectChange,
 }: CompactListLayoutProps) {
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-3">
       {items.map((item) => (
         <CompactRow
           key={item.id}

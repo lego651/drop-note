@@ -57,12 +57,12 @@ describe('FiltersButton', () => {
   it('trigger button has bg-foreground class when a filter is active', () => {
     render(<FiltersButton activeSource="youtube" />)
     const btn = screen.getByRole('button', { name: /Videos/i })
-    expect(btn.className).toContain('bg-foreground')
+    expect(btn.className).toContain('bg-primary')
   })
 
   it('trigger button does NOT have bg-foreground class when no filter active', () => {
     render(<FiltersButton activeSource="all" />)
     const btn = screen.getByRole('button', { name: /Filters/i })
-    expect(btn.className).not.toContain('bg-foreground')
+    expect(btn.className).not.toContain('bg-primary')
   })
 })

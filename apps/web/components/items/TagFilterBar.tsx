@@ -4,6 +4,13 @@ import { useTransition } from 'react'
 import type { CSSProperties } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { colorForTag } from '@/lib/design-tokens'
+
+// Filter chips (AIRMAIL § 7): ink outline, active = cobalt + small ink shadow.
+const CHIP =
+  'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border-stroke border-ink px-3 text-sm font-semibold transition-colors'
+const CHIP_ACTIVE = 'bg-primary text-primary-foreground shadow-ink-sm'
+const CHIP_INACTIVE = 'bg-card text-foreground hover:bg-accent'
 
 interface TagFilterBarProps {
   tags: { id: string; name: string; count: number }[]
@@ -33,7 +40,7 @@ export function TagFilterBar({ tags, totalCount, activeTagId }: TagFilterBarProp
   return (
     <div
       className={cn(
-        'flex gap-2 overflow-x-auto pb-1',
+        'flex gap-2 overflow-x-auto pb-1.5 pr-1',
         isPending && 'pointer-events-none opacity-60',
       )}
       style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as CSSProperties}
@@ -43,13 +50,11 @@ export function TagFilterBar({ tags, totalCount, activeTagId }: TagFilterBarProp
         type="button"
         onClick={() => handleTagClick(null)}
         className={cn(
-          'shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
-          isAllActive
-            ? 'bg-foreground text-background border-foreground'
-            : 'bg-card text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground',
+          CHIP,
+          isAllActive ? CHIP_ACTIVE : CHIP_INACTIVE,
         )}
       >
-        All <span className="opacity-70">{totalCount}</span>
+        All <span className="font-mono text-[11px] font-normal opacity-70">{totalCount}</span>
       </button>
 
       {tags.map((tag) => {
@@ -60,13 +65,13 @@ export function TagFilterBar({ tags, totalCount, activeTagId }: TagFilterBarProp
             type="button"
             onClick={() => handleTagClick(tag.id)}
             className={cn(
-              'shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
-              isActive
-                ? 'bg-foreground text-background border-foreground'
-                : 'bg-card text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground',
+              CHIP,
+              isActive ? CHIP_ACTIVE : CHIP_INACTIVE,
             )}
           >
-            # {tag.name} <span className="opacity-70">{tag.count}</span>
+            <span style={isActive ? undefined : { color: `hsl(${colorForTag(tag.name)})` }}>#</span>
+            {tag.name}
+            <span className="font-mono text-[11px] font-normal opacity-70">{tag.count}</span>
           </button>
         )
       })}

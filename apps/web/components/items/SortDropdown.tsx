@@ -45,7 +45,7 @@ export function SortDropdown({ activeSort }: SortDropdownProps) {
           variant="outline"
           disabled={isPending}
           className={cn(
-            'h-9 w-[150px] justify-between gap-2 rounded-full border-border px-3.5 text-sm font-normal',
+            'h-10 w-[150px] justify-between gap-2 px-3.5 text-sm font-semibold',
             isPending && 'opacity-50',
           )}
         >

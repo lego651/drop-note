@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   colorForTag,
+  colorForTagHsl,
   TAG_PALETTE,
   SOURCE_DOT,
   STATUS_DOT,
@@ -34,6 +35,14 @@ describe('colorForTag', () => {
   it('handles single character names', () => {
     const result = colorForTag('a')
     expect(TAG_PALETTE as readonly string[]).toContain(result)
+  })
+})
+
+describe('colorForTagHsl', () => {
+  it('returns a theme-aware var reference, not literal channels', () => {
+    // Literal HSL numbers would ignore the .dark block; var() follows the theme.
+    expect(colorForTagHsl('ai')).toBe(colorForTag('ai'))
+    expect(colorForTagHsl('ai')).toMatch(/^var\(--color-tag-/)
   })
 })
 

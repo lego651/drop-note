@@ -1,4 +1,6 @@
+import type { CSSProperties } from 'react'
 import { Inbox, TrendingUp, Clock, Tag } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { STAT_CARD_ACCENT } from '@/lib/design-tokens'
 
 interface StatsBarProps {
@@ -15,23 +17,29 @@ interface StatCardProps {
   sub: string
   accent: string // HSL channel var reference, e.g. 'var(--color-stat-total)'
   Icon: typeof Inbox
+  tilt?: string
 }
 
-function StatCard({ label, value, sub, accent, Icon }: StatCardProps) {
+// Postage stamp (AIRMAIL § 6.2): the one "stamp moment" on the inbox.
+function StatCard({ label, value, sub, accent, Icon, tilt }: StatCardProps) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-sm font-medium text-muted-foreground">{label}</span>
-        <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-          style={{ backgroundColor: `hsl(${accent} / 0.12)` }}
-          aria-hidden="true"
-        >
-          <Icon size={16} style={{ color: `hsl(${accent})` }} />
-        </span>
+    <div className={cn('stamp min-w-0', tilt)}>
+      <div className="stamp-in h-full p-[18px] sm:p-[22px]" style={{ '--a': accent } as CSSProperties}>
+        <div className="flex items-start justify-between gap-2">
+          <span className="type-label text-[11px] text-foreground">{label}</span>
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-stroke border-dashed bg-card"
+            style={{ borderColor: `hsl(${accent})`, color: `hsl(${accent})` }}
+            aria-hidden="true"
+          >
+            <Icon size={16} />
+          </span>
+        </div>
+        <p className="type-display mt-4 truncate text-[26px] font-black leading-none text-foreground sm:text-[36px]">
+          {value}
+        </p>
+        <p className="mt-2 font-mono text-[11px] text-muted-foreground">{sub}</p>
       </div>
-      <p className="mt-5 text-[26px] font-bold leading-none text-foreground">{value}</p>
-      <p className="mt-2 text-xs text-muted-foreground">{sub}</p>
     </div>
   )
 }
@@ -49,7 +57,7 @@ export function StatsBar({
       : `${weekDelta >= 0 ? '+' : ''}${weekDelta} vs last week`
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-[22px]">
       <StatCard
         label="Total saved"
         value={String(totalCount)}
@@ -63,6 +71,7 @@ export function StatsBar({
         sub={weekSub}
         accent={STAT_CARD_ACCENT.thisWeek}
         Icon={TrendingUp}
+        tilt="-rotate-[1.2deg]"
       />
       <StatCard
         label="Processing"
@@ -77,6 +86,7 @@ export function StatsBar({
         sub={topTag ? `${topTag.count} items` : 'no tags yet'}
         accent={STAT_CARD_ACCENT.topTag}
         Icon={Tag}
+        tilt="rotate-[0.9deg]"
       />
     </div>
   )

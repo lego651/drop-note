@@ -1,12 +1,20 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Archivo, JetBrains_Mono, Noto_Sans_SC } from 'next/font/google'
 import { ThemeProvider } from 'next-themes'
 import { Toaster } from '@/components/ui/toaster'
 import { CookieBanner } from '@/components/CookieBanner'
 import Link from 'next/link'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+// Airmail type (docs/design/AIRMAIL.md § 4). Archivo keeps its width axis for the 125% display cut.
+// Noto Sans SC is the CJK fallback in every stack; it is large, so it isn't preloaded.
+const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-archivo' })
+const jetbrains = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains' })
+const notoSc = Noto_Sans_SC({
+  weight: ['400', '500', '700', '900'],
+  preload: false,
+  variable: '--font-noto-sc',
+})
 
 export const metadata: Metadata = {
   title: 'drop-note',
@@ -34,8 +42,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${archivo.variable} ${jetbrains.variable} ${notoSc.variable}`}
+    >
+      <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
           <footer className="border-t border-border py-6 px-4">

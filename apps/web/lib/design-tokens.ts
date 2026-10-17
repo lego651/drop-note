@@ -37,28 +37,17 @@ export function colorForTag(name: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Tag palette as raw HSL values (for hsl(... / 0.12) opacity syntax)
-// Must stay in sync with TAG_PALETTE order and globals.css --color-tag-* values
+// Tag palette as HSL channels (for hsl(... / 0.12) opacity syntax)
+// These are var() references, not literal numbers, so they follow the theme
+// (light / dark) — `hsl(var(--color-tag-blue) / 0.12)` is valid CSS.
 // ---------------------------------------------------------------------------
 
-export const TAG_PALETTE_HSL = [
-  '214 89% 52%',
-  '270 60% 55%',
-  '330 70% 55%',
-  '142 55% 42%',
-  '45 90% 45%',
-  '25 85% 50%',
-  '180 55% 40%',
-  '245 65% 52%',
-] as const
-
 /**
- * Returns raw HSL numbers (e.g. "214 89% 52%") for use in hsl(... / opacity) syntax.
- * Use this when you need: `hsl(${colorForTagHsl(name)} / 0.12)`
+ * Returns the tag's HSL channels as a var reference (e.g. "var(--color-tag-blue)")
+ * for use in hsl(... / opacity) syntax: `hsl(${colorForTagHsl(name)} / 0.12)`
  */
 export function colorForTagHsl(name: string): string {
-  const hash = [...name].reduce((a, c) => a + c.charCodeAt(0), 0)
-  return TAG_PALETTE_HSL[hash % TAG_PALETTE_HSL.length]
+  return colorForTag(name)
 }
 
 // ---------------------------------------------------------------------------
