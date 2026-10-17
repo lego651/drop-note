@@ -15,10 +15,11 @@ export default defineConfig({
     environment: 'node',
     environmentMatchGlobs: [['**/*.test.tsx', 'jsdom']],
     setupFiles: ['./vitest.setup.ts'],
-    exclude: ['**/node_modules/**', 'e2e/**', '.claude/**'],
+    exclude: ['**/node_modules/**', 'e2e/**', '.claude/**', '.worktrees/**', '.paperclip/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'json-summary'],
+      exclude: ['.worktrees/**', '.paperclip/**'],
       thresholds: {
         statements: 60,
         branches: 50,
