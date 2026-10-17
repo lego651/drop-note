@@ -39,24 +39,24 @@ const TESTIMONIALS: Testimonial[] = [
 
 export function Testimonials() {
   return (
-    <section className="bg-muted/40 border-y border-border py-20">
+    <section className="py-20">
       <div className="mx-auto max-w-5xl px-4">
-        {/* Pill */}
+        {/* Eyebrow */}
         <div className="flex justify-center mb-6">
-          <span className="inline-flex rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold text-muted-foreground tracking-widest">
+          <span className="type-label inline-flex rounded-full border-stroke border-dashed border-ink px-3 py-1 text-muted-foreground">
             FROM USERS
           </span>
         </div>
 
         {/* Headline */}
-        <h2 className="type-display text-center text-3xl sm:text-4xl mb-14">
+        <h2 className="type-display text-center text-[28px] sm:text-[36px] mb-14">
           Built for people who actually save things.
         </h2>
 
         {/* Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {TESTIMONIALS.map((t) => (
-            <div key={t.name} className="rounded-xl border border-border bg-background p-6 flex flex-col justify-between">
+            <div key={t.name} className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-6 flex flex-col justify-between">
               <p className="text-sm text-foreground leading-relaxed mb-6">
                 &ldquo;{t.quote}&rdquo;
               </p>

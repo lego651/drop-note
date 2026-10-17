@@ -13,7 +13,7 @@ import { LandingFooter } from '@/components/landing/LandingFooter'
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-canvas bg-dot-grid text-foreground">
       <LandingNav />
       <LandingHero />
       <HowItWorks />

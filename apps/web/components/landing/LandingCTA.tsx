@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button'
 export function LandingCTA() {
   return (
     <section className="mx-auto max-w-5xl px-4 py-20">
-      <div className="rounded-2xl bg-muted/50 border border-border p-12 text-center">
+      <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-12 text-center">
         {/* Headline */}
-        <h2 className="type-display text-3xl sm:text-4xl mb-4">
+        <h2 className="type-display text-[28px] sm:text-[36px] mb-4">
           Start saving in 30 seconds.
         </h2>
 

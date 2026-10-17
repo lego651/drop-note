@@ -3,7 +3,7 @@ import { Mail } from 'lucide-react'
 
 export function LandingFooter() {
   return (
-    <footer className="border-t border-border bg-muted/30">
+    <footer className="border-t-stroke border-ink bg-background">
       <div className="mx-auto max-w-5xl px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
         {/* Left: brand + nav */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">

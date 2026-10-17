@@ -4,10 +4,13 @@ import { Button } from '@/components/ui/button'
 
 export function LandingNav() {
   return (
-    <nav className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+    <nav
+      className="stripe-top border-b-stroke border-ink bg-background sticky top-0 z-10"
+      style={{ '--stripe-h': '5px' } as React.CSSProperties}
+    >
       <div className="mx-auto max-w-5xl flex items-center justify-between px-4 py-3">
         {/* Left: logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-foreground hover:opacity-80 transition-opacity">
+        <Link href="/" className="flex items-center gap-2 type-display text-lg text-foreground hover:opacity-80 transition-opacity">
           <Mail className="h-5 w-5" />
           <span>drop-note</span>
         </Link>

@@ -3,15 +3,9 @@ import { Button } from '@/components/ui/button'
 import { CopyAddressPill } from './CopyAddressPill'
 import { HeroMockup } from './HeroMockup'
 
-const heroGradient: React.CSSProperties = {
-  background:
-    'radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--hero-gradient-rose) / 0.07) 0%, transparent 60%), ' +
-    'radial-gradient(ellipse 60% 40% at 80% 20%, hsl(var(--hero-gradient-violet) / 0.05) 0%, transparent 55%)',
-}
-
 export function LandingHero() {
   return (
-    <section className="mx-auto max-w-5xl px-4 py-20 text-center" style={heroGradient}>
+    <section className="mx-auto max-w-5xl px-4 py-20 text-center">
       {/* Powered-by pill */}
       <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs text-muted-foreground">
         <span className="h-1.5 w-1.5 rounded-full bg-success inline-block" />
@@ -19,7 +13,7 @@ export function LandingHero() {
       </div>
 
       {/* Headline */}
-      <h1 className="type-display text-5xl leading-tight sm:text-6xl lg:text-7xl mb-6">
+      <h1 className="type-display text-[40px] sm:text-[56px] lg:text-[72px] leading-[1.05] mb-6">
         Save anything from anywhere.
       </h1>
 

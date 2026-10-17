@@ -5,8 +5,6 @@ interface Feature {
   icon: LucideIcon
   title: string
   body: string
-  iconColor: string
-  iconBg: string
 }
 
 const FEATURES: Feature[] = [
@@ -14,56 +12,44 @@ const FEATURES: Feature[] = [
     icon: PenLine,
     title: 'AI summaries',
     body: 'Every item gets a crisp 2-sentence summary written by GPT-4o-mini so you know what you saved without re-reading.',
-    iconColor: 'hsl(var(--color-pin))',
-    iconBg: 'hsl(var(--color-pin) / 0.1)',
   },
   {
     icon: Tag,
     title: 'Auto-tagging',
     body: 'Topics, domains, and content types are detected automatically. Tags appear instantly — no manual categorization.',
-    iconColor: 'hsl(var(--color-tag-orange))',
-    iconBg: 'hsl(var(--color-tag-orange) / 0.1)',
   },
   {
     icon: Search,
     title: 'Full-text search',
     body: 'Search across titles, summaries, and original content. Find that article from 6 months ago in under a second.',
-    iconColor: 'hsl(var(--color-tag-purple))',
-    iconBg: 'hsl(var(--color-tag-purple) / 0.1)',
   },
   {
     icon: Calendar,
     title: 'Browse by date',
     body: 'Collapsible year/month accordion in the sidebar. Your reading history organized exactly how you\'d expect.',
-    iconColor: 'hsl(var(--color-tag-teal))',
-    iconBg: 'hsl(var(--color-tag-teal) / 0.1)',
   },
   {
     icon: Upload,
     title: 'Any content type',
     body: 'Articles, YouTube links, PDFs, raw URLs, or plain-text notes. If you can email it, drop-note can save it.',
-    iconColor: 'hsl(var(--color-tag-blue))',
-    iconBg: 'hsl(var(--color-tag-blue) / 0.1)',
   },
   {
     icon: CreditCard,
     title: 'Privacy first',
     body: 'Your content is never sold or shared. Items are processed by OpenAI for summarisation only — nothing else touches your data.',
-    iconColor: 'hsl(var(--color-tag-indigo))',
-    iconBg: 'hsl(var(--color-tag-indigo) / 0.1)',
   },
 ]
 
 export function Features() {
   return (
     <section className="mx-auto max-w-5xl px-4 py-20">
-      {/* Pill */}
-      <span className="inline-flex rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-semibold text-muted-foreground tracking-widest mb-6">
+      {/* Eyebrow */}
+      <span className="type-label inline-flex rounded-full border-stroke border-dashed border-ink px-3 py-1 text-muted-foreground mb-6">
         FEATURES
       </span>
 
       {/* Headline */}
-      <h2 className="type-display text-3xl leading-tight sm:text-4xl mb-4">
+      <h2 className="type-display text-[28px] leading-tight sm:text-[36px] mb-4">
         Everything your read-later app should have been.
       </h2>
 
@@ -78,12 +64,12 @@ export function Features() {
         {FEATURES.map((feature) => {
           const Icon = feature.icon
           return (
-            <div key={feature.title} className="rounded-xl border border-border bg-card p-6">
+            <div key={feature.title} className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-6">
               <div
-                className="mb-4 inline-flex rounded-lg p-2"
-                style={{ backgroundColor: feature.iconBg }}
+                className="mb-4 flex h-9 w-9 items-center justify-center rounded-full border-stroke border-dashed bg-card"
+                style={{ borderColor: 'hsl(var(--primary))', color: 'hsl(var(--primary))' }}
               >
-                <Icon className="h-5 w-5" style={{ color: feature.iconColor }} />
+                <Icon className="h-4 w-4" />
               </div>
               <h3 className="font-semibold text-foreground mb-2">{feature.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{feature.body}</p>
