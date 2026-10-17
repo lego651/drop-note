@@ -1,11 +1,6 @@
 import { Mail, Clock, Search } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-const serifItalic: React.CSSProperties = {
-  fontFamily: 'ui-serif, Georgia, "Times New Roman", serif',
-  fontStyle: 'italic',
-}
-
 interface Step {
   number: string
   icon: LucideIcon
@@ -54,8 +49,8 @@ export function HowItWorks() {
         </div>
 
         {/* Headline */}
-        <h2 className="text-center text-4xl font-bold tracking-tight mb-14">
-          Three steps. <span style={serifItalic}>Zero friction.</span>
+        <h2 className="type-display text-center text-4xl mb-14">
+          Three steps. Zero friction.
         </h2>
 
         {/* Steps grid */}

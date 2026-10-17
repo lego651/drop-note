@@ -2,18 +2,13 @@ import Link from 'next/link'
 import { Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-const serifItalic: React.CSSProperties = {
-  fontFamily: 'ui-serif, Georgia, "Times New Roman", serif',
-  fontStyle: 'italic',
-}
-
 export function LandingCTA() {
   return (
     <section className="mx-auto max-w-5xl px-4 py-20">
       <div className="rounded-2xl bg-muted/50 border border-border p-12 text-center">
         {/* Headline */}
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
-          Start saving in <span style={serifItalic}>30 seconds.</span>
+        <h2 className="type-display text-3xl sm:text-4xl mb-4">
+          Start saving in 30 seconds.
         </h2>
 
         {/* Subhead */}

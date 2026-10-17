@@ -3,11 +3,6 @@ import { Button } from '@/components/ui/button'
 import { CopyAddressPill } from './CopyAddressPill'
 import { HeroMockup } from './HeroMockup'
 
-const serifItalic: React.CSSProperties = {
-  fontFamily: 'ui-serif, Georgia, "Times New Roman", serif',
-  fontStyle: 'italic',
-}
-
 const heroGradient: React.CSSProperties = {
   background:
     'radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--hero-gradient-rose) / 0.07) 0%, transparent 60%), ' +
@@ -19,14 +14,13 @@ export function LandingHero() {
     <section className="mx-auto max-w-5xl px-4 py-20 text-center" style={heroGradient}>
       {/* Powered-by pill */}
       <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs text-muted-foreground">
-        <span className="h-1.5 w-1.5 rounded-full bg-green-500 inline-block" />
+        <span className="h-1.5 w-1.5 rounded-full bg-success inline-block" />
         Powered by GPT-4o-mini · No extensions needed
       </div>
 
       {/* Headline */}
-      <h1 className="text-5xl font-bold tracking-tight leading-tight sm:text-6xl lg:text-7xl mb-6">
-        Save anything{' '}
-        <span style={serifItalic}>from anywhere.</span>
+      <h1 className="type-display text-5xl leading-tight sm:text-6xl lg:text-7xl mb-6">
+        Save anything from anywhere.
       </h1>
 
       {/* Subheadline */}

@@ -1,8 +1,3 @@
-const serifItalic: React.CSSProperties = {
-  fontFamily: 'ui-serif, Georgia, "Times New Roman", serif',
-  fontStyle: 'italic',
-}
-
 interface Testimonial {
   initials: string
   name: string
@@ -54,15 +49,15 @@ export function Testimonials() {
         </div>
 
         {/* Headline */}
-        <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl mb-14">
-          Built for people who <span style={serifItalic}>actually save things.</span>
+        <h2 className="type-display text-center text-3xl sm:text-4xl mb-14">
+          Built for people who actually save things.
         </h2>
 
         {/* Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {TESTIMONIALS.map((t) => (
             <div key={t.name} className="rounded-xl border border-border bg-background p-6 flex flex-col justify-between">
-              <p className="text-sm text-muted-foreground leading-relaxed mb-6" style={serifItalic}>
+              <p className="text-sm text-foreground leading-relaxed mb-6">
                 &ldquo;{t.quote}&rdquo;
               </p>
               <div className="flex items-center gap-3">

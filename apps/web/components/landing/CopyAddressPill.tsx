@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail } from 'lucide-react'
+import { Mail, Check } from 'lucide-react'
 
 const DROP_ADDRESS = 'drop@dropnote.me'
 
@@ -18,7 +18,7 @@ export function CopyAddressPill() {
   return (
     <button
       onClick={handleCopy}
-      className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-1.5 text-sm text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
+      className="inline-flex min-h-9 items-center gap-2 rounded-full border-stroke border-ink bg-card px-4 py-1.5 text-sm text-foreground shadow-ink-md transition-colors hover:bg-accent hover:text-accent-foreground active:translate-x-px active:translate-y-px active:shadow-ink-sm cursor-pointer"
       title="Click to copy drop address"
     >
       <Mail className="h-3.5 w-3.5" />
@@ -27,7 +27,10 @@ export function CopyAddressPill() {
         <span className="font-mono font-semibold text-foreground">{DROP_ADDRESS}</span>
       </span>
       {copied && (
-        <span className="ml-1 text-xs text-green-600 dark:text-green-400">Copied!</span>
+        <span className="ml-1 inline-flex items-center gap-1 text-xs text-success">
+          <Check className="h-3 w-3" />
+          Copied!
+        </span>
       )}
     </button>
   )
