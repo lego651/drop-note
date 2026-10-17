@@ -6,7 +6,7 @@
  * attemptsMade) is gone; retryable errors now result in status='pending' and
  * the user can re-send to reprocess.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 vi.mock('../../../../lib/ingest/db', () => ({
   setItemProcessing: vi.fn().mockResolvedValue(undefined),
@@ -15,6 +15,7 @@ vi.mock('../../../../lib/ingest/db', () => ({
   setItemPending: vi.fn().mockResolvedValue(undefined),
   upsertTags: vi.fn().mockResolvedValue(undefined),
   createAttachmentItem: vi.fn().mockResolvedValue('attach-1'),
+  getExistingTagNames: vi.fn().mockResolvedValue([]),
 }))
 
 vi.mock('../../../../lib/ingest/ai', () => ({
@@ -48,7 +49,7 @@ vi.mock('@drop-note/shared/page-metadata', () => ({
 }))
 
 import { processEmail, resolveEffectiveBodyText } from '../../../../lib/ingest/process-email'
-import { setItemPending, setItemFailed, setItemDone } from '../../../../lib/ingest/db'
+import { setItemPending, setItemFailed, setItemDone, getExistingTagNames } from '../../../../lib/ingest/db'
 import { summarizeEmailBody } from '../../../../lib/ingest/ai'
 import { parseSendGridPayload } from '@drop-note/shared'
 import { fetchPageMetadata } from '@drop-note/shared/page-metadata'
@@ -140,6 +141,56 @@ describe('processEmail — AI error handling', () => {
   })
 })
 
+describe('processEmail — existing tag reuse wiring (DRO-102)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    // getExistingTagNames defaults to `[]` for every other describe block in this
+    // file — restore that since clearAllMocks() doesn't undo mockResolvedValue.
+    vi.mocked(getExistingTagNames).mockResolvedValue([])
+  })
+
+  it('fetches the user\'s existing tags and passes them to summarizeEmailBody for the email body', async () => {
+    vi.mocked(getExistingTagNames).mockResolvedValue(['travel', 'recipe'])
+    vi.mocked(summarizeEmailBody).mockResolvedValue({
+      summary: 'A summary',
+      tags: [],
+      error: null,
+      retryable: false,
+    })
+
+    await processEmail(makeParams())
+
+    expect(getExistingTagNames).toHaveBeenCalledWith('user-1')
+    expect(summarizeEmailBody).toHaveBeenCalledWith('Test subject', 'Hello world', ['travel', 'recipe'])
+  })
+
+  it('passes the same existing tags to summarizeEmailBody for a PDF attachment', async () => {
+    const { parseSendGridPayload } = await import('@drop-note/shared')
+    const { extractPdfText } = await import('../../../../lib/ingest/pdf')
+
+    vi.mocked(getExistingTagNames).mockResolvedValue(['travel', 'recipe'])
+    vi.mocked(parseSendGridPayload).mockReturnValue({
+      from: 'test@example.com',
+      subject: 'Test subject',
+      bodyText: 'Hello world',
+      bodyHtml: '',
+      attachments: [{ filename: 'notes.pdf', mimeType: 'application/pdf', data: 'base64data', size: 1024 }],
+    })
+    vi.mocked(extractPdfText).mockResolvedValue({ text: 'PDF body text', error: null })
+    vi.mocked(summarizeEmailBody)
+      .mockResolvedValueOnce({ summary: 'Body summary', tags: [], error: null, retryable: false })
+      .mockResolvedValueOnce({ summary: 'PDF summary', tags: [], error: null, retryable: false })
+
+    await processEmail(makeParams())
+
+    expect(summarizeEmailBody).toHaveBeenNthCalledWith(1, 'Test subject', 'Hello world', ['travel', 'recipe'])
+    expect(summarizeEmailBody).toHaveBeenNthCalledWith(2, 'notes.pdf', 'PDF body text', ['travel', 'recipe'])
+  })
+})
+
 describe('resolveEffectiveBodyText', () => {
   it('returns bodyText unchanged when bodyHtml is empty', () => {
     expect(resolveEffectiveBodyText('Hello world', '')).toBe('Hello world')
@@ -190,6 +241,7 @@ describe('processEmail — HTML-only newsletter fallback', () => {
     expect(summarizeEmailBody).toHaveBeenCalledWith(
       'Weekly digest',
       expect.stringContaining('https://example.com/article'),
+      [],
     )
     expect(setItemDone).toHaveBeenCalledWith(
       'item-1',
@@ -231,6 +283,7 @@ describe('processEmail — generic URL metadata fetch', () => {
     expect(summarizeEmailBody).toHaveBeenCalledWith(
       'Some programming thread',
       'Some programming thread\n\nA lively discussion about programming.',
+      [],
     )
     expect(result.status).toBe('done')
     expect(setItemDone).toHaveBeenCalledWith(
@@ -251,6 +304,7 @@ describe('processEmail — generic URL metadata fetch', () => {
     expect(summarizeEmailBody).toHaveBeenCalledWith(
       'Check this out',
       'https://www.reddit.com/r/programming/comments/1a2b3c4/some_thread/',
+      [],
     )
     expect(result.status).toBe('done')
     expect(setItemFailed).not.toHaveBeenCalled()

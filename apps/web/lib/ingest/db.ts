@@ -7,6 +7,25 @@ import { normalizeTags } from '@drop-note/shared'
 import type { SourceType } from '@drop-note/shared'
 import { log } from '../observability/logger'
 
+// Bounds how many of the user's existing tag names we send to the AI as reuse
+// context — cheap to fetch, but an unbounded list would bloat every prompt.
+const EXISTING_TAGS_LIMIT = 150
+
+export async function getExistingTagNames(userId: string): Promise<string[]> {
+  const { data, error } = await supabaseAdmin
+    .from('tags')
+    .select('name')
+    .eq('user_id', userId)
+    .order('name')
+    .limit(EXISTING_TAGS_LIMIT)
+
+  if (error || !data) {
+    log.warn('ingest.existing_tags_fetch_failed', { userId }, error ?? undefined)
+    return []
+  }
+  return data.map((row) => row.name)
+}
+
 export async function setItemProcessing(itemId: string): Promise<void> {
   const { data, error } = await supabaseAdmin
     .from('items')

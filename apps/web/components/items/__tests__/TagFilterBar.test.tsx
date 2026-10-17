@@ -73,3 +73,34 @@ describe('TagFilterBar', () => {
     expect(mockPush).toHaveBeenCalledWith('/items')
   })
 })
+
+describe('TagFilterBar — top-N + show all', () => {
+  const manyTags = Array.from({ length: 12 }, (_, i) => ({
+    id: `tag-${i}`,
+    name: `tag${i}`,
+    count: 12 - i,
+  }))
+
+  it('shows only the first 8 tags and a "Show all" toggle when there are more than 8', () => {
+    render(<TagFilterBar tags={manyTags} totalCount={100} />)
+    expect(screen.getByText('tag0')).toBeInTheDocument()
+    expect(screen.getByText('tag7')).toBeInTheDocument()
+    expect(screen.queryByText('tag8')).not.toBeInTheDocument()
+    expect(screen.getByText('Show all (12)')).toBeInTheDocument()
+  })
+
+  it('reveals the rest of the tags when "Show all" is clicked, then can collapse again', () => {
+    render(<TagFilterBar tags={manyTags} totalCount={100} />)
+    fireEvent.click(screen.getByText('Show all (12)'))
+    expect(screen.getByText('tag11')).toBeInTheDocument()
+    expect(screen.getByText('Show less')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Show less'))
+    expect(screen.queryByText('tag11')).not.toBeInTheDocument()
+  })
+
+  it('does not render a toggle when there are 8 or fewer tags', () => {
+    render(<TagFilterBar tags={tags} totalCount={247} />)
+    expect(screen.queryByText(/Show all/)).not.toBeInTheDocument()
+  })
+})

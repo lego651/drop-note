@@ -45,6 +45,35 @@ export function groupItemsByDate(items: ItemSummary[]): ItemGroup[] {
   return Array.from(groups.values()).sort((a, b) => b.date.getTime() - a.date.getTime())
 }
 
+/** Tag ids linked to the given items, before those items (and their item_tags rows) are hard-deleted. */
+async function getTagIdsForItems(
+  itemIds: string[],
+  db: Pick<SupabaseClient, 'from'>,
+): Promise<string[]> {
+  if (itemIds.length === 0) return []
+  const { data, error } = await db.from('item_tags').select('tag_id').in('item_id', itemIds)
+  if (error || !data) return []
+  return [...new Set((data as { tag_id: string }[]).map((row) => row.tag_id))]
+}
+
+/**
+ * Deletes any of the given tags that no longer have a live item_tags link — i.e. the
+ * item_id side was cascade-deleted by a hard item delete and nothing else references it.
+ * Hard-delete is the only path that can orphan a tag: soft-delete (trash) leaves
+ * item_tags rows intact.
+ */
+async function cleanupOrphanTags(tagIds: string[], db: Pick<SupabaseClient, 'from'>): Promise<void> {
+  if (tagIds.length === 0) return
+  const { data: stillLinked, error } = await db.from('item_tags').select('tag_id').in('tag_id', tagIds)
+  if (error) return
+
+  const linkedIds = new Set((stillLinked as { tag_id: string }[] | null ?? []).map((row) => row.tag_id))
+  const orphanIds = tagIds.filter((tagId) => !linkedIds.has(tagId))
+  if (orphanIds.length === 0) return
+
+  await db.from('tags').delete().in('id', orphanIds)
+}
+
 export async function deleteItem(
   id: string,
   userId: string,
@@ -55,6 +84,7 @@ export async function deleteItem(
 
   if (tier === 'free') {
     // Free tier: always hard-delete
+    const tagIds = await getTagIdsForItems([id], db)
     const { data, error } = await db
       .from('items')
       .delete()
@@ -63,7 +93,9 @@ export async function deleteItem(
       .select('id')
       .maybeSingle()
     if (error) return { ok: false, affected: false }
-    return { ok: true, affected: data !== null }
+    const affected = data !== null
+    if (affected) await cleanupOrphanTags(tagIds, db)
+    return { ok: true, affected }
   } else {
     // Paid tier: check if item is already in trash — if so, hard-delete permanently
     const { data: existing } = await db
@@ -75,6 +107,7 @@ export async function deleteItem(
 
     if (existing?.deleted_at) {
       // Already in trash — permanent delete
+      const tagIds = await getTagIdsForItems([id], db)
       const { data, error } = await db
         .from('items')
         .delete()
@@ -83,7 +116,9 @@ export async function deleteItem(
         .select('id')
         .maybeSingle()
       if (error) return { ok: false, affected: false }
-      return { ok: true, affected: data !== null }
+      const affected = data !== null
+      if (affected) await cleanupOrphanTags(tagIds, db)
+      return { ok: true, affected }
     } else {
       // Soft-delete (move to trash)
       const { data, error } = await db
@@ -109,6 +144,7 @@ export async function deleteItems(
 
   if (tier === 'free') {
     // Free tier: single hard-delete query
+    const tagIds = await getTagIdsForItems(ids, db)
     const { data, error } = await db
       .from('items')
       .delete()
@@ -116,6 +152,7 @@ export async function deleteItems(
       .eq('user_id', userId)
       .select('id')
     if (error) return { deleted: 0 }
+    await cleanupOrphanTags(tagIds, db)
     return { deleted: data?.length ?? 0 }
   } else {
     // Paid tier: split into already-trashed (hard-delete) vs not-yet-trashed (soft-delete)
@@ -132,6 +169,7 @@ export async function deleteItems(
     let deleted = 0
 
     if (trashed.length > 0) {
+      const tagIds = await getTagIdsForItems(trashed, db)
       const { data } = await db
         .from('items')
         .delete()
@@ -139,6 +177,7 @@ export async function deleteItems(
         .eq('user_id', userId)
         .select('id')
       deleted += data?.length ?? 0
+      await cleanupOrphanTags(tagIds, db)
     }
 
     if (notTrashed.length > 0) {

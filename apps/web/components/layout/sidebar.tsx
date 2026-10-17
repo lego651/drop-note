@@ -56,6 +56,10 @@ const ROW_ACTIVE = 'border-ink bg-accent font-semibold text-accent-foreground sh
 const COUNT =
   'shrink-0 rounded-full border border-border bg-card px-1.5 font-mono text-[11px] tabular-nums text-muted-foreground'
 
+// Tags arrive ordered by item_count desc (get_tags_with_counts RPC) — the first N are
+// already the most-used ones, so capping here doubles as "top tags" without re-sorting.
+const TAGS_SHOWN_BY_DEFAULT = 8
+
 // Inner component that uses useSearchParams (requires Suspense boundary)
 export function SidebarNav({
   tags = [],
@@ -67,6 +71,7 @@ export function SidebarNav({
 }: SidebarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const [showAllTags, setShowAllTags] = useState(false)
 
   const activeTag = searchParams.get('tag')
   const activeSort = searchParams.get('sort')
@@ -128,7 +133,7 @@ export function SidebarNav({
         {tags.length > 0 && (
           <div className="space-y-0.5">
             {!collapsed && <SectionLabel>Tags</SectionLabel>}
-            {tags.map((tag) => {
+            {(showAllTags ? tags : tags.slice(0, TAGS_SHOWN_BY_DEFAULT)).map((tag) => {
               const active = activeTag === tag.id
               return (
                 <Link
@@ -156,6 +161,17 @@ export function SidebarNav({
                 </Link>
               )
             })}
+            {!collapsed && tags.length > TAGS_SHOWN_BY_DEFAULT && (
+              <button
+                type="button"
+                onClick={() => setShowAllTags((prev) => !prev)}
+                className={cn(ROW_BASE, ROW_INACTIVE, 'w-full py-1.5 text-muted-foreground')}
+              >
+                <span className="flex-1 truncate">
+                  {showAllTags ? 'Show less' : `Show all (${tags.length})`}
+                </span>
+              </button>
+            )}
           </div>
         )}
       </nav>

@@ -19,6 +19,13 @@ function getAIProvider(): AIProvider {
 const MAX_INPUT_CHARS = 50_000
 const IMAGE_MAX_BASE64_SIZE = 5 * 1024 * 1024
 
+// Today's prompt asks for 3-5 tags and the model defaults to the top of that
+// range (avg 4.24/item, 33/45 items hit exactly 5 on Jason's account) — that's
+// the single biggest driver of tag sprawl. Capping hard at 3, enforced here
+// regardless of what the model actually returns, bounds growth even if a
+// provider ignores the prompt's count.
+export const MAX_TAGS_PER_ITEM = 3
+
 export interface SummarizeResult {
   summary: string
   tags: string[]
@@ -41,7 +48,7 @@ export async function summarizeEmailBody(
       .map((t) => t.trim().toLowerCase())
       .filter(Boolean)
 
-    const deduped = [...new Set(tags)].slice(0, 10)
+    const deduped = [...new Set(tags)].slice(0, MAX_TAGS_PER_ITEM)
 
     return { summary: result.summary ?? '', tags: deduped, error: null, retryable: false }
   } catch (err) {
