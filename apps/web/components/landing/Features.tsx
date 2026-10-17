@@ -1,11 +1,6 @@
 import { PenLine, Tag, Search, Calendar, Upload, CreditCard } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-const serifItalic: React.CSSProperties = {
-  fontFamily: 'ui-serif, Georgia, "Times New Roman", serif',
-  fontStyle: 'italic',
-}
-
 interface Feature {
   icon: LucideIcon
   title: string
@@ -68,8 +63,8 @@ export function Features() {
       </span>
 
       {/* Headline */}
-      <h2 className="text-3xl font-bold tracking-tight leading-tight sm:text-4xl mb-4">
-        Everything your <span style={serifItalic}>read-later app</span> should have been.
+      <h2 className="type-display text-3xl leading-tight sm:text-4xl mb-4">
+        Everything your read-later app should have been.
       </h2>
 
       {/* Subhead */}

@@ -58,17 +58,12 @@ const SIDEBAR_TAGS = [
 export function HeroMockup() {
   return (
     <div
-      className="mx-auto mt-12 max-w-3xl rounded-xl border border-border bg-card shadow-2xl overflow-hidden"
+      className="stripe-top mx-auto mt-12 max-w-3xl rounded-xl border-stroke border-ink bg-card shadow-ink-lg overflow-hidden"
+      style={{ '--stripe-h': '5px' } as React.CSSProperties}
       aria-hidden="true"
     >
       {/* Title bar */}
       <div className="flex items-center gap-4 px-4 py-3 bg-muted/50 border-b border-border">
-        {/* Traffic lights */}
-        <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded-full bg-red-400" />
-          <div className="h-3 w-3 rounded-full bg-yellow-400" />
-          <div className="h-3 w-3 rounded-full bg-green-400" />
-        </div>
         {/* Fake address bar */}
         <div className="flex-1 rounded-md bg-background/80 border border-border px-3 py-1 text-center text-xs text-muted-foreground font-mono">
           dropnote.me/items
