@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { NativeSelect } from '@/components/ui/native-select'
 
 const TIERS = ['free', 'pro', 'power'] as const
 
@@ -33,18 +34,18 @@ export function UserTierSelect({ userId, currentTier }: UserTierSelectProps) {
   }
 
   return (
-    <div className="flex items-center gap-1">
-      <select
+    <div className="flex items-center gap-2">
+      <NativeSelect
         value={tier}
         onChange={handleChange}
         disabled={loading}
-        className="rounded border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+        className="h-8 px-2 text-xs"
       >
         {TIERS.map((t) => (
           <option key={t} value={t}>{t}</option>
         ))}
-      </select>
-      {error && <span className="text-xs text-destructive">{error}</span>}
+      </NativeSelect>
+      {error && <span className="text-xs text-destructive-text">{error}</span>}
     </div>
   )
 }

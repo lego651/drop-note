@@ -118,12 +118,14 @@ export function InviteCodesClient({ initialCodes, initialMode }: InviteCodesClie
                 </td>
                 <td className="px-4 py-2">
                   {!c.used_by && (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive-text"
                       onClick={() => handleRevoke(c.id)}
-                      className="text-xs text-destructive hover:underline"
                     >
                       Revoke
-                    </button>
+                    </Button>
                   )}
                 </td>
               </tr>
