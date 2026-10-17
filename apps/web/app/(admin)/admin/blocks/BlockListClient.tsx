@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { NativeSelect } from '@/components/ui/native-select'
 
 interface BlockEntry {
   id: string
@@ -62,30 +64,30 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
       <form onSubmit={handleAdd} className="flex items-end gap-2 flex-wrap">
         <div className="flex flex-col gap-1">
           <label className="text-xs text-muted-foreground">Type</label>
-          <select
+          <NativeSelect
             value={type}
             onChange={(e) => setType(e.target.value as 'email' | 'ip')}
-            className="rounded border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            className="h-9 text-sm"
           >
             <option value="email">Email</option>
             <option value="ip">IP</option>
-          </select>
+          </NativeSelect>
         </div>
         <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
           <label className="text-xs text-muted-foreground">Value</label>
-          <input
+          <Input
             type="text"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={type === 'email' ? 'spam@example.com' : '1.2.3.4'}
             required
-            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            className="h-9 text-sm"
           />
         </div>
         <Button type="submit" size="sm" disabled={adding}>
           {adding ? 'Adding\u2026' : 'Add block'}
         </Button>
-        {addError && <p className="w-full text-xs text-destructive">{addError}</p>}
+        {addError && <p className="w-full text-xs text-destructive-text">{addError}</p>}
       </form>
 
       {/* Table */}
@@ -112,12 +114,14 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
                   {b.created_by ? 'Admin' : 'Auto-blocked'}
                 </td>
                 <td className="px-4 py-2">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive-text"
                     onClick={() => handleRemove(b.id)}
-                    className="text-xs text-destructive hover:underline"
                   >
                     Remove
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}

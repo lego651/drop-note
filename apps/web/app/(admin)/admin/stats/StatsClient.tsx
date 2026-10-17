@@ -60,7 +60,7 @@ export function StatsClient() {
       </div>
 
       {error && (
-        <p className="text-sm text-destructive">{error}</p>
+        <p className="text-sm text-destructive-text">{error}</p>
       )}
 
       {stats && (
