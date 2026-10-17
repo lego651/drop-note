@@ -37,8 +37,8 @@ export function StatusLogin() {
   }
 
   return (
-    <main className="min-h-screen bg-canvas flex items-center justify-center px-4">
-      <form onSubmit={submit} className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-sm space-y-4">
+    <main className="min-h-screen bg-canvas bg-dot-grid flex items-center justify-center px-4">
+      <form onSubmit={submit} className="w-full max-w-sm rounded-xl border-stroke border-ink bg-card p-6 shadow-ink-lg space-y-4">
         <div className="flex items-center gap-2">
           <Lock className="size-5 text-muted-foreground" aria-hidden />
           <h1 className="text-lg font-semibold">drop-note status</h1>

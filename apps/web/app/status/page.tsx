@@ -7,6 +7,8 @@ import { buildUptime, isStale, overallState, type BarLevel, type DailyCounts, ty
 import { STATUS_COOKIE, hasStatusSession } from '@/lib/health/access'
 import { StatusActions, StatusLogin } from './StatusClient'
 import { StatusNav } from './StatusNav'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Status — drop-note', robots: { index: false, follow: false } }
@@ -20,17 +22,17 @@ const STATUS_COLOR: Record<HealthStatus, string> = {
   down: 'hsl(var(--color-status-failed))',
 }
 const BAR_COLOR: Record<BarLevel, string> = {
-  ok: 'hsl(var(--color-status-done) / 0.7)',
+  ok: 'hsl(var(--color-status-done))',
   minor: 'hsl(var(--color-status-processing))',
   major: 'hsl(var(--color-status-failed))',
   nodata: 'hsl(var(--muted-foreground) / 0.25)',
 }
-const BANNER: Record<OverallState, { text: string; color: string }> = {
-  operational: { text: 'All Systems Operational', color: 'hsl(var(--color-status-done))' },
-  degraded: { text: 'Degraded Performance', color: 'hsl(var(--color-status-processing))' },
-  outage: { text: 'Partial Outage', color: 'hsl(var(--color-status-failed))' },
-  nodata: { text: 'Waiting for the first health check', color: 'hsl(var(--muted-foreground))' },
-  stale: { text: 'Health checks have stopped — results are out of date', color: 'hsl(var(--color-status-processing))' },
+const BANNER: Record<OverallState, { text: string; colorVar: string; Icon: typeof CheckCircle2 }> = {
+  operational: { text: 'All Systems Operational', colorVar: '--color-status-done', Icon: CheckCircle2 },
+  degraded: { text: 'Degraded Performance', colorVar: '--color-status-processing', Icon: AlertTriangle },
+  outage: { text: 'Partial Outage', colorVar: '--color-status-failed', Icon: XCircle },
+  nodata: { text: 'Waiting for the first health check', colorVar: '--muted-foreground', Icon: CircleDashed },
+  stale: { text: 'Health checks have stopped — results are out of date', colorVar: '--color-status-processing', Icon: AlertTriangle },
 }
 const STATUS_LABEL: Record<HealthStatus, string> = { up: 'Normal', degraded: 'Degraded', down: 'Down' }
 
@@ -108,8 +110,14 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
           </div>
         </header>
 
-        <div className="flex items-center gap-3 rounded-lg px-5 py-4 text-lg font-semibold shadow-sm"
-          style={{ background: banner.color, color: 'hsl(var(--primary-foreground))' }}>
+        <div
+          className="flex items-center gap-3 rounded-xl border-stroke bg-card px-5 py-4 text-lg font-semibold text-foreground shadow-ink-lg"
+          style={{
+            borderColor: `hsl(var(${banner.colorVar}))`,
+            backgroundImage: `linear-gradient(hsl(var(${banner.colorVar}) / 0.12), hsl(var(${banner.colorVar}) / 0.12))`,
+          }}
+        >
+          <banner.Icon className="size-6 shrink-0" style={{ color: `hsl(var(${banner.colorVar}))` }} aria-hidden />
           {banner.text}
         </div>
 
@@ -159,7 +167,7 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
                     <span>Today</span>
                   </div>
                   <div className="mt-2 text-sm">
-                    <span style={{ color: status ? STATUS_COLOR[status] : undefined }}>
+                    <span className="text-foreground">
                       {status ? STATUS_LABEL[status] : 'No data'}
                     </span>
                     {latest && (
@@ -170,7 +178,7 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
                     <p className="mt-1 text-xs text-muted-foreground">
                       Real users (24h): {requests} requests
                       {serverErrors > 0 ? (
-                        <span style={{ color: STATUS_COLOR.down }}> · {serverErrors} server error{serverErrors === 1 ? '' : 's'}</span>
+                        <span className="text-foreground"> · {serverErrors} server error{serverErrors === 1 ? '' : 's'}</span>
                       ) : ' · no server errors'}
                     </p>
                   )}
@@ -184,16 +192,16 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
           <h2 className="text-xl font-semibold">Find a request</h2>
           <form method="get" className="flex flex-wrap gap-2">
             <label htmlFor="cid" className="sr-only">Correlation ID</label>
-            <input
+            <Input
               id="cid"
               name="cid"
               defaultValue={cid ?? ''}
               placeholder="Paste an x-correlation-id"
-              className="h-9 min-w-0 flex-1 rounded-md border border-input bg-card px-3 font-mono text-sm"
+              className="min-w-0 flex-1 font-mono text-sm"
             />
-            <button type="submit" className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm text-primary-foreground">
-              <Search className="size-4" aria-hidden /> Search logs
-            </button>
+            <Button type="submit">
+              <Search aria-hidden /> Search logs
+            </Button>
           </form>
           {cid && (
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
@@ -268,7 +276,7 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
                         <td className="p-2 font-mono text-xs">{s.route}</td>
                         <td className="p-2">{s.requests}</td>
                         <td className="p-2">{s.client_errors}</td>
-                        <td className="p-2" style={{ color: Number(s.server_errors) > 0 ? STATUS_COLOR.down : undefined }}>{s.server_errors}</td>
+                        <td className="p-2 text-foreground">{s.server_errors}</td>
                         <td className="p-2">{s.p95_ms}ms</td>
                       </tr>
                     ))}
