@@ -1,29 +1,29 @@
 # Airmail: drop-note's design system
 
-> **Status:** adopted by the board 2026-10-16 (light). The dark variant is being chosen (see § 12).
-> Not yet applied to app code: it ships in one PR together with the dark theme. Until then the app
-> still renders the old shadcn look, and this doc is the **target**.
+> **Status:** adopted by the board 2026-10-16. Light = Airmail (DRO-69), dark = **Night Mail** (DRO-70, § 12).
+> Applied to app code by the theme PR (§ 13). If something in the app disagrees with this doc, the doc is the
+> **target**.
 >
 > **How this relates to `docs/STYLE_GUIDE.md`:** STYLE_GUIDE is the *code* rulebook (tokens only,
 > helpers, loading states, checklist). AIRMAIL is the *visual* rulebook: what things look like and why.
 > Both apply to every UI change. When they disagree, this doc wins on looks and STYLE_GUIDE wins on code.
 >
-> Reference: `docs/design/airmail/light-inbox-mockup.html` (open in a browser),
-> `light-inbox-1440.png`, `light-inbox-390.png`, `tokens-light.css`.
+> Reference: `docs/design/airmail/inbox-mockup.html` (open in a browser; add `#dark` to the URL for
+> Night Mail), `light-inbox-*.png`, `dark-inbox-*.png`, `tokens-light.css`, `tokens-dark.css`.
 
 ---
 
 ## 1. The idea in one sentence
 
 **drop-note is something you mail things to, so the UI looks like a well-run mailroom.** It uses cobalt
-ink on white paper, confident outlines, hard printed shadows, and a few postal motifs (airmail stripe,
+and navy ink on white paper (cream ink on navy paper at night), confident outlines, hard printed shadows, and a few postal motifs (airmail stripe,
 postage stamp, postmark) used sparingly.
 
 ## 2. Principles (use these to decide anything this doc doesn't cover)
 
 1. **Ink defines structure.** Containers and controls a user can act on get a 1.5px ink outline.
    Grey hairlines are only for dividers *inside* a container.
-2. **Shadows are printed, never blurred.** Elevation is a hard offset shadow in ink color. No soft or
+2. **Shadows are printed, never blurred.** Elevation is a hard offset shadow in `--shadow-color`. No soft or
    blurred `box-shadow` anywhere.
 3. **Postal motifs are seasoning.** At most **one** "stamp moment" per screen (the stat row on the inbox).
    Stripes appear only in chrome (sidebar top, mobile top bar) and as small accents. Never fill an area
@@ -38,8 +38,9 @@ postage stamp, postmark) used sparingly.
 
 ## 3. Tokens
 
-All values are HSL channels in `apps/web/app/globals.css`, same as today. The complete light block is
-`docs/design/airmail/tokens-light.css`. Paste it over `:root`.
+All values are HSL channels in `apps/web/app/globals.css`. The complete blocks are
+`docs/design/airmail/tokens-light.css` (`:root`) and `tokens-dark.css` (`.dark`). Both use the same names
+in the same order. A token that exists in one block must exist in the other.
 
 ### 3.1 Core colors (light)
 
@@ -47,8 +48,8 @@ All values are HSL channels in `apps/web/app/globals.css`, same as today. The co
 |---|---|---|
 | `--background` | `#FFFFFF` | Sidebar, top bar, popovers |
 | `--content-bg` | `#EEF1F9` | Page canvas (with the dot grid, § 6.4) |
-| `--card` | `#FFFFFF` | Cards, inputs, chips |
-| `--foreground` | `#0F1938` | Text **and** the default ink (outlines, shadows) |
+| `--card` | `#FFFFFF` | Cards, inputs, chips, secondary buttons |
+| `--foreground` | `#0F1938` | Text only. In light it has the same value as `--ink`, but **never** use it for outlines or shadows (§ 3.2) |
 | `--muted-foreground` | `#485270` | Secondary text, meta |
 | `--border` | `#CDD3E4` | Hairline dividers inside containers only |
 | `--input` | `#0F1938` | Input/control outlines (= ink) |
@@ -65,13 +66,19 @@ green `#176D45`, yellow `#955604`, orange `#BB3B0C`, teal `#0C6A79`, indigo `#3F
 
 | Token | Light value | Why |
 |---|---|---|
-| `--ink` | `226 58% 14%` (= foreground) | Outline and shadow color, kept **separate from text** so dark mode can choose a different ink |
+| `--ink` | `226 58% 14%` | Outline color. Equal to `--foreground` **only in light**; dark uses cream |
 | `--stroke` | `1.5px` | The one outline width |
-| `--shadow-sm` | `2px 2px 0 hsl(var(--ink))` | Active nav item, active chip |
-| `--shadow-md` | `3px 3px 0 hsl(var(--ink))` | Controls: search, buttons, sort, segmented control |
-| `--shadow-lg` | `4px 4px 0 hsl(var(--ink))` | Cards |
-| `--shadow-hover` | `6px 6px 0 hsl(var(--ink))` | Card hover (paired with a −2px lift) |
-| `--stripe` | the airmail gradient (§ 6.1) | One definition, reused everywhere |
+| `--shadow-color` | `226 58% 14%` | Hard-shadow color. Equal to `--ink` in both themes today, but kept separate so a theme can split them |
+| `--shadow-sm` | `2px 2px 0 hsl(var(--shadow-color))` | Active nav item, active chip |
+| `--shadow-md` | `3px 3px 0 hsl(var(--shadow-color))` | Controls: search, buttons, sort, segmented control |
+| `--shadow-lg` | `4px 4px 0 hsl(var(--shadow-color))` | Cards, dialogs |
+| `--shadow-hover` | `6px 6px 0 hsl(var(--shadow-color))` | Card hover (paired with a −2px lift) |
+| `--shadow-stamp` | `drop-shadow(3px 3px 0 hsl(var(--shadow-color)))` | Stat stamps. A `filter`, because `box-shadow` ignores the perforated mask |
+| `--stripe` | the big airmail gradient (§ 6.1) | Sidebar top edge, mobile top bar |
+| `--stripe-mini` | the small airmail gradient (§ 6.1) | 30×7px mark on card date rows |
+| `--stripe-gap` | `0 0% 100%` | The light bands between red and cobalt. Dark uses cream, so the stripe never reads as hazard tape |
+| `--badge-ring` | `0 0% 100%` | 2.5px ring around the play badge |
+| `--grid-alpha` | `.10` | Dot-grid opacity on the canvas (dark: `.09`) |
 | `--font-sans` / `--font-display` / `--font-mono` | see § 4 | Wired via `next/font/google` |
 
 Wire the shadows as Tailwind `boxShadow: { 'ink-sm': 'var(--shadow-sm)', … }` and use `shadow-ink-lg`
@@ -117,13 +124,13 @@ in components. **Never type an offset shadow by hand.**
 | Nav item | 8px | transparent → ink when active | active: `--shadow-sm` |
 | Filter chip | pill | `--stroke` ink | active: `--shadow-sm` |
 | Tag pill (in cards) | pill | 1px of the tag color at 45% | none |
-| Stat stamp | 0 (perforated mask) | inner frame in its accent | `drop-shadow(3px 3px 0 ink)` |
+| Stat stamp | 0 (perforated mask) | inner frame in its accent | `--shadow-stamp` |
 | Dialog / popover | 12px | `--stroke` ink | `--shadow-lg` |
 | Media (thumbnail) | inherits card | bottom edge `--stroke` ink | none |
 
 **Rules:**
 - Exactly one outline width (`--stroke`). Hairlines (`1px --border`) only *inside* a container.
-- Shadows only go **down-right**, only in ink, only from the 4 tokens.
+- Shadows only go **down-right**, only in `--shadow-color`, only from the 5 `--shadow-*` tokens.
 - No gradients except `--stripe`, and the tag/accent tints (`hsl(var(--x) / .08)`).
 - Pressed state: the shadow shrinks one step and the element moves 1px down-right ("pressed into paper").
 
@@ -133,10 +140,10 @@ in components. **Never type an offset shadow by hand.**
 
 | Motif | Looks like | Allowed in | Never in |
 |---|---|---|---|
-| **6.1 Airmail stripe** | `repeating-linear-gradient(-45deg, red 0 12px, white 12px 18px, cobalt 18px 30px, white 30px 36px)` | Top edge of sidebar (8px) and mobile top bar (5px). Mini 30×7px mark at the right end of a card's date row. | Buttons, backgrounds, text, more than 1 large stripe per screen |
+| **6.1 Airmail stripe** | `--stripe`: `repeating-linear-gradient(-45deg, pin 0 12px, stripe-gap 12px 18px, primary 18px 30px, stripe-gap 30px 36px)`. `--stripe-mini` is the same at 4/6/10/12px | Top edge of sidebar (8px) and mobile top bar (5px). Mini 30×7px mark at the right end of a card's date row. | Buttons, backgrounds, text, more than 1 large stripe per screen |
 | **6.2 Postage stamp** | Perforated edge (CSS mask), inner accent frame, 7% accent tint, optional ±1° tilt on alternate stamps | Stat cards (inbox), "milestone" moments (e.g. first item saved) | Lists, forms, anything clickable that isn't a summary |
 | **6.3 Postmark** | Dashed 1.5px outline, mono uppercase text | "Updated just now" pill, stat icon circles, the dashed divider above card dates | Primary actions (dashed = passive/informational) |
-| **6.4 Dot grid** | `radial-gradient(ink/10% 1px)` every 20px | Page canvas only | Cards, sidebar, dialogs |
+| **6.4 Dot grid** | `radial-gradient(hsl(var(--ink) / var(--grid-alpha)) 1px, …)` every 20px | Page canvas only | Cards, sidebar, dialogs |
 
 Budget per screen: **1 stamp group, 1 big stripe, any number of mini marks and postmarks.**
 
@@ -144,21 +151,22 @@ Budget per screen: **1 stamp group, 1 big stripe, any number of mini marks and p
 
 ## 7. Components
 
-**Card (item).** White, ink outline, 12px, `shadow-ink-lg`. Thumbnail on top with an ink bottom edge.
+**Card (item).** `--card` fill, ink outline, 12px, `shadow-ink-lg`. Thumbnail on top with an ink bottom edge.
 Body padding 16px, gap 8px: title (2 lines) → mono meta (source icon + domain · read time) → summary
 (2 lines, muted) → tag pills (one row, fades out on the right) → dashed postmark divider → mono uppercase
 date (`OCT 16, 2026`) with the mini stripe on the right.
 
-**Play badge.** 46px cobalt circle, white triangle, 2.5px white ring. Centered on the thumbnail.
+**Play badge.** 46px `--primary` circle, triangle in `--primary-foreground`, 2.5px `--badge-ring` ring.
+Centered on the thumbnail. Never dim the thumbnail behind it.
 
 **Buttons.**
-- Primary: cobalt fill, white text, ink outline, `shadow-ink-md`.
-- Secondary: white fill, ink text and outline, `shadow-ink-md`.
+- Primary: `--primary` fill, `--primary-foreground` text, ink outline, `shadow-ink-md`.
+- Secondary: `--card` fill, `--foreground` text, ink outline, `shadow-ink-md`.
 - Ghost (inline/tertiary): no outline or shadow. Accent background on hover.
 - Destructive: `--destructive` fill. Only in confirm dialogs.
 - Height 44px (36px compact). Icon-only buttons are square, with an `aria-label`.
 
-**Inputs / search.** 44px, white, ink outline, 10px radius, `shadow-ink-md`. Placeholder muted.
+**Inputs / search.** 44px, `--card` fill, ink outline, 10px radius, `shadow-ink-md`. Placeholder muted.
 Focus: 2px cobalt ring, offset 2px (outline stays ink).
 
 **Filter chips (above the grid).** Pill, ink outline, 600 weight, `#` in the tag's color, mono count.
@@ -167,7 +175,7 @@ Active = cobalt fill + `shadow-ink-sm`. The row scrolls horizontally on mobile.
 **Tag pills (inside cards).** Pill, 11px/600, tag color text on an 8% tint with a 1px 45% outline.
 Colors always come from `colorForTag()`, never chosen by hand.
 
-**Sidebar.** White, ink right edge, airmail stripe on top, wordmark in the display cut. Group labels are
+**Sidebar.** `--background` fill, ink right edge, airmail stripe on top, wordmark in the display cut. Group labels are
 mono uppercase. Nav item active = ink outline + `shadow-ink-sm` + mono count pill. Tag links show `#` in
 the tag color.
 
@@ -175,8 +183,8 @@ the tag color.
 processing = yellow, top tag = red. Mono uppercase label, big display number, mono sub-line, dashed
 postmark icon circle.
 
-**Segmented control (view toggle).** Ink outline, `shadow-ink-md`. Selected segment is cobalt with
-white icons.
+**Segmented control (view toggle).** Ink outline, `shadow-ink-md`. Selected segment is `--primary` with
+`--primary-foreground` icons.
 
 **Empty / loading states.** Follow STYLE_GUIDE § 2 for behavior. Visually, skeletons use `--muted`
 blocks with the card's outline and shadow (so layout doesn't jump). Empty states can use **one** postmark
@@ -196,12 +204,15 @@ illustration and one sentence.
 
 - Card hover: lift −2px plus the bigger shadow, 150ms ease-out. Buttons: press-in on `:active`.
 - No entrance animations, no parallax, no animated stripes.
-- Respect `prefers-reduced-motion`: drop the lift and keep the shadow change.
+- Respect `prefers-reduced-motion`: drop the lift and keep the shadow change
+  (`@media (prefers-reduced-motion: reduce) { transform: none; transition: none }`).
 
 ## 10. Accessibility (hard requirements)
 
-- Text contrast ≥ 4.5:1 (≥ 3:1 for ≥ 18px bold and for icons). The light palette passes everywhere.
-  The measured values are in the DRO-69 README.
+- Text contrast ≥ 4.5:1 (≥ 3:1 for ≥ 18px bold and for icons). Both palettes pass everywhere; the measured
+  values are in the DRO-69 (light) and DRO-70 (dark) READMEs.
+- Tag pill text is measured against the 8% tint **composited over the card**, not the bare card. That is
+  the pair that fails first when a tag color changes.
 - Focus is always visible: a 2px `--ring` with offset, never removed.
 - Hit targets ≥ 36px (44px for primary controls on mobile).
 - Never use color as the only signal (status also uses an icon or text).
@@ -212,6 +223,8 @@ illustration and one sentence.
 | ✅ Do | ❌ Don't |
 |---|---|
 | Use `shadow-ink-lg` on cards | Write `box-shadow: 4px 4px 0 #0F1938` by hand |
+| Use `--ink` for outlines, `--shadow-color` for shadows | Use `--foreground` for outlines (it breaks dark mode) |
+| Write `--card` / `--background` | Write "white" or `#fff` in a component |
 | Use one stamp group per screen | Make every panel a stamp |
 | Use mono for dates, counts, domains | Use mono for titles, summaries or buttons |
 | Use the display cut for H1 and big numbers | Set paragraphs wide or uppercase |
@@ -221,13 +234,38 @@ illustration and one sentence.
 
 ## 12. Dark theme
 
-To be chosen from 3 Airmail-dark options (Paperclip issue for the UI Designer). Every dark option keeps
-§ 2–11 and only changes token values. Notably, `--ink` may differ from `--foreground` so outlines and
-shadows stay visible on dark paper. This section is filled in when the board picks.
+**Night Mail** (adopted 2026-10-16, DRO-70): an overnight mail train. Navy envelopes, addressed in cream ink.
+It is light Airmail inverted: "dark ink on light paper" becomes "light ink on dark paper". § 2–11 apply
+unchanged; only token values differ. The complete block is `tokens-dark.css`.
+
+| Role | Token | Hex |
+|---|---|---|
+| Canvas | `--content-bg` | `#0A0E1C` |
+| Sidebar / top bar | `--background` | `#101528` |
+| Card / inputs | `--card` | `#151B30` |
+| Text | `--foreground` | `#F4ECDC` |
+| Muted text | `--muted-foreground` | `#C3BAAC` |
+| Ink (outlines) **and** shadow | `--ink` = `--shadow-color` | `#E3D7BF` |
+| Hairline | `--border` | `#2F3750` |
+| Cobalt | `--primary` / `--primary-foreground` | `#4161F1` / `#FFFFFF` |
+| Airmail red | `--color-pin` | `#F34954` |
+| Stripe gap, badge ring | `--stripe-gap`, `--badge-ring` | cream |
+| Focus ring | `--ring` | `#708AFF` |
+| Destructive | `--destructive` | `#DE212E` |
+
+Tags (blue, purple, pink, green, yellow, orange, teal, indigo): `#80ACFA` `#C9A3F5` `#F490BB` `#6CD09E`
+`#F4BE52` `#F9966C` `#51CDD6` `#A29FF9`.
+
+**Rules specific to dark:**
+- Ink is a little dimmer than the text cream, so outlines are confident without glaring.
+- Don't dim thumbnails. Every thumbnail is closed in by ink on all four sides, so a black video frame never
+  bleeds into the card.
+- If the cream shadows feel loud in the real app, lower **only** `--shadow-color` to about `40 30% 62%`.
+  Don't touch `--ink`.
 
 ## 13. Adoption checklist (the theme PR)
 
-1. Paste `tokens-light.css` (and the chosen dark block) into `globals.css`, plus the new tokens from § 3.2.
+1. Paste `tokens-light.css` (`:root`) and `tokens-dark.css` (`.dark`) into `globals.css`.
 2. Fonts via `next/font/google` (Archivo with the width axis, JetBrains Mono, Noto Sans SC subset),
    exposed as `--font-*` and `tailwind.config.ts` `fontFamily`.
 3. `tailwind.config.ts`: `boxShadow.ink-*`, `borderWidth.stroke`.
@@ -236,3 +274,6 @@ shadows stay visible on dark paper. This section is filled in when the board pic
 5. Restyle components per § 7 (cards, controls, chips, sidebar, stats, play badge, dates).
 6. Update `docs/STYLE_GUIDE.md` § 1–3 values to match, and link this doc.
 7. Screenshots at 1440px and 390px, light and dark, attached to the PR report.
+
+**Every later UI change:** use tokens, never hex; outlines from `--ink`, shadows from `shadow-ink-*`; check the
+change in light **and** dark and with a long Chinese title; new color = a token in both blocks plus a contrast check.
