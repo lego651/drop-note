@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { NextRequest } from 'next/server'
 
 const { getUser, rpc } = vi.hoisted(() => ({ getUser: vi.fn(), rpc: vi.fn() }))
 vi.mock('@/lib/supabase/server', () => ({
@@ -9,8 +10,8 @@ vi.mock('@/lib/counters', () => ({ incrementCounter: vi.fn().mockResolvedValue(1
 
 import { GET } from '../search/route'
 
-function makeRequest(q: string): Request {
-  return new Request(`http://localhost/api/items/search?q=${encodeURIComponent(q)}`)
+function makeRequest(q: string): NextRequest {
+  return new NextRequest(`http://localhost/api/items/search?q=${encodeURIComponent(q)}`)
 }
 
 beforeEach(() => {
