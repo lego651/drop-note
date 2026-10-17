@@ -23,7 +23,15 @@ import {
 } from '@drop-note/shared'
 import type { SourceType } from '@drop-note/shared'
 import { fetchPageMetadata } from '@drop-note/shared/page-metadata'
-import { setItemProcessing, setItemDone, setItemFailed, setItemPending, upsertTags, createAttachmentItem } from './db'
+import {
+  setItemProcessing,
+  setItemDone,
+  setItemFailed,
+  setItemPending,
+  upsertTags,
+  createAttachmentItem,
+  getExistingTagNames,
+} from './db'
 import { uploadAttachment } from './storage'
 import { summarizeEmailBody, describeImage } from './ai'
 import { extractPdfText } from './pdf'
@@ -74,6 +82,10 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
   const aiStart = Date.now()
 
   try {
+    // Fetched once and reused for every AI call in this request so the model sees
+    // the user's existing tags and reuses them instead of inventing near-duplicates.
+    const existingTags = await getExistingTagNames(userId)
+
     const fields: Record<string, string> = {
       from,
       subject,
@@ -128,7 +140,7 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
     }
 
     // Summarize body
-    const bodyResult = await summarizeEmailBody(summarizeSubject, summarizeBody)
+    const bodyResult = await summarizeEmailBody(summarizeSubject, summarizeBody, existingTags)
     const aiMs = Date.now() - aiStart
 
     if (bodyResult.error) {
@@ -190,7 +202,7 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
         } else if (attachment.mimeType === 'application/pdf') {
           const pdfResult = await extractPdfText(attachment.data)
           if (pdfResult.text) {
-            const sumResult = await summarizeEmailBody(attachment.filename, pdfResult.text)
+            const sumResult = await summarizeEmailBody(attachment.filename, pdfResult.text, existingTags)
             aiSummary = sumResult.summary
             aiTags = sumResult.tags
           }

@@ -14,7 +14,10 @@ describe('deleteItem', () => {
     const eqUserId = vi.fn().mockReturnValue({ select: selectAfterDelete })
     const eqId = vi.fn().mockReturnValue({ eq: eqUserId })
     const mockDelete = vi.fn().mockReturnValue({ eq: eqId })
-    const mockFrom = vi.fn().mockReturnValue({ delete: mockDelete })
+    // Hard-delete also fetches/cleans up orphaned tags — no tags linked here, so
+    // cleanup is a no-op after this single query.
+    const itemTagsChain = { select: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ data: [], error: null }) }) }
+    const mockFrom = vi.fn((table: string) => (table === 'item_tags' ? itemTagsChain : { delete: mockDelete }))
     const mockClient = { from: mockFrom } as any
 
     const result = await deleteItem('item-id', 'user-id', 'free', mockClient)
@@ -69,10 +72,15 @@ describe('deleteItem', () => {
     const eqIdDelete = vi.fn().mockReturnValue({ eq: eqUserIdDelete })
     const mockDelete = vi.fn().mockReturnValue({ eq: eqIdDelete })
 
-    let callCount = 0
-    const mockFrom = vi.fn().mockImplementation(() => {
-      callCount++
-      if (callCount === 1) return { select: mockSelect }
+    // Hard-delete also fetches/cleans up orphaned tags — no tags linked here, so
+    // cleanup is a no-op after this single query.
+    const itemTagsChain = { select: vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ data: [], error: null }) }) }
+
+    let itemsCallCount = 0
+    const mockFrom = vi.fn().mockImplementation((table: string) => {
+      if (table === 'item_tags') return itemTagsChain
+      itemsCallCount++
+      if (itemsCallCount === 1) return { select: mockSelect }
       return { delete: mockDelete }
     })
 

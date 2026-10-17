@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import type { CSSProperties } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -12,6 +12,10 @@ const CHIP =
 const CHIP_ACTIVE = 'bg-primary text-primary-foreground shadow-ink-sm'
 const CHIP_INACTIVE = 'bg-card text-foreground hover:bg-accent'
 
+// `tags` arrives ordered by item_count desc — the first N are already the
+// most-used ones, so this cap doubles as "top tags" without re-sorting.
+const TAGS_SHOWN_BY_DEFAULT = 8
+
 interface TagFilterBarProps {
   tags: { id: string; name: string; count: number }[]
   totalCount: number
@@ -22,6 +26,7 @@ export function TagFilterBar({ tags, totalCount, activeTagId }: TagFilterBarProp
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
+  const [showAllTags, setShowAllTags] = useState(false)
 
   function handleTagClick(tagId: string | null) {
     const params = new URLSearchParams(searchParams.toString())
@@ -57,7 +62,7 @@ export function TagFilterBar({ tags, totalCount, activeTagId }: TagFilterBarProp
         All <span className="font-mono text-[11px] font-normal opacity-70">{totalCount}</span>
       </button>
 
-      {tags.map((tag) => {
+      {(showAllTags ? tags : tags.slice(0, TAGS_SHOWN_BY_DEFAULT)).map((tag) => {
         const isActive = activeTagId === tag.id
         return (
           <button
@@ -75,6 +80,16 @@ export function TagFilterBar({ tags, totalCount, activeTagId }: TagFilterBarProp
           </button>
         )
       })}
+
+      {tags.length > TAGS_SHOWN_BY_DEFAULT && (
+        <button
+          type="button"
+          onClick={() => setShowAllTags((prev) => !prev)}
+          className={cn(CHIP, CHIP_INACTIVE, 'text-muted-foreground')}
+        >
+          {showAllTags ? 'Show less' : `Show all (${tags.length})`}
+        </button>
+      )}
     </div>
   )
 }

@@ -31,7 +31,7 @@ export class OpenAIProvider implements AIProvider {
         messages: [
           {
             role: 'system',
-            content: 'You are a content summarizer. Given text content, return a JSON object with "summary" (2-3 sentence summary) and "tags" (array of 3-5 lowercase topic tags). Existing tags for context: ' + existingTags.join(', '),
+            content: 'You are a content summarizer. Given text content, return a JSON object with "summary" (2-3 sentence summary) and "tags" (array of 1-3 lowercase topic tags). Reuse one of the user\'s existing tags whenever it fits; only invent a new tag when none of the existing ones apply. Existing tags for context: ' + existingTags.join(', '),
           },
           { role: 'user', content: text.slice(0, 50000) },
         ],
@@ -111,7 +111,7 @@ export class AnthropicProvider implements AIProvider {
         messages: [
           {
             role: 'user',
-            content: `Summarize this content and suggest tags. Existing tags for context: ${existingTags.join(', ')}.\n\nReturn JSON with "summary" (2-3 sentences) and "tags" (array of 3-5 lowercase topic tags).\n\nContent:\n${text.slice(0, 50000)}`,
+            content: `Summarize this content and suggest tags. Existing tags for context: ${existingTags.join(', ')}. Reuse one of the existing tags whenever it fits; only invent a new tag when none of the existing ones apply.\n\nReturn JSON with "summary" (2-3 sentences) and "tags" (array of 1-3 lowercase topic tags).\n\nContent:\n${text.slice(0, 50000)}`,
           },
         ],
       }),
@@ -197,7 +197,7 @@ export class GeminiProvider implements AIProvider {
             {
               parts: [
                 {
-                  text: `Summarize this content and suggest tags. Existing tags for context: ${existingTags.join(', ')}.\n\nReturn JSON with "summary" (2-3 sentences) and "tags" (array of 3-5 lowercase topic tags).\n\nContent:\n${text.slice(0, 50000)}`,
+                  text: `Summarize this content and suggest tags. Existing tags for context: ${existingTags.join(', ')}. Reuse one of the existing tags whenever it fits; only invent a new tag when none of the existing ones apply.\n\nReturn JSON with "summary" (2-3 sentences) and "tags" (array of 1-3 lowercase topic tags).\n\nContent:\n${text.slice(0, 50000)}`,
                 },
               ],
             },
