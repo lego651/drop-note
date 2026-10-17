@@ -75,17 +75,17 @@ export function InviteCodesClient({ initialCodes, initialMode }: InviteCodesClie
           onValueChange={(v) => v && handleModeChange(v as 'open' | 'invite')}
           disabled={modeLoading}
           aria-label="Registration mode"
-          className="inline-flex flex-wrap justify-start gap-1 rounded-[10px] border-stroke border-ink bg-card p-1 shadow-ink-md"
+          className="inline-flex max-w-full flex-wrap justify-start gap-1 rounded-[10px] border-stroke border-ink bg-card p-1 shadow-ink-md"
         >
           <ToggleGroupItem
             value="open"
-            className="h-auto min-h-8 whitespace-nowrap rounded-lg px-3 py-1 text-sm leading-tight data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            className="h-auto min-h-8 whitespace-normal text-center rounded-lg px-3 py-1 text-sm leading-tight data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
           >
             Open (first 50 users)
           </ToggleGroupItem>
           <ToggleGroupItem
             value="invite"
-            className="h-auto min-h-8 whitespace-nowrap rounded-lg px-3 py-1 text-sm leading-tight data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            className="h-auto min-h-8 whitespace-normal text-center rounded-lg px-3 py-1 text-sm leading-tight data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
           >
             Invite-only
           </ToggleGroupItem>
