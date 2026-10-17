@@ -28,6 +28,8 @@ export const MAX_TAGS_PER_ITEM = 3
 
 export interface SummarizeResult {
   summary: string
+  /** One category name from the `categories` list passed in, or '' if none was passed. */
+  category: string
   tags: string[]
   error: string | null
   retryable: boolean
@@ -37,11 +39,12 @@ export async function summarizeEmailBody(
   subject: string,
   bodyText: string,
   existingTags: string[] = [],
+  categories: string[] = [],
 ): Promise<SummarizeResult> {
   const input = `Subject: ${subject}\n\n${bodyText}`.slice(0, MAX_INPUT_CHARS)
 
   try {
-    const result = await getAIProvider().processText(input, existingTags)
+    const result = await getAIProvider().processText(input, existingTags, categories)
 
     const tags = result.tags
       .filter((t): t is string => typeof t === 'string')
@@ -50,15 +53,16 @@ export async function summarizeEmailBody(
 
     const deduped = [...new Set(tags)].slice(0, MAX_TAGS_PER_ITEM)
 
-    return { summary: result.summary ?? '', tags: deduped, error: null, retryable: false }
+    return { summary: result.summary ?? '', category: result.category ?? '', tags: deduped, error: null, retryable: false }
   } catch (err) {
     if (err instanceof SyntaxError) {
-      return { summary: '', tags: [], error: 'Invalid AI response format', retryable: false }
+      return { summary: '', category: '', tags: [], error: 'Invalid AI response format', retryable: false }
     }
     const isRetryable =
       err instanceof Error && (err as Error & { retryable?: boolean }).retryable === true
     return {
       summary: '',
+      category: '',
       tags: [],
       error: err instanceof Error ? err.message : 'Unknown error',
       retryable: isRetryable,

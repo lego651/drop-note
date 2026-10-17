@@ -26,6 +26,62 @@ export async function getExistingTagNames(userId: string): Promise<string[]> {
   return data.map((row) => row.name)
 }
 
+export type UserCategory = { id: string; name: string }
+
+/**
+ * The user's current category list, ordered with their "Other" category last — this
+ * ordering is the fallback contract that buildCategoryKeywordPrompt/resolveCategory rely
+ * on. Hidden categories are dropped from the list offered to the AI (so a hidden category
+ * stops collecting new items) except the user's "Other" category, which always stays in
+ * the list even if hidden, since it's the only guaranteed fallback.
+ */
+export async function getCategoriesForUser(userId: string): Promise<UserCategory[]> {
+  const { data, error } = await supabaseAdmin
+    .from('categories')
+    .select('id, name, hidden, is_other')
+    .eq('user_id', userId)
+    .order('position')
+
+  if (error || !data) {
+    log.warn('ingest.categories_fetch_failed', { userId }, error ?? undefined)
+    return []
+  }
+
+  const visible = data.filter((c) => !c.hidden || c.is_other)
+  const sorted = [...visible].sort((a, b) => Number(a.is_other) - Number(b.is_other))
+  return sorted.map((c) => ({ id: c.id, name: c.name }))
+}
+
+/**
+ * Sets an item's category_id to the category matching `categoryName` (by exact name,
+ * which must be one of the names in `categories` — see resolveCategory). A no-op if the
+ * name doesn't match (defensive — resolveCategory should already guarantee a match) or if
+ * the item has since been category_locked (the user manually moved it): the `eq`
+ * filter on category_locked makes "never overwrite a user-locked category" hold even
+ * under a race with a concurrent manual move, not just at the call site.
+ */
+export async function setItemCategory(
+  itemId: string,
+  categoryName: string,
+  categories: UserCategory[],
+): Promise<void> {
+  const match = categories.find((c) => c.name === categoryName)
+  if (!match) {
+    log.warn('ingest.set_category_no_match', { itemId, categoryName })
+    return
+  }
+
+  const { error } = await supabaseAdmin
+    .from('items')
+    .update({ category_id: match.id })
+    .eq('id', itemId)
+    .eq('category_locked', false)
+
+  if (error) {
+    log.warn('ingest.set_category_failed', { itemId }, error)
+  }
+}
+
 export async function setItemProcessing(itemId: string): Promise<void> {
   const { data, error } = await supabaseAdmin
     .from('items')
