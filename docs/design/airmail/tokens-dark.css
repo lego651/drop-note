@@ -50,6 +50,7 @@
   --color-stat-week: 150 52% 58%;
   --color-stat-processing: 40 88% 62%;
   --color-stat-tag: 356 92% 68%;
+  /* Deprecated — see tokens-light.css comment (restyle audit K-5) */
   --hero-gradient-rose: 356 88% 62%;
   --hero-gradient-violet: 229 86% 60%;
 
@@ -68,4 +69,13 @@
   --shadow-stamp: drop-shadow(3px 3px 0 hsl(var(--shadow-color)));
   --stripe: repeating-linear-gradient(-45deg, hsl(var(--color-pin)) 0 12px, hsl(var(--stripe-gap)) 12px 18px, hsl(var(--primary)) 18px 30px, hsl(var(--stripe-gap)) 30px 36px);
   --stripe-mini: repeating-linear-gradient(-45deg, hsl(var(--color-pin)) 0 4px, hsl(var(--stripe-gap)) 4px 6px, hsl(var(--primary)) 6px 10px, hsl(var(--stripe-gap)) 10px 12px);
+
+  /* Restyle audit tokens (DRO-71/DRO-78, AIRMAIL.md § K) */
+  --destructive-text: var(--color-status-failed); /* K-1: --destructive is too dark as text on a dark card */
+  --link: var(--color-source-email); /* K-2: dark --primary as small text on a card is 3.43:1 */
+  --overlay: 227 48% 3%; /* K-3 */
+  --color-chart-1: var(--primary); /* K-4 */
+  --color-chart-2: var(--color-status-done);
+  --color-chart-3: var(--color-tag-purple);
+  --color-chart-4: var(--color-tag-teal);
 }

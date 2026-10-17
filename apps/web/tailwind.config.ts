@@ -40,12 +40,21 @@ const config: Config = {
   				DEFAULT: 'hsl(var(--destructive))',
   				foreground: 'hsl(var(--destructive-foreground))'
   			},
+  			'destructive-text': 'hsl(var(--destructive-text))',
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
   			success: 'hsl(var(--color-success))',
   			canvas: 'hsl(var(--content-bg))',
-  			ink: 'hsl(var(--ink))'
+  			ink: 'hsl(var(--ink))',
+  			link: 'hsl(var(--link))',
+  			overlay: 'hsl(var(--overlay))',
+  			chart: {
+  				'1': 'hsl(var(--color-chart-1))',
+  				'2': 'hsl(var(--color-chart-2))',
+  				'3': 'hsl(var(--color-chart-3))',
+  				'4': 'hsl(var(--color-chart-4))'
+  			}
   		},
   		fontFamily: {
   			sans: ['var(--font-sans)'],
