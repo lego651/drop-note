@@ -324,7 +324,7 @@ export function CategoryNav({
                   className={cn(
                     ROW_BASE,
                     ROW_INACTIVE,
-                    'w-full py-1.5 text-muted-foreground',
+                    'w-full py-1.5 text-left text-muted-foreground',
                     atCap && 'cursor-not-allowed opacity-60',
                   )}
                 >
@@ -348,7 +348,7 @@ export function CategoryNav({
                 type="button"
                 onClick={() => setHiddenOpen((v) => !v)}
                 aria-expanded={hiddenOpen}
-                className={cn(ROW_BASE, ROW_INACTIVE, 'w-full py-1.5 text-muted-foreground')}
+                className={cn(ROW_BASE, ROW_INACTIVE, 'w-full py-1.5 text-left text-muted-foreground')}
               >
                 <ChevronRight
                   size={15}

@@ -43,7 +43,7 @@ export function CategoryRowMenu({
           size="icon"
           aria-label={`Options for ${category.name}`}
           className={cn(
-            'absolute right-0 h-9 w-9 rounded-lg text-muted-foreground hover:text-accent-foreground',
+            'absolute right-0 inset-y-0 my-auto h-9 w-9 rounded-lg text-muted-foreground hover:text-accent-foreground',
             'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100',
             "[@media(hover:none)]:opacity-100",
           )}
