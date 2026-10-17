@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -202,15 +203,13 @@ export function ResortDialog({ open, category, categories, onOpenChange, onAppli
         )}
 
         {loadState === 'error' && (
-          <div className="rounded-[10px] border-stroke bg-[hsl(var(--destructive)/0.10)] px-3 py-2.5 text-sm text-foreground">
+          <DangerNotice>
             Couldn&apos;t check your items. Your category was created and nothing was moved.
-          </div>
+          </DangerNotice>
         )}
 
         {applyState === 'apply-error' && (
-          <div className="rounded-[10px] border-stroke bg-[hsl(var(--destructive)/0.10)] px-3 py-2.5 text-sm text-foreground">
-            Couldn&apos;t move these items. Nothing was changed.
-          </div>
+          <DangerNotice>Couldn&apos;t move these items. Nothing was changed.</DangerNotice>
         )}
 
         <DialogFooter>
@@ -247,5 +246,21 @@ export function ResortDialog({ open, category, categories, onOpenChange, onAppli
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/** AIRMAIL D-4 danger notice: ink-stroke outline in the destructive color, tint over --card. */
+function DangerNotice({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className="flex items-start gap-2 rounded-[10px] border-stroke px-3 py-2.5"
+      style={{
+        backgroundColor: 'hsl(var(--destructive) / 0.08)',
+        borderColor: 'hsl(var(--destructive) / 0.45)',
+      }}
+    >
+      <AlertTriangle size={14} className="mt-0.5 shrink-0 text-destructive-text" aria-hidden="true" />
+      <p className="text-sm text-foreground">{children}</p>
+    </div>
   )
 }

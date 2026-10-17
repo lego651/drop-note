@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ItemDetailEditor } from '@/components/ItemDetailEditor'
 import { AttachmentsSection } from '@/components/AttachmentsSection'
 import { ItemCategorySection } from '@/components/categories/ItemCategorySection'
+import type { BadgeCategory } from '@/components/categories/CategoryBadge'
 import { getCategories } from '@/lib/categories'
 import { format } from 'date-fns'
 import { ExternalLink } from 'lucide-react'
@@ -112,6 +113,9 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
     ? extractYouTubeId(item.source_url)
     : null
 
+  const itemCategory = (item.categories as BadgeCategory | null) ?? null
+  const isProcessing = item.status === 'pending' || item.status === 'processing'
+
   return (
     <div className="max-w-3xl mx-auto p-6">
       {/* Header */}
@@ -176,6 +180,15 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
           </a>
         )}
       </div>
+
+      {/* Category */}
+      <ItemCategorySection
+        itemId={item.id}
+        category={itemCategory}
+        locked={item.category_locked ?? false}
+        isProcessing={isProcessing}
+        categories={categories}
+      />
 
       {/* Editable fields */}
       <ItemDetailEditor

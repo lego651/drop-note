@@ -31,7 +31,7 @@ export const CategoryBadge = forwardRef<HTMLButtonElement, CategoryBadgeProps>(
     } as CSSProperties
 
     const shared = cn(
-      'inline-flex max-w-full items-center gap-1.5 rounded-full border font-bold leading-none',
+      'inline-flex max-w-full items-center gap-1.5 rounded-full border-stroke font-bold leading-none',
       'border-[var(--cat-border)] bg-[var(--cat-bg)] text-[var(--cat-color)]',
       size === 'lg' ? 'px-3.5 py-1.5 text-[13.5px]' : 'px-2.5 py-[3px] text-xs',
       className,

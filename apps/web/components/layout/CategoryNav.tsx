@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, EyeOff, Loader2, Plus } from 'lucide-react'
+import { AlertTriangle, ChevronRight, EyeOff, Loader2, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -135,7 +135,7 @@ export function CategoryNav({
     }
   }
 
-  function handleDeleted(category: CategoryWithCount, _reassigned: number) {
+  function handleDeleted(category: CategoryWithCount) {
     setItems((prev) => prev.filter((c) => c.id !== category.id))
     setDeleteTarget(null)
     setDeletingId(null)
@@ -243,9 +243,16 @@ export function CategoryNav({
 
       {categoriesError ? (
         <div className="space-y-2 px-3">
-          <p className="rounded-[10px] border-stroke bg-[hsl(var(--destructive)/0.10)] px-3 py-2.5 text-sm text-foreground">
-            Couldn&apos;t load categories.
-          </p>
+          <div
+            className="flex items-start gap-2 rounded-[10px] border-stroke px-3 py-2.5"
+            style={{
+              backgroundColor: 'hsl(var(--destructive) / 0.08)',
+              borderColor: 'hsl(var(--destructive) / 0.45)',
+            }}
+          >
+            <AlertTriangle size={14} className="mt-0.5 shrink-0 text-destructive-text" aria-hidden="true" />
+            <p className="text-sm text-foreground">Couldn&apos;t load categories.</p>
+          </div>
           <Button variant="ghost" size="sm" onClick={() => router.refresh()}>
             Retry
           </Button>
@@ -352,7 +359,7 @@ export function CategoryNav({
           open
           category={deleteTarget}
           onOpenChange={(open) => !open && setDeleteTarget(null)}
-          onDeleted={(reassigned) => handleDeleted(deleteTarget, reassigned)}
+          onDeleted={() => handleDeleted(deleteTarget)}
           onPendingChange={(pending) => setDeletingId(pending ? deleteTarget.id : null)}
         />
       )}

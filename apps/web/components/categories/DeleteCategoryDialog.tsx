@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -78,10 +78,7 @@ export function DeleteCategoryDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={(next) => !isPending && onOpenChange(next)}>
-      <AlertDialogContent
-        onEscapeKeyDown={(e) => isPending && e.preventDefault()}
-        onPointerDownOutside={(e) => isPending && e.preventDefault()}
-      >
+      <AlertDialogContent onEscapeKeyDown={(e) => isPending && e.preventDefault()}>
         <AlertDialogHeader>
           <AlertDialogTitle className="[overflow-wrap:anywhere] line-clamp-2">
             Delete &ldquo;{category.name}&rdquo;?
@@ -90,8 +87,17 @@ export function DeleteCategoryDialog({
         </AlertDialogHeader>
 
         {state === 'error' && (
-          <div className="rounded-[10px] border-stroke bg-[hsl(var(--destructive)/0.10)] px-3 py-2.5 text-sm text-foreground">
-            Couldn&apos;t delete &ldquo;{category.name}&rdquo;. Try again in a moment.
+          <div
+            className="flex items-start gap-2 rounded-[10px] border-stroke px-3 py-2.5"
+            style={{
+              backgroundColor: 'hsl(var(--destructive) / 0.08)',
+              borderColor: 'hsl(var(--destructive) / 0.45)',
+            }}
+          >
+            <AlertTriangle size={14} className="mt-0.5 shrink-0 text-destructive-text" aria-hidden="true" />
+            <p className="text-sm text-foreground">
+              Couldn&apos;t delete &ldquo;{category.name}&rdquo;. Try again in a moment.
+            </p>
           </div>
         )}
 
