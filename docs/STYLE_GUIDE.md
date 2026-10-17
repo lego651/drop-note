@@ -48,12 +48,16 @@ Use as Tailwind tokens (`bg-x`, `text-x`) where wired in `tailwind.config.ts`, o
 | `--color-success` / `--color-status-done` | green | success, "Active" badge, done |
 | `--color-status-processing` | amber | processing/pending |
 | `--color-status-failed` | red | failed |
+| `--destructive-text` | red (lighter in dark) | **text** on a card — `--destructive` itself is 3.54:1 as text on a dark card, below AA. Use `text-destructive-text` for error copy, delete-action labels, danger headings |
+| `--link` | cobalt (light) / lighter cobalt (dark) | inline link text — dark `--primary` as small text on a card is 3.43:1, below AA |
+| `--overlay` | navy, both themes | dialog/sheet scrim — `bg-[hsl(var(--overlay)/0.72)]`, replaces `bg-black/80` |
+| `--color-chart-1..4` | aliases of `--primary` / `--color-status-done` / `--color-tag-purple` / `--color-tag-teal` | chart series colors, decoupled from tag/status/source meaning so changing one doesn't silently recolor a chart |
 
 ### Palettes (cycled by hash via helpers)
 - **Tags** — `--color-tag-{blue,purple,pink,green,yellow,orange,teal,indigo}`
 - **Source dots** — `--color-source-{email,youtube,article,note,default}`
 - **Stat cards** — `--color-stat-{total(ink),week(green),processing(amber),tag(red)}`
-- **Hero wash** — `--hero-gradient-{rose,violet}` (very subtle radial only)
+- **Hero wash** — `--hero-gradient-{rose,violet}` (very subtle radial only). **Deprecated** (restyle audit K-5): § 5 forbids gradients outside `--stripe`; kept until the landing hero wash is removed (backlog)
 
 ### Helpers — `apps/web/lib/design-tokens.ts`
 | Helper | Returns | Use |
@@ -98,6 +102,7 @@ Use as Tailwind tokens (`bg-x`, `text-x`) where wired in `tailwind.config.ts`, o
 
 ### Controls
 - Buttons/inputs come from `components/ui` and already carry the ink outline + `shadow-ink-md` (10px radius). Sort, Filters and the view switch use them; active/selected = `bg-primary text-primary-foreground`.
+- Native `<select>` elements use `components/ui/native-select.tsx` (`NativeSelect`), not a hand-rolled `className`. Same recipe as `Input`.
 - Icon-in-circle pattern (stat cards): `h-9 w-9 rounded-full border-stroke border-dashed bg-card`, border + icon in `hsl(${accent})` (a postmark).
 
 ### Media / placeholders

@@ -47,6 +47,7 @@
   --color-stat-week: 152 65% 28%;
   --color-stat-processing: 34 95% 32%;
   --color-stat-tag: 356 80% 46%;
+  /* Deprecated (restyle audit K-5): only the landing hero wash uses these; remove with L-7 */
   --hero-gradient-rose: 356 80% 50%;
   --hero-gradient-violet: 228 78% 47%;
 
@@ -68,4 +69,13 @@
   --shadow-stamp: drop-shadow(3px 3px 0 hsl(var(--shadow-color)));
   --stripe: repeating-linear-gradient(-45deg, hsl(var(--color-pin)) 0 12px, hsl(var(--stripe-gap)) 12px 18px, hsl(var(--primary)) 18px 30px, hsl(var(--stripe-gap)) 30px 36px);
   --stripe-mini: repeating-linear-gradient(-45deg, hsl(var(--color-pin)) 0 4px, hsl(var(--stripe-gap)) 4px 6px, hsl(var(--primary)) 6px 10px, hsl(var(--stripe-gap)) 10px 12px);
+
+  /* Restyle audit tokens (DRO-71/DRO-78, AIRMAIL.md § K) */
+  --destructive-text: var(--destructive); /* K-1 */
+  --link: var(--primary); /* K-2 */
+  --overlay: 226 58% 8%; /* K-3 */
+  --color-chart-1: var(--primary); /* K-4 */
+  --color-chart-2: var(--color-status-done);
+  --color-chart-3: var(--color-tag-purple);
+  --color-chart-4: var(--color-tag-teal);
 }

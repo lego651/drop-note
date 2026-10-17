@@ -49,6 +49,8 @@
     --color-stat-week: 152 65% 28%;
     --color-stat-processing: 34 95% 32%;
     --color-stat-tag: 356 80% 46%;
+    /* Deprecated (AIRMAIL.md D-5 / audit K-5): only the landing hero wash uses these, and § 5
+       forbids gradients outside --stripe. Remove once the landing hero (L-7, backlog) drops the wash. */
     --hero-gradient-rose: 356 80% 50%;
     --hero-gradient-violet: 228 78% 47%;
 
@@ -66,6 +68,16 @@
     --shadow-stamp: drop-shadow(3px 3px 0 hsl(var(--shadow-color)));
     --stripe: repeating-linear-gradient(-45deg, hsl(var(--color-pin)) 0 12px, hsl(var(--stripe-gap)) 12px 18px, hsl(var(--primary)) 18px 30px, hsl(var(--stripe-gap)) 30px 36px);
     --stripe-mini: repeating-linear-gradient(-45deg, hsl(var(--color-pin)) 0 4px, hsl(var(--stripe-gap)) 4px 6px, hsl(var(--primary)) 6px 10px, hsl(var(--stripe-gap)) 10px 12px);
+
+    /* Restyle audit tokens (DRO-71/DRO-78, AIRMAIL.md § K). Aliases resolve within this block's own
+       cascade, so each one picks up this theme's values automatically. */
+    --destructive-text: var(--destructive); /* K-1: text on a card needs more contrast than the --destructive fill */
+    --link: var(--primary); /* K-2: small link text (see .dark override) */
+    --overlay: 226 58% 8%; /* K-3: dialog/sheet scrim, replaces bg-black/80 */
+    --color-chart-1: var(--primary); /* K-4: chart series, decoupled from tag/status meaning */
+    --color-chart-2: var(--color-status-done);
+    --color-chart-3: var(--color-tag-purple);
+    --color-chart-4: var(--color-tag-teal);
 
     /* Fonts — next/font sets --font-archivo / --font-jetbrains / --font-noto-sc on <html> */
     --font-sans: var(--font-archivo), var(--font-noto-sc), "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -120,6 +132,7 @@
     --color-stat-week: 150 52% 58%;
     --color-stat-processing: 40 88% 62%;
     --color-stat-tag: 356 92% 68%;
+    /* Deprecated — see :root comment above (AIRMAIL.md D-5 / audit K-5) */
     --hero-gradient-rose: 356 88% 62%;
     --hero-gradient-violet: 229 86% 60%;
 
@@ -138,6 +151,15 @@
     --shadow-stamp: drop-shadow(3px 3px 0 hsl(var(--shadow-color)));
     --stripe: repeating-linear-gradient(-45deg, hsl(var(--color-pin)) 0 12px, hsl(var(--stripe-gap)) 12px 18px, hsl(var(--primary)) 18px 30px, hsl(var(--stripe-gap)) 30px 36px);
     --stripe-mini: repeating-linear-gradient(-45deg, hsl(var(--color-pin)) 0 4px, hsl(var(--stripe-gap)) 4px 6px, hsl(var(--primary)) 6px 10px, hsl(var(--stripe-gap)) 10px 12px);
+
+    /* Restyle audit tokens (DRO-71/DRO-78, AIRMAIL.md § K) */
+    --destructive-text: var(--color-status-failed); /* K-1: --destructive itself is too dark as text on a dark card */
+    --link: var(--color-source-email); /* K-2: dark --primary as small text on a card is 3.43:1, below AA */
+    --overlay: 227 48% 3%; /* K-3 */
+    --color-chart-1: var(--primary); /* K-4 */
+    --color-chart-2: var(--color-status-done);
+    --color-chart-3: var(--color-tag-purple);
+    --color-chart-4: var(--color-tag-teal);
   }
 
   * {

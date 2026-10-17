@@ -80,6 +80,10 @@ green `#176D45`, yellow `#955604`, orange `#BB3B0C`, teal `#0C6A79`, indigo `#3F
 | `--badge-ring` | `0 0% 100%` | 2.5px ring around the play badge |
 | `--grid-alpha` | `.10` | Dot-grid opacity on the canvas (dark: `.09`) |
 | `--font-sans` / `--font-display` / `--font-mono` | see § 4 | Wired via `next/font/google` |
+| `--destructive-text` | alias of `--destructive` (light) | Error/delete **text** on a card (§ 8 K-1). `--destructive` itself is 3.54:1 as text on a dark card |
+| `--link` | alias of `--primary` (light) | Inline link text (§ 8 K-2). Dark `--primary` as small card text is 3.43:1 |
+| `--overlay` | `226 58% 8%` | Dialog/sheet scrim, used at `/ 0.72` (K-3). Navy in both themes so the scrim reads as ink, not neutral black |
+| `--color-chart-1..4` | aliases of `--primary`, `--color-status-done`, `--color-tag-purple`, `--color-tag-teal` | Chart series colors, decoupled from tag/status/source meaning (K-4) |
 
 Wire the shadows as Tailwind `boxShadow: { 'ink-sm': 'var(--shadow-sm)', … }` and use `shadow-ink-lg`
 in components. **Never type an offset shadow by hand.**
@@ -99,19 +103,25 @@ in components. **Never type an offset shadow by hand.**
 | Role | Size / weight | Notes |
 |---|---|---|
 | Page title (H1) | 42px / 800, width 125%, tracking −0.025em | 32px under 640px |
-| Section title (H2) | 22px / 800, width 125% | |
+| Document title (item detail) | 32px / 800, width 125% | 26px under 640px; 3-line clamp (D-1) |
+| Marketing hero | 72px / 800, width 125%, leading 1.05 | 56px tablet, 40px mobile (D-1) |
+| Section title (H2) | 22px / 800, width 125% | Outside cards — e.g. status "Recent errors", settings "Drop Address" (D-8) |
+| Panel heading | 15px (`text-base`) / 600 | **Inside** a card, e.g. a stat panel's title — not the display cut (D-8). See STYLE_GUIDE § 3 |
 | Big number (stat) | 36px / 900, width 125% | 28px on mobile |
 | Card title | 15.5px / 700 | Clamp 2 lines |
 | Body / UI | 14px / 400–600 | Line height 1.45 |
 | Summary | 12.5px / 400, muted | Clamp 2 lines |
 | Meta (mono) | 11px / 400–500 | `youtube.com · 1 min read`, dates |
-| Section label (mono) | 10.5–11px / 700, uppercase, tracking 0.08–0.14em | Sidebar group names and stat labels **only** |
+| Section label (mono) | 10.5–11px / 700, uppercase, tracking 0.08–0.14em | Sidebar group names, stat labels, in-panel group labels (settings), and marketing eyebrows (D-5) |
 
 **Rules:**
 - The wide display cut is for text **≥ 22px**. Never set body text wide.
 - Mono is for data, not sentences. If it has a verb, it isn't mono.
 - Uppercase is only for the mono section labels. Never uppercase a heading, a button or Chinese text.
 - One weight jump per element. Don't bold part of a title.
+- **Section title vs. panel heading (D-8):** a page can have both. Section title = `type-display text-[22px]`,
+  sits on the canvas, outside any card. Panel heading = `text-base font-semibold`, sits inside a card as that
+  card's own title. Don't use the display cut inside a card.
 
 ---
 
@@ -125,7 +135,9 @@ in components. **Never type an offset shadow by hand.**
 | Filter chip | pill | `--stroke` ink | active: `--shadow-sm` |
 | Tag pill (in cards) | pill | 1px of the tag color at 45% | none |
 | Stat stamp | 0 (perforated mask) | inner frame in its accent | `--shadow-stamp` |
-| Dialog / popover | 12px | `--stroke` ink | `--shadow-lg` |
+| Dialog | 12px | `--stroke` ink | `--shadow-lg` |
+| Popover / menu (anchored to a control) | 10px | `--stroke` ink | `--shadow-md` (D-3) |
+| Table | 12px | `--stroke` ink | `--shadow-lg` (D-6, see § 7 Table) |
 | Media (thumbnail) | inherits card | bottom edge `--stroke` ink | none |
 
 **Rules:**
@@ -186,6 +198,23 @@ postmark icon circle.
 **Segmented control (view toggle).** Ink outline, `shadow-ink-md`. Selected segment is `--primary` with
 `--primary-foreground` icons.
 
+**Option card (D-2).** For pickers where one of several cards is "selected" (theme, density, registration
+mode). Unselected: `--card` fill, ink outline, 10px radius, no shadow. Selected: `--primary` outline,
+`--accent` fill, `shadow-ink-sm`, plus a `Check` icon. Always set `aria-pressed={isSelected}`. Pin red is
+never used for selection — that's cobalt's job (§ 8).
+
+**Notice / banner (D-4).** For the status banner, danger warnings, admin info boxes and page-load errors.
+`rounded-[10px]` (`rounded-xl` at banner size), `--stroke` outline in the variant's color, a `.08–.12` tint
+of that color over `--card`, a leading icon, and **`--foreground`** body text (never muted text on a tint,
+and never colored body text — see § 8 D-7). Variants: info (`--primary`), success (`--color-success`),
+warning (`--color-status-processing`), danger (`--destructive`).
+
+**Table (D-6).** Card recipe for the wrapper: ink outline, 12px, `shadow-ink-lg`, `overflow-hidden`.
+`thead` fill is `--muted` (not `/50` — the header row must stay visible in dark), `th` is
+`text-xs font-semibold text-muted-foreground`. Rows are hairline-divided (`divide-y divide-border`, allowed
+*inside* the table's one outlined container) with `hover:bg-accent/50`. Numeric cells are `tabular-nums`;
+ids/routes/dates are mono.
+
 **Empty / loading states.** Follow STYLE_GUIDE § 2 for behavior. Visually, skeletons use `--muted`
 blocks with the card's outline and shadow (so layout doesn't jump). Empty states can use **one** postmark
 illustration and one sentence.
@@ -199,6 +228,12 @@ illustration and one sentence.
 - **Airmail red (`--color-pin`)** is for pin, YouTube and the stripe. Errors use `--destructive`, not pin red.
 - **Tints** are always `hsl(var(--x) / .08)` with a `/ .45` outline. Never put a tint behind body text.
 - **New colors:** add a token in light + dark first (STYLE_GUIDE § 0), then check contrast (§ 10).
+- **Status colors are for icons, dots and bars (D-7)**, which only need 3:1. Status **words** stay
+  `--foreground` next to a colored icon — several status colors read as text below 4.5:1 (e.g.
+  `--color-status-processing` is 4.31:1 in light). A count can keep color only when it's paired with an
+  icon, e.g. a non-zero error count.
+- **Error / delete text (K-1)** uses `--destructive-text`, not `--destructive` — the fill color is too dark
+  to read as small text on a card.
 
 ## 9. Motion
 
