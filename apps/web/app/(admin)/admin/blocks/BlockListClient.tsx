@@ -91,20 +91,20 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
       </form>
 
       {/* Table */}
-      <div className="rounded-md border border-border overflow-hidden">
+      <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-muted/50">
+          <thead className="bg-muted">
             <tr>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground">Type</th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground">Value</th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground">Added</th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground">Source</th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground">Actions</th>
+              <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Type</th>
+              <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Value</th>
+              <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Added</th>
+              <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Source</th>
+              <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {blocks.map((b) => (
-              <tr key={b.id} className="hover:bg-muted/30">
+              <tr key={b.id} className="hover:bg-accent/50">
                 <td className="px-4 py-2 capitalize">{b.type}</td>
                 <td className="px-4 py-2 font-mono text-xs">{b.value}</td>
                 <td className="px-4 py-2 text-muted-foreground">

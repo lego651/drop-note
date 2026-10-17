@@ -1,37 +1,6 @@
 // Static browser window mockup — no interactivity needed
 
-// Tag color mapping using the global CSS token palette
-const TAG_COLORS: Record<string, { color: string; bg: string }> = {
-  research: {
-    color: 'hsl(var(--color-tag-blue))',
-    bg: 'hsl(var(--color-tag-blue) / 0.1)',
-  },
-  academia: {
-    color: 'hsl(var(--color-tag-indigo))',
-    bg: 'hsl(var(--color-tag-indigo) / 0.1)',
-  },
-  design: {
-    color: 'hsl(var(--color-tag-purple))',
-    bg: 'hsl(var(--color-tag-purple) / 0.1)',
-  },
-  saas: {
-    color: 'hsl(var(--color-tag-teal))',
-    bg: 'hsl(var(--color-tag-teal) / 0.1)',
-  },
-  dev: {
-    color: 'hsl(var(--color-tag-orange))',
-    bg: 'hsl(var(--color-tag-orange) / 0.1)',
-  },
-  reading: {
-    color: 'hsl(var(--color-tag-green))',
-    bg: 'hsl(var(--color-tag-green) / 0.1)',
-  },
-}
-
-const DEFAULT_TAG_COLOR = {
-  color: 'hsl(var(--color-source-default))',
-  bg: 'hsl(var(--color-source-default) / 0.1)',
-}
+import { colorForTagHsl } from '@/lib/design-tokens'
 
 const SAMPLE_ITEMS = [
   {
@@ -73,7 +42,7 @@ export function HeroMockup() {
       {/* App layout */}
       <div className="flex" style={{ minHeight: 280 }}>
         {/* Sidebar */}
-        <div className="w-44 border-r border-border bg-muted/20 p-3 flex-shrink-0">
+        <div className="w-44 border-r-stroke border-ink bg-background p-3 flex-shrink-0">
           <div className="text-xs font-bold text-foreground mb-3">drop-note</div>
           <nav className="space-y-0.5 mb-4">
             {['All Items', 'Settings', 'Trash'].map((item) => (
@@ -85,46 +54,54 @@ export function HeroMockup() {
               </div>
             ))}
           </nav>
-          <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 px-2">
-            Tags
-          </div>
+          <div className="type-label mb-1 px-2 text-muted-foreground">TAGS</div>
           {SIDEBAR_TAGS.map((tag) => (
             <div key={tag.name} className="flex items-center justify-between px-2 py-0.5">
               <span className="text-xs text-muted-foreground">{tag.name}</span>
-              <span className="text-[10px] text-muted-foreground">{tag.count}</span>
+              <span className="font-mono text-[10px] text-muted-foreground">{tag.count}</span>
             </div>
           ))}
         </div>
 
         {/* Content area */}
-        <div className="flex-1 p-3 space-y-2 overflow-hidden">
+        <div className="flex-1 bg-canvas p-3 space-y-2 overflow-hidden">
           {SAMPLE_ITEMS.map((item) => (
-            <div key={item.title} className="rounded-lg border border-border bg-card p-3">
+            <div key={item.title} className="rounded-lg border-stroke border-ink bg-card shadow-ink-sm p-3">
               <div className="text-xs font-semibold text-foreground mb-1 truncate">
                 {item.title}
               </div>
               <div className="text-[11px] text-muted-foreground mb-2 line-clamp-2 leading-relaxed">
                 {item.summary}
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 mb-2">
                 {item.tags.map((tag) => {
-                  const tc = TAG_COLORS[tag] ?? DEFAULT_TAG_COLOR
+                  const hsl = colorForTagHsl(tag)
                   return (
                     <span
                       key={tag}
-                      className="inline-block rounded-full px-2 py-0.5 text-[10px] font-medium"
-                      style={{ backgroundColor: tc.bg, color: tc.color }}
+                      className="inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+                      style={{
+                        backgroundColor: `hsl(${hsl} / 0.08)`,
+                        borderColor: `hsl(${hsl} / 0.45)`,
+                        color: `hsl(${hsl})`,
+                      }}
                     >
-                      {tag}
+                      #{tag}
                     </span>
                   )
                 })}
+              </div>
+              <div className="flex items-center justify-between border-t-stroke border-dashed border-ink/35 pt-2">
+                <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
+                  Oct 16
+                </span>
+                <span className="stripe-mini" aria-hidden="true" />
               </div>
             </div>
           ))}
 
           {/* Skeleton / processing card */}
-          <div className="rounded-lg border border-border bg-card p-3">
+          <div className="rounded-lg border-stroke border-ink bg-card shadow-ink-sm p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="h-2.5 w-32 rounded bg-muted animate-pulse" />
               <span className="text-[10px] text-muted-foreground">Processing...</span>

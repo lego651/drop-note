@@ -98,7 +98,7 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
       <div className="mx-auto max-w-5xl px-4 py-8 space-y-8">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold">drop-note status</h1>
+            <h1 className="type-display text-[32px] sm:text-[42px]">drop-note status</h1>
             <p className="text-sm text-muted-foreground">
               Synthetic checks every 5 minutes
               {lastRun ? ` · last run ${formatDistanceToNowStrict(new Date(lastRun))} ago` : ''}
@@ -122,17 +122,17 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
         </div>
 
         {loadError && (
-          <p className="text-sm" style={{ color: 'hsl(var(--color-status-failed))' }}>
+          <p className="text-sm text-destructive-text">
             Could not load health data: {loadError}
           </p>
         )}
 
         <section>
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-xl font-semibold">Current status</h2>
+            <h2 className="type-display text-[22px]">Current status</h2>
             <span className="text-sm text-muted-foreground">Uptime over the past {DAYS} days</span>
           </div>
-          <div className="grid grid-cols-1 overflow-hidden rounded-xl border border-border bg-card md:grid-cols-2">
+          <div className="grid grid-cols-1 overflow-hidden rounded-xl border-stroke border-ink bg-card shadow-ink-lg md:grid-cols-2">
             {COMPONENTS.map((c) => {
               const latest = latestByComponent.get(c.key)
               const status = stale ? null : (latest?.status as HealthStatus | undefined) ?? null
@@ -189,7 +189,7 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">Find a request</h2>
+          <h2 className="type-display text-[22px]">Find a request</h2>
           <form method="get" className="flex flex-wrap gap-2">
             <label htmlFor="cid" className="sr-only">Correlation ID</label>
             <Input
@@ -204,27 +204,29 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
             </Button>
           </form>
           {cid && (
-            <div className="overflow-x-auto rounded-xl border border-border bg-card">
+            <div className="overflow-hidden rounded-xl border-stroke border-ink bg-card shadow-ink-lg">
               {lookup && lookup.length > 0 ? (
-                <table className="w-full text-left text-sm">
-                  <thead className="text-xs text-muted-foreground">
-                    <tr><th className="p-2">Time (UTC)</th><th className="p-2">Level</th><th className="p-2">Event</th><th className="p-2">Route</th><th className="p-2">Status</th><th className="p-2">Details</th></tr>
-                  </thead>
-                  <tbody>
-                    {lookup.map((r, i) => (
-                      <tr key={i} className="border-t border-border align-top">
-                        <td className="p-2 font-mono text-xs">{r.created_at.slice(11, 23)}</td>
-                        <td className="p-2">{r.level}</td>
-                        <td className="p-2 font-mono text-xs">{r.event}</td>
-                        <td className="p-2 font-mono text-xs">{r.route}</td>
-                        <td className="p-2">{r.status ?? ''}{r.duration_ms !== null ? ` · ${r.duration_ms}ms` : ''}</td>
-                        <td className="p-2 font-mono text-xs break-all">
-                          {r.message}{r.meta && JSON.stringify(r.meta) !== '{}' ? ` ${JSON.stringify(r.meta)}` : ''}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-muted">
+                      <tr><th className="p-2 text-xs font-semibold text-muted-foreground">Time (UTC)</th><th className="p-2 text-xs font-semibold text-muted-foreground">Level</th><th className="p-2 text-xs font-semibold text-muted-foreground">Event</th><th className="p-2 text-xs font-semibold text-muted-foreground">Route</th><th className="p-2 text-xs font-semibold text-muted-foreground">Status</th><th className="p-2 text-xs font-semibold text-muted-foreground">Details</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {lookup.map((r, i) => (
+                        <tr key={i} className="align-top hover:bg-accent/50">
+                          <td className="p-2 font-mono text-xs">{r.created_at.slice(11, 23)}</td>
+                          <td className="p-2">{r.level}</td>
+                          <td className="p-2 font-mono text-xs">{r.event}</td>
+                          <td className="p-2 font-mono text-xs">{r.route}</td>
+                          <td className="p-2">{r.status ?? ''}{r.duration_ms !== null ? ` · ${r.duration_ms}ms` : ''}</td>
+                          <td className="p-2 font-mono text-xs break-all">
+                            {r.message}{r.meta && JSON.stringify(r.meta) !== '{}' ? ` ${JSON.stringify(r.meta)}` : ''}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
                 <p className="p-4 text-sm text-muted-foreground">No logs for this correlation ID (logs are kept 14 days).</p>
               )}
@@ -234,8 +236,8 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
 
         <section className="grid gap-6 lg:grid-cols-2">
           <div className="min-w-0 space-y-3">
-            <h2 className="text-xl font-semibold">Recent errors</h2>
-            <div className="rounded-xl border border-border bg-card">
+            <h2 className="type-display text-[22px]">Recent errors</h2>
+            <div className="overflow-hidden rounded-xl border-stroke border-ink bg-card shadow-ink-lg">
               {errors.length === 0 ? (
                 <p className="p-4 text-sm text-muted-foreground">No errors logged in the last 14 days.</p>
               ) : (
@@ -261,27 +263,29 @@ export default async function StatusPage({ searchParams }: { searchParams: Promi
             </div>
           </div>
           <div className="min-w-0 space-y-3">
-            <h2 className="text-xl font-semibold">Real-user traffic (24h)</h2>
-            <div className="overflow-x-auto rounded-xl border border-border bg-card">
+            <h2 className="type-display text-[22px]">Real-user traffic (24h)</h2>
+            <div className="overflow-hidden rounded-xl border-stroke border-ink bg-card shadow-ink-lg">
               {summary.length === 0 ? (
                 <p className="p-4 text-sm text-muted-foreground">No API traffic in the last 24 hours.</p>
               ) : (
-                <table className="w-full text-left text-sm">
-                  <thead className="text-xs text-muted-foreground">
-                    <tr><th className="p-2">Route</th><th className="p-2">Requests</th><th className="p-2">4xx</th><th className="p-2">5xx</th><th className="p-2">p95</th></tr>
-                  </thead>
-                  <tbody>
-                    {[...summary].sort((a, b) => Number(b.requests) - Number(a.requests)).map((s) => (
-                      <tr key={s.route} className="border-t border-border">
-                        <td className="p-2 font-mono text-xs">{s.route}</td>
-                        <td className="p-2">{s.requests}</td>
-                        <td className="p-2">{s.client_errors}</td>
-                        <td className="p-2 text-foreground">{s.server_errors}</td>
-                        <td className="p-2">{s.p95_ms}ms</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-muted">
+                      <tr><th className="p-2 text-xs font-semibold text-muted-foreground">Route</th><th className="p-2 text-xs font-semibold text-muted-foreground">Requests</th><th className="p-2 text-xs font-semibold text-muted-foreground">4xx</th><th className="p-2 text-xs font-semibold text-muted-foreground">5xx</th><th className="p-2 text-xs font-semibold text-muted-foreground">p95</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {[...summary].sort((a, b) => Number(b.requests) - Number(a.requests)).map((s) => (
+                        <tr key={s.route} className="hover:bg-accent/50">
+                          <td className="p-2 font-mono text-xs">{s.route}</td>
+                          <td className="p-2 tabular-nums">{s.requests}</td>
+                          <td className="p-2 tabular-nums">{s.client_errors}</td>
+                          <td className="p-2 text-foreground tabular-nums">{s.server_errors}</td>
+                          <td className="p-2 tabular-nums">{s.p95_ms}ms</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>

@@ -30,10 +30,10 @@ async function loadUsage() {
 
 function Stat({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-2xl font-semibold tabular-nums">{value}</p>
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-4">
+      <p className="type-label text-muted-foreground">{label}</p>
+      <p className="type-display text-[28px] sm:text-[36px] font-black tabular-nums">{value}</p>
+      {hint && <p className="mt-1 font-mono text-[11px] text-muted-foreground">{hint}</p>}
     </div>
   )
 }
@@ -53,14 +53,14 @@ export default async function UsagePage() {
       <div className="mx-auto max-w-5xl space-y-8 px-4 py-8">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold">drop-note usage</h1>
+            <h1 className="type-display text-[32px] sm:text-[42px]">drop-note usage</h1>
             <p className="text-sm text-muted-foreground">Users and items by day (UTC) · updated on every page load</p>
           </div>
           <StatusNav active="/status/usage" />
         </header>
 
         {loadError && (
-          <p className="text-sm" style={{ color: 'hsl(var(--color-status-failed))' }}>
+          <p className="text-sm text-destructive-text">
             Could not load usage data: {loadError}
           </p>
         )}
@@ -76,7 +76,7 @@ export default async function UsagePage() {
         <div className="grid gap-4 lg:grid-cols-2">
           <DailyChart
             title="Items processed per day"
-            color="hsl(var(--color-source-email))"
+            color="hsl(var(--color-chart-1))"
             total={`${sumLast(days, CHART_DAYS).items} in ${CHART_DAYS} days`}
             points={days.map((d) => ({
               day: d.day,
@@ -86,7 +86,7 @@ export default async function UsagePage() {
           />
           <DailyChart
             title="Total users"
-            color="hsl(var(--color-status-done))"
+            color="hsl(var(--color-chart-2))"
             total={`${totalUsers} now`}
             points={days.map((d) => ({
               day: d.day,
@@ -96,7 +96,7 @@ export default async function UsagePage() {
           />
           <DailyChart
             title="Active users per day"
-            color="hsl(var(--color-tag-purple))"
+            color="hsl(var(--color-chart-3))"
             total="users who saved ≥ 1 item"
             points={days.map((d) => ({
               day: d.day,
@@ -106,7 +106,7 @@ export default async function UsagePage() {
           />
           <DailyChart
             title="Emails received per day"
-            color="hsl(var(--color-tag-teal))"
+            color="hsl(var(--color-chart-4))"
             total={`${sumLast(days, CHART_DAYS).emails} in ${CHART_DAYS} days`}
             points={days.map((d) => ({
               day: d.day,
@@ -118,33 +118,35 @@ export default async function UsagePage() {
 
         <section className="space-y-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-xl font-semibold">Top 10 users by items</h2>
+            <h2 className="type-display text-[22px]">Top 10 users by items</h2>
             <span className="text-sm text-muted-foreground">last {TOP_DAYS} days · full addresses in Admin → Users</span>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
+          <div className="overflow-hidden rounded-xl border-stroke border-ink bg-card shadow-ink-lg">
             {top.length === 0 ? (
               <p className="p-4 text-sm text-muted-foreground">No items saved in the last {TOP_DAYS} days.</p>
             ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="text-xs text-muted-foreground">
-                  <tr>
-                    <th className="p-2">#</th><th className="p-2">User</th><th className="p-2">Tier</th>
-                    <th className="p-2 text-right">Items</th><th className="p-2 text-right">Emails</th><th className="p-2">Last item</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {top.slice(0, 10).map((u, i) => (
-                    <tr key={u.user_id} className="border-t border-border">
-                      <td className="p-2 text-muted-foreground">{i + 1}</td>
-                      <td className="p-2 font-mono text-xs">{maskEmail(u.email)}</td>
-                      <td className="p-2">{u.tier}</td>
-                      <td className="p-2 text-right tabular-nums">{u.items}</td>
-                      <td className="p-2 text-right tabular-nums">{u.emails}</td>
-                      <td className="p-2 text-muted-foreground">{formatDistanceToNowStrict(new Date(u.last_item_at))} ago</td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="p-2 text-xs font-semibold text-muted-foreground">#</th><th className="p-2 text-xs font-semibold text-muted-foreground">User</th><th className="p-2 text-xs font-semibold text-muted-foreground">Tier</th>
+                      <th className="p-2 text-right text-xs font-semibold text-muted-foreground">Items</th><th className="p-2 text-right text-xs font-semibold text-muted-foreground">Emails</th><th className="p-2 text-xs font-semibold text-muted-foreground">Last item</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {top.slice(0, 10).map((u, i) => (
+                      <tr key={u.user_id} className="hover:bg-accent/50">
+                        <td className="p-2 text-muted-foreground tabular-nums">{i + 1}</td>
+                        <td className="p-2 font-mono text-xs">{maskEmail(u.email)}</td>
+                        <td className="p-2">{u.tier}</td>
+                        <td className="p-2 text-right tabular-nums">{u.items}</td>
+                        <td className="p-2 text-right tabular-nums">{u.emails}</td>
+                        <td className="p-2 text-muted-foreground">{formatDistanceToNowStrict(new Date(u.last_item_at))} ago</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </section>

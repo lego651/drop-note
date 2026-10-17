@@ -56,7 +56,7 @@ export function StatusLogin() {
           />
         </div>
         {error && (
-          <p role="alert" className="text-sm" style={{ color: 'hsl(var(--color-status-failed))' }}>
+          <p role="alert" className="text-sm text-destructive-text">
             {error}
           </p>
         )}
