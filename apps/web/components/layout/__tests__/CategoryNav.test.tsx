@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react'
 import { CategoryNav, type CategoryWithCount } from '../CategoryNav'
 
 vi.mock('next/navigation', () => ({
@@ -226,8 +226,13 @@ describe('CategoryNav', () => {
     it('corrects the confirmation count to the actual deletion scope (DRO-105 Codex P2)', async () => {
       // The sidebar's count (18, active/non-archived/email_body only) understates what
       // deleteCategory would reassign (22, every item with this category_id).
+      // The GET is deferred so the test can assert the sidebar count (18) BEFORE it
+      // resolves — otherwise the correction can land before the first assertion runs,
+      // making the test flaky (it failed 3/3 locally without this).
+      let resolveGet!: (value: Response) => void
+      const getPromise = new Promise<Response>((resolve) => { resolveGet = resolve })
       const fetchMock = vi.fn((url: string, init?: RequestInit) => {
-        if (!init) return Promise.resolve(new Response(JSON.stringify({ item_count: 22 }), { status: 200 }))
+        if (!init) return getPromise
         return Promise.resolve(new Response(JSON.stringify({ reassigned: 22 }), { status: 200 }))
       })
       vi.stubGlobal('fetch', fetchMock)
@@ -238,8 +243,13 @@ describe('CategoryNav', () => {
 
       const dialog = await screen.findByRole('alertdialog')
       expect(within(dialog).getByText(/Its 18 items will be re-sorted/)).toBeInTheDocument()
+      expect(fetchMock).toHaveBeenCalledWith('/api/categories/cat-food')
 
-      await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/categories/cat-food'))
+      await act(async () => {
+        resolveGet(new Response(JSON.stringify({ item_count: 22 }), { status: 200 }))
+        await getPromise
+      })
+
       await waitFor(() =>
         expect(within(dialog).getByText(/Its 22 items will be re-sorted/)).toBeInTheDocument(),
       )

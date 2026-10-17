@@ -70,6 +70,34 @@ describe('ItemCategoryControl', () => {
     ))
   })
 
+  it('keeps the optimistic override until refreshed props match it (DRO-105 B3)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { rerender } = render(
+      <ItemCategoryControl itemId="item-1" category={foodBadge} locked={false} categories={categories} />,
+    )
+    openPicker()
+    fireEvent.click(screen.getByText('Tech'))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    expect(screen.getByRole('button', { name: /Category: Tech/ })).toBeInTheDocument()
+
+    // Simulate a stale re-render (router.refresh() hasn't delivered the new
+    // server props yet) — the override must keep showing Tech, not flip back.
+    rerender(
+      <ItemCategoryControl itemId="item-1" category={foodBadge} locked={false} categories={categories} />,
+    )
+    expect(screen.getByRole('button', { name: /Category: Tech/ })).toBeInTheDocument()
+
+    // Once the refreshed props catch up, the override clears and props take over.
+    const techBadge = { id: 'cat-tech', name: 'Tech', position: 1, is_other: false }
+    rerender(
+      <ItemCategoryControl itemId="item-1" category={techBadge} locked categories={categories} />,
+    )
+    expect(screen.getByRole('button', { name: /Category: Tech/ })).toBeInTheDocument()
+  })
+
   it('rolls back the badge when the move request fails', async () => {
     vi.stubGlobal(
       'fetch',
