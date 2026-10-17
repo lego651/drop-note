@@ -57,7 +57,7 @@ describe('createAIProvider', () => {
 describe('OpenAIProvider.processText', () => {
   afterEach(() => { vi.restoreAllMocks() })
 
-  it('calls OpenAI API and returns summary + tags', async () => {
+  it('calls OpenAI API and returns summary + tags (no category when categories omitted)', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({
@@ -67,7 +67,37 @@ describe('OpenAIProvider.processText', () => {
 
     const provider = new OpenAIProvider('sk-test')
     const result = await provider.processText('Some content', [])
-    expect(result).toEqual({ summary: 'Test summary', tags: ['tag1', 'tag2'] })
+    expect(result).toEqual({ summary: 'Test summary', category: '', tags: ['tag1', 'tag2'] })
+  })
+
+  it('returns the matching category from the user list, case-insensitively', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        choices: [{ message: { content: JSON.stringify({ summary: 'Test summary', category: 'tech', tags: ['react'] }) } }],
+      }),
+    }) as unknown as typeof fetch
+
+    const provider = new OpenAIProvider('sk-test')
+    const result = await provider.processText('Some content', [], ['Food & Drink', 'Tech', 'Other'])
+    expect(result).toEqual({ summary: 'Test summary', category: 'Tech', tags: ['react'] })
+
+    const [, requestInit] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(requestInit.body as string) as { messages: Array<{ content: string }> }
+    expect(body.messages[0].content).toContain('Food & Drink, Tech, Other')
+  })
+
+  it('falls back to the last category when the model invents a name not in the list', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        choices: [{ message: { content: JSON.stringify({ summary: 'Test summary', category: 'Made Up Category', tags: [] }) } }],
+      }),
+    }) as unknown as typeof fetch
+
+    const provider = new OpenAIProvider('sk-test')
+    const result = await provider.processText('Some content', [], ['Food & Drink', 'Tech', 'Other'])
+    expect(result.category).toBe('Other')
   })
 
   it('throws with rate limit hint on 429', async () => {
@@ -107,7 +137,7 @@ describe('AnthropicProvider.processText', () => {
 
     const provider = new AnthropicProvider('sk-ant-test')
     const result = await provider.processText('Some content', [])
-    expect(result).toEqual({ summary: 'Anthropic summary', tags: ['a', 'b'] })
+    expect(result).toEqual({ summary: 'Anthropic summary', category: '', tags: ['a', 'b'] })
   })
 
   it('strips code fences before parsing JSON', async () => {
@@ -120,7 +150,20 @@ describe('AnthropicProvider.processText', () => {
 
     const provider = new AnthropicProvider('sk-ant-test')
     const result = await provider.processText('Some content', [])
-    expect(result).toEqual({ summary: 's', tags: ['t'] })
+    expect(result).toEqual({ summary: 's', category: '', tags: ['t'] })
+  })
+
+  it('resolves category against the user list', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        content: [{ text: JSON.stringify({ summary: 's', category: 'other', tags: [] }) }],
+      }),
+    }) as unknown as typeof fetch
+
+    const provider = new AnthropicProvider('sk-ant-test')
+    const result = await provider.processText('Some content', [], ['Tech', 'Other'])
+    expect(result.category).toBe('Other')
   })
 })
 
@@ -137,7 +180,7 @@ describe('GeminiProvider.processText', () => {
 
     const provider = new GeminiProvider('gemini-key')
     const result = await provider.processText('Some content', [])
-    expect(result).toEqual({ summary: 'Gemini summary', tags: ['x', 'y'] })
+    expect(result).toEqual({ summary: 'Gemini summary', category: '', tags: ['x', 'y'] })
   })
 
   it('throws with retryable=true on 429 rate limit', async () => {

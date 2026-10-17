@@ -65,6 +65,14 @@ async function handlePOST() {
     return NextResponse.json({ error: 'Failed to delete account data' }, { status: 500 })
   }
 
+  // Delete categories (items are already gone, so the "Other" undeletable guardrail
+  // in lib/categories.ts — which this bypasses — has nothing left to protect)
+  const { error: categoriesError } = await supabaseAdmin.from('categories').delete().eq('user_id', user.id)
+  if (categoriesError) {
+    log.error('account.delete.categories_failed', categoriesError)
+    return NextResponse.json({ error: 'Failed to delete account data' }, { status: 500 })
+  }
+
   // Delete usage_log entries
   const { error: usageError } = await supabaseAdmin.from('usage_log').delete().eq('user_id', user.id)
   if (usageError) {

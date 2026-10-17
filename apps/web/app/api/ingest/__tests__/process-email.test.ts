@@ -16,6 +16,8 @@ vi.mock('../../../../lib/ingest/db', () => ({
   upsertTags: vi.fn().mockResolvedValue(undefined),
   createAttachmentItem: vi.fn().mockResolvedValue('attach-1'),
   getExistingTagNames: vi.fn().mockResolvedValue([]),
+  getCategoriesForUser: vi.fn().mockResolvedValue([]),
+  setItemCategory: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('../../../../lib/ingest/ai', () => ({
@@ -49,7 +51,7 @@ vi.mock('@drop-note/shared/page-metadata', () => ({
 }))
 
 import { processEmail, resolveEffectiveBodyText } from '../../../../lib/ingest/process-email'
-import { setItemPending, setItemFailed, setItemDone, getExistingTagNames } from '../../../../lib/ingest/db'
+import { setItemPending, setItemFailed, setItemDone, getExistingTagNames, getCategoriesForUser, setItemCategory } from '../../../../lib/ingest/db'
 import { summarizeEmailBody } from '../../../../lib/ingest/ai'
 import { parseSendGridPayload } from '@drop-note/shared'
 import { fetchPageMetadata } from '@drop-note/shared/page-metadata'
@@ -78,6 +80,7 @@ describe('processEmail — AI error handling', () => {
     vi.mocked(summarizeEmailBody).mockResolvedValue({
       summary: '',
       tags: [],
+      category: '',
       error: 'OpenAI HTTP 500: Internal Server Error',
       retryable: true,
     })
@@ -96,6 +99,7 @@ describe('processEmail — AI error handling', () => {
     vi.mocked(summarizeEmailBody).mockResolvedValue({
       summary: '',
       tags: [],
+      category: '',
       error: 'Invalid AI response format',
       retryable: false,
     })
@@ -111,6 +115,7 @@ describe('processEmail — AI error handling', () => {
     vi.mocked(summarizeEmailBody).mockResolvedValue({
       summary: 'A test summary',
       tags: ['tag1', 'tag2'],
+      category: '',
       error: null,
       retryable: false,
     })
@@ -130,6 +135,7 @@ describe('processEmail — AI error handling', () => {
     vi.mocked(summarizeEmailBody).mockResolvedValue({
       summary: 'ok',
       tags: [],
+      category: '',
       error: null,
       retryable: false,
     })
@@ -157,6 +163,7 @@ describe('processEmail — existing tag reuse wiring (DRO-102)', () => {
     vi.mocked(summarizeEmailBody).mockResolvedValue({
       summary: 'A summary',
       tags: [],
+      category: '',
       error: null,
       retryable: false,
     })
@@ -164,7 +171,7 @@ describe('processEmail — existing tag reuse wiring (DRO-102)', () => {
     await processEmail(makeParams())
 
     expect(getExistingTagNames).toHaveBeenCalledWith('user-1')
-    expect(summarizeEmailBody).toHaveBeenCalledWith('Test subject', 'Hello world', ['travel', 'recipe'])
+    expect(summarizeEmailBody).toHaveBeenCalledWith('Test subject', 'Hello world', ['travel', 'recipe'], [])
   })
 
   it('passes the same existing tags to summarizeEmailBody for a PDF attachment', async () => {
@@ -181,13 +188,79 @@ describe('processEmail — existing tag reuse wiring (DRO-102)', () => {
     })
     vi.mocked(extractPdfText).mockResolvedValue({ text: 'PDF body text', error: null })
     vi.mocked(summarizeEmailBody)
-      .mockResolvedValueOnce({ summary: 'Body summary', tags: [], error: null, retryable: false })
-      .mockResolvedValueOnce({ summary: 'PDF summary', tags: [], error: null, retryable: false })
+      .mockResolvedValueOnce({ summary: 'Body summary', category: '', tags: [], error: null, retryable: false })
+      .mockResolvedValueOnce({ summary: 'PDF summary', category: '', tags: [], error: null, retryable: false })
 
     await processEmail(makeParams())
 
-    expect(summarizeEmailBody).toHaveBeenNthCalledWith(1, 'Test subject', 'Hello world', ['travel', 'recipe'])
-    expect(summarizeEmailBody).toHaveBeenNthCalledWith(2, 'notes.pdf', 'PDF body text', ['travel', 'recipe'])
+    expect(summarizeEmailBody).toHaveBeenNthCalledWith(1, 'Test subject', 'Hello world', ['travel', 'recipe'], [])
+    expect(summarizeEmailBody).toHaveBeenNthCalledWith(2, 'notes.pdf', 'PDF body text', ['travel', 'recipe'], [])
+  })
+})
+
+describe('processEmail — category wiring (DRO-103)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.mocked(getCategoriesForUser).mockResolvedValue([])
+  })
+
+  it('fetches the user\'s categories and passes their names to summarizeEmailBody', async () => {
+    vi.mocked(getCategoriesForUser).mockResolvedValue([
+      { id: 'tech-id', name: 'Tech' },
+      { id: 'other-id', name: 'Other' },
+    ])
+    vi.mocked(summarizeEmailBody).mockResolvedValue({
+      summary: 'A summary',
+      category: 'Tech',
+      tags: [],
+      error: null,
+      retryable: false,
+    })
+
+    await processEmail(makeParams())
+
+    expect(getCategoriesForUser).toHaveBeenCalledWith('user-1')
+    expect(summarizeEmailBody).toHaveBeenCalledWith('Test subject', 'Hello world', [], ['Tech', 'Other'])
+    expect(setItemCategory).toHaveBeenCalledWith('item-1', 'Tech', [
+      { id: 'tech-id', name: 'Tech' },
+      { id: 'other-id', name: 'Other' },
+    ])
+  })
+
+  it('falls back to the last (Other) category when the AI returns no category', async () => {
+    vi.mocked(getCategoriesForUser).mockResolvedValue([
+      { id: 'tech-id', name: 'Tech' },
+      { id: 'other-id', name: 'Other' },
+    ])
+    vi.mocked(summarizeEmailBody).mockResolvedValue({
+      summary: 'A summary',
+      category: '',
+      tags: [],
+      error: null,
+      retryable: false,
+    })
+
+    await processEmail(makeParams())
+
+    expect(setItemCategory).toHaveBeenCalledWith('item-1', 'Other', expect.anything())
+  })
+
+  it('never calls setItemCategory when the user has no categories yet', async () => {
+    vi.mocked(getCategoriesForUser).mockResolvedValue([])
+    vi.mocked(summarizeEmailBody).mockResolvedValue({
+      summary: 'A summary',
+      category: '',
+      tags: [],
+      error: null,
+      retryable: false,
+    })
+
+    await processEmail(makeParams())
+
+    expect(setItemCategory).not.toHaveBeenCalled()
   })
 })
 
@@ -231,6 +304,7 @@ describe('processEmail — HTML-only newsletter fallback', () => {
     vi.mocked(summarizeEmailBody).mockResolvedValue({
       summary: 'A summary',
       tags: [],
+      category: '',
       error: null,
       retryable: false,
     })
@@ -241,6 +315,7 @@ describe('processEmail — HTML-only newsletter fallback', () => {
     expect(summarizeEmailBody).toHaveBeenCalledWith(
       'Weekly digest',
       expect.stringContaining('https://example.com/article'),
+      [],
       [],
     )
     expect(setItemDone).toHaveBeenCalledWith(
@@ -263,6 +338,7 @@ describe('processEmail — generic URL metadata fetch', () => {
     vi.mocked(summarizeEmailBody).mockResolvedValue({
       summary: 'A reddit thread summary',
       tags: [],
+      category: '',
       error: null,
       retryable: false,
     })
@@ -284,6 +360,7 @@ describe('processEmail — generic URL metadata fetch', () => {
       'Some programming thread',
       'Some programming thread\n\nA lively discussion about programming.',
       [],
+      [],
     )
     expect(result.status).toBe('done')
     expect(setItemDone).toHaveBeenCalledWith(
@@ -304,6 +381,7 @@ describe('processEmail — generic URL metadata fetch', () => {
     expect(summarizeEmailBody).toHaveBeenCalledWith(
       'Check this out',
       'https://www.reddit.com/r/programming/comments/1a2b3c4/some_thread/',
+      [],
       [],
     )
     expect(result.status).toBe('done')

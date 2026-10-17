@@ -38,6 +38,47 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          created_at: string
+          hidden: boolean
+          id: string
+          is_default: boolean
+          is_other: boolean
+          name: string
+          position: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          is_default?: boolean
+          is_other?: boolean
+          name: string
+          position?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          is_default?: boolean
+          is_other?: boolean
+          name?: string
+          position?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       health_checks: {
         Row: {
           checked_at: string
@@ -144,6 +185,8 @@ export type Database = {
         Row: {
           ai_summary: string | null
           archived_at: string | null
+          category_id: string | null
+          category_locked: boolean
           created_at: string
           deleted_at: string | null
           error_message: string | null
@@ -166,6 +209,8 @@ export type Database = {
         Insert: {
           ai_summary?: string | null
           archived_at?: string | null
+          category_id?: string | null
+          category_locked?: boolean
           created_at?: string
           deleted_at?: string | null
           error_message?: string | null
@@ -188,6 +233,8 @@ export type Database = {
         Update: {
           ai_summary?: string | null
           archived_at?: string | null
+          category_id?: string | null
+          category_locked?: boolean
           created_at?: string
           deleted_at?: string | null
           error_message?: string | null
@@ -208,6 +255,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "items_user_id_fkey"
             columns: ["user_id"]

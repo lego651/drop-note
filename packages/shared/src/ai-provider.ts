@@ -1,9 +1,17 @@
 // packages/shared/src/ai-provider.ts
 
+import { buildCategoryKeywordPrompt, resolveCategory } from './prompts'
+
 export interface AIProvider {
-  /** Returns summary and tags from a single API call — do not split into two calls */
-  processText(text: string, existingTags: string[]): Promise<{
+  /**
+   * Returns summary, category and tags from a single API call — do not split into two calls.
+   * `categories` is the user's current category list (defaults + custom), ordered with
+   * their "Other" category last — see buildCategoryKeywordPrompt. When omitted or empty,
+   * no category is requested and `category` on the result is ''.
+   */
+  processText(text: string, existingTags: string[], categories?: string[]): Promise<{
     summary: string
+    category: string
     tags: string[]
   }>
   /** Returns image description. Providers that don't support vision return '' */
@@ -19,7 +27,11 @@ export class OpenAIProvider implements AIProvider {
     this.model = model ?? 'gpt-4o-mini'
   }
 
-  async processText(text: string, existingTags: string[]): Promise<{ summary: string; tags: string[] }> {
+  async processText(text: string, existingTags: string[], categories: string[] = []): Promise<{ summary: string; category: string; tags: string[] }> {
+    const systemContent = categories.length > 0
+      ? `You are a content summarizer and categorizer. ${buildCategoryKeywordPrompt(categories, existingTags)} Respond only with a JSON object: {"summary": "...", "category": "...", "tags": ["...", "..."]}`
+      : 'You are a content summarizer. Given text content, return a JSON object with "summary" (2-3 sentence summary) and "tags" (array of 1-3 lowercase topic tags). Reuse one of the user\'s existing tags whenever it fits; only invent a new tag when none of the existing ones apply. Existing tags for context: ' + existingTags.join(', ')
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -29,10 +41,7 @@ export class OpenAIProvider implements AIProvider {
       body: JSON.stringify({
         model: this.model,
         messages: [
-          {
-            role: 'system',
-            content: 'You are a content summarizer. Given text content, return a JSON object with "summary" (2-3 sentence summary) and "tags" (array of 1-3 lowercase topic tags). Reuse one of the user\'s existing tags whenever it fits; only invent a new tag when none of the existing ones apply. Existing tags for context: ' + existingTags.join(', '),
-          },
+          { role: 'system', content: systemContent },
           { role: 'user', content: text.slice(0, 50000) },
         ],
         response_format: { type: 'json_object' },
@@ -49,8 +58,12 @@ export class OpenAIProvider implements AIProvider {
       throw err
     }
     const data = await response.json() as { choices: Array<{ message: { content: string } }> }
-    const parsed = JSON.parse(data.choices[0].message.content) as { summary: string; tags: string[] }
-    return { summary: parsed.summary ?? '', tags: parsed.tags ?? [] }
+    const parsed = JSON.parse(data.choices[0].message.content) as { summary: string; category?: string; tags: string[] }
+    return {
+      summary: parsed.summary ?? '',
+      category: categories.length > 0 ? resolveCategory(parsed.category, categories) : '',
+      tags: parsed.tags ?? [],
+    }
   }
 
   async describeImage(base64: string, mimeType: string): Promise<string> {
@@ -97,7 +110,11 @@ export class AnthropicProvider implements AIProvider {
     this.model = model ?? 'claude-haiku-4-5-20251001'
   }
 
-  async processText(text: string, existingTags: string[]): Promise<{ summary: string; tags: string[] }> {
+  async processText(text: string, existingTags: string[], categories: string[] = []): Promise<{ summary: string; category: string; tags: string[] }> {
+    const instruction = categories.length > 0
+      ? `${buildCategoryKeywordPrompt(categories, existingTags)}\n\nReturn JSON with "summary" (2-3 sentences), "category" and "tags".`
+      : `Summarize this content and suggest tags. Existing tags for context: ${existingTags.join(', ')}. Reuse one of the existing tags whenever it fits; only invent a new tag when none of the existing ones apply.\n\nReturn JSON with "summary" (2-3 sentences) and "tags" (array of 1-3 lowercase topic tags).`
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -111,7 +128,7 @@ export class AnthropicProvider implements AIProvider {
         messages: [
           {
             role: 'user',
-            content: `Summarize this content and suggest tags. Existing tags for context: ${existingTags.join(', ')}. Reuse one of the existing tags whenever it fits; only invent a new tag when none of the existing ones apply.\n\nReturn JSON with "summary" (2-3 sentences) and "tags" (array of 1-3 lowercase topic tags).\n\nContent:\n${text.slice(0, 50000)}`,
+            content: `${instruction}\n\nContent:\n${text.slice(0, 50000)}`,
           },
         ],
       }),
@@ -128,8 +145,12 @@ export class AnthropicProvider implements AIProvider {
     }
     const data = await response.json() as { content: Array<{ text: string }> }
     const raw = data.content[0].text.replace(/^```(?:json)?\n?|\n?```$/g, '').trim()
-    const parsed = JSON.parse(raw) as { summary: string; tags: string[] }
-    return { summary: parsed.summary ?? '', tags: parsed.tags ?? [] }
+    const parsed = JSON.parse(raw) as { summary: string; category?: string; tags: string[] }
+    return {
+      summary: parsed.summary ?? '',
+      category: categories.length > 0 ? resolveCategory(parsed.category, categories) : '',
+      tags: parsed.tags ?? [],
+    }
   }
 
   async describeImage(base64: string, mimeType: string): Promise<string> {
@@ -183,7 +204,11 @@ export class GeminiProvider implements AIProvider {
     this.visionModel = visionModel ?? 'gemini-1.5-flash'
   }
 
-  async processText(text: string, existingTags: string[]): Promise<{ summary: string; tags: string[] }> {
+  async processText(text: string, existingTags: string[], categories: string[] = []): Promise<{ summary: string; category: string; tags: string[] }> {
+    const instruction = categories.length > 0
+      ? `${buildCategoryKeywordPrompt(categories, existingTags)}\n\nReturn JSON with "summary" (2-3 sentences), "category" and "tags".`
+      : `Summarize this content and suggest tags. Existing tags for context: ${existingTags.join(', ')}. Reuse one of the existing tags whenever it fits; only invent a new tag when none of the existing ones apply.\n\nReturn JSON with "summary" (2-3 sentences) and "tags" (array of 1-3 lowercase topic tags).`
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`,
       {
@@ -197,7 +222,7 @@ export class GeminiProvider implements AIProvider {
             {
               parts: [
                 {
-                  text: `Summarize this content and suggest tags. Existing tags for context: ${existingTags.join(', ')}. Reuse one of the existing tags whenever it fits; only invent a new tag when none of the existing ones apply.\n\nReturn JSON with "summary" (2-3 sentences) and "tags" (array of 1-3 lowercase topic tags).\n\nContent:\n${text.slice(0, 50000)}`,
+                  text: `${instruction}\n\nContent:\n${text.slice(0, 50000)}`,
                 },
               ],
             },
@@ -217,8 +242,12 @@ export class GeminiProvider implements AIProvider {
       throw err
     }
     const data = await response.json() as { candidates: Array<{ content: { parts: Array<{ text: string }> } }> }
-    const parsed = JSON.parse(data.candidates[0].content.parts[0].text) as { summary: string; tags: string[] }
-    return { summary: parsed.summary ?? '', tags: parsed.tags ?? [] }
+    const parsed = JSON.parse(data.candidates[0].content.parts[0].text) as { summary: string; category?: string; tags: string[] }
+    return {
+      summary: parsed.summary ?? '',
+      category: categories.length > 0 ? resolveCategory(parsed.category, categories) : '',
+      tags: parsed.tags ?? [],
+    }
   }
 
   async describeImage(base64: string, mimeType: string): Promise<string> {

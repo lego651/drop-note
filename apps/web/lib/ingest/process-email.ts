@@ -31,6 +31,9 @@ import {
   upsertTags,
   createAttachmentItem,
   getExistingTagNames,
+  getCategoriesForUser,
+  setItemCategory,
+  type UserCategory,
 } from './db'
 import { uploadAttachment } from './storage'
 import { summarizeEmailBody, describeImage } from './ai'
@@ -85,6 +88,10 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
     // Fetched once and reused for every AI call in this request so the model sees
     // the user's existing tags and reuses them instead of inventing near-duplicates.
     const existingTags = await getExistingTagNames(userId)
+    // Fetched once and reused for every classification call in this request — the
+    // user's current category list (defaults + custom), with "Other" always last.
+    const categories = await getCategoriesForUser(userId)
+    const categoryNames = categories.map((c) => c.name)
 
     const fields: Record<string, string> = {
       from,
@@ -140,7 +147,7 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
     }
 
     // Summarize body
-    const bodyResult = await summarizeEmailBody(summarizeSubject, summarizeBody, existingTags)
+    const bodyResult = await summarizeEmailBody(summarizeSubject, summarizeBody, existingTags, categoryNames)
     const aiMs = Date.now() - aiStart
 
     if (bodyResult.error) {
@@ -168,6 +175,10 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
       await upsertTags(userId, bodyItemId, bodyResult.tags)
     }
 
+    if (categories.length > 0) {
+      await setItemCategory(bodyItemId, bodyResult.category || fallbackCategoryName(categories), categories)
+    }
+
     // Process attachments
     const itemIds: string[] = [bodyItemId]
 
@@ -193,6 +204,10 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
 
         let aiSummary = ''
         let aiTags: string[] = []
+        // Image attachments only get a text description (no JSON/category support from
+        // the vision call), so they fall back to the user's "Other" category rather than
+        // going uncategorized. PDFs get a real classification via summarizeEmailBody.
+        let aiCategory = fallbackCategoryName(categories)
 
         if (!isAllowedMimeType(attachment.mimeType)) {
           // skip unsupported mime types
@@ -202,9 +217,10 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
         } else if (attachment.mimeType === 'application/pdf') {
           const pdfResult = await extractPdfText(attachment.data)
           if (pdfResult.text) {
-            const sumResult = await summarizeEmailBody(attachment.filename, pdfResult.text, existingTags)
+            const sumResult = await summarizeEmailBody(attachment.filename, pdfResult.text, existingTags, categoryNames)
             aiSummary = sumResult.summary
             aiTags = sumResult.tags
+            aiCategory = sumResult.category || aiCategory
           }
         }
 
@@ -216,6 +232,10 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
 
         if (aiTags.length > 0) {
           await upsertTags(userId, attachItemId, aiTags)
+        }
+
+        if (categories.length > 0) {
+          await setItemCategory(attachItemId, aiCategory, categories)
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Unknown error'
@@ -235,6 +255,12 @@ export async function processEmail(params: ProcessEmailParams): Promise<ProcessE
     }
     return { itemIds: [bodyItemId], status: 'failed', aiMs }
   }
+}
+
+// The user's "Other" category is always last in getCategoriesForUser's list — used when
+// an item has no AI-determined category (e.g. image attachments, unsupported mime types).
+function fallbackCategoryName(categories: UserCategory[]): string {
+  return categories[categories.length - 1]?.name ?? ''
 }
 
 // Host only — full URLs can carry personal tokens in query strings.

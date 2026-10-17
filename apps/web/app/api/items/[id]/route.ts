@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { deleteItem } from '@/lib/items'
+import { moveItems } from '@/lib/categories'
 import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
 async function handlePATCH(
@@ -22,14 +23,16 @@ async function handlePATCH(
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
 
-    const { ai_summary, notes, tags, pinned, archived } = body as {
+    const { ai_summary, notes, tags, pinned, archived, category_id } = body as {
       ai_summary?: string
       notes?: string
       tags?: string[]
       pinned?: boolean
       archived?: boolean
+      category_id?: string
     }
-    // deleted_at is NOT accepted via PATCH
+    // deleted_at and category_locked are NOT accepted via PATCH directly — category_id
+    // goes through moveItems() below, which is the only path that sets category_locked.
 
     // Verify ownership first
     const { data: existing } = await supabase
@@ -40,6 +43,11 @@ async function handlePATCH(
       .single()
 
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    if (category_id !== undefined) {
+      const result = await moveItems(user.id, [id], category_id)
+      if (!result.ok) return NextResponse.json({ error: result.error }, { status: 422 })
+    }
 
     // Build update object
     const updates: Record<string, unknown> = {}

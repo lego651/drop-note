@@ -18,15 +18,28 @@ describe('summarizeEmailBody', () => {
   })
 
   it('passes existingTags through to the AI provider', async () => {
-    processText.mockResolvedValue({ summary: 's', tags: [] })
+    processText.mockResolvedValue({ summary: 's', category: '', tags: [] })
     await summarizeEmailBody('Subject', 'Body', ['travel', 'recipe'])
-    expect(processText).toHaveBeenCalledWith(expect.stringContaining('Body'), ['travel', 'recipe'])
+    expect(processText).toHaveBeenCalledWith(expect.stringContaining('Body'), ['travel', 'recipe'], [])
   })
 
-  it('defaults existingTags to an empty array when omitted', async () => {
-    processText.mockResolvedValue({ summary: 's', tags: [] })
+  it('defaults existingTags and categories to an empty array when omitted', async () => {
+    processText.mockResolvedValue({ summary: 's', category: '', tags: [] })
     await summarizeEmailBody('Subject', 'Body')
-    expect(processText).toHaveBeenCalledWith(expect.any(String), [])
+    expect(processText).toHaveBeenCalledWith(expect.any(String), [], [])
+  })
+
+  it('passes the category list through and returns the resolved category', async () => {
+    processText.mockResolvedValue({ summary: 's', category: 'Tech', tags: [] })
+    const result = await summarizeEmailBody('Subject', 'Body', [], ['Food & Drink', 'Tech', 'Other'])
+    expect(processText).toHaveBeenCalledWith(expect.any(String), [], ['Food & Drink', 'Tech', 'Other'])
+    expect(result.category).toBe('Tech')
+  })
+
+  it('defaults category to an empty string when the provider omits it', async () => {
+    processText.mockResolvedValue({ summary: 's', tags: [] })
+    const result = await summarizeEmailBody('Subject', 'Body')
+    expect(result.category).toBe('')
   })
 
   it('caps tags at MAX_TAGS_PER_ITEM even when the model returns more', async () => {
