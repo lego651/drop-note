@@ -17,7 +17,7 @@ export function DailyChart({ title, points, color, total }: {
 }) {
   const max = niceMax(Math.max(0, ...points.map((p) => p.value)))
   return (
-    <section className="min-w-0 rounded-xl border border-border bg-card p-5">
+    <section className="min-w-0 rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-5">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="font-medium">{title}</h3>
         <span className="text-sm text-muted-foreground">{total}</span>
