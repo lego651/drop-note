@@ -5,10 +5,16 @@ import { log } from './observability/logger'
 
 export const CATEGORY_CAP = 15
 export const CATEGORY_NAME_MAX_LENGTH = 40
-// Bounds how many of a category's items get an AI re-sort call on delete/resort-preview —
-// cheap for the handful of custom categories users will actually delete, but an unbounded
-// scan would turn one click into hundreds of synchronous AI calls.
-const RESORT_SCAN_LIMIT = 200
+// Bounds how many of a category's items get an AI re-sort call, in both deleteCategory and
+// previewResort: cheap for the handful of custom categories users will actually delete, but
+// classifying an unbounded number of items would turn one click into hundreds of AI calls.
+// In deleteCategory, anything beyond this limit skips the AI entirely and goes straight to
+// the fallback category (every item still gets moved — nothing is left uncategorized).
+export const RESORT_SCAN_LIMIT = 200
+// Within that limit, caps how many of those AI calls run at once — e.g. deleting "Tech"
+// with 200 items fires at most this many concurrent requests, not 200, so one delete can't
+// exhaust the AI provider's rate limit or time out the request.
+export const DELETE_RESORT_CONCURRENCY = 8
 
 type AdminClient = Pick<SupabaseClient, 'from'>
 
@@ -152,6 +158,10 @@ export async function setCategoryHidden(
 /**
  * Deletes a category, re-sorting ALL of its items (including ones the user manually
  * moved there) to the closest remaining category via the AI, or "Other" if nothing fits.
+ * AI calls are capped at DELETE_RESORT_CONCURRENCY at a time, and only the first
+ * RESORT_SCAN_LIMIT items get an AI call at all — anything beyond that goes straight to
+ * the fallback category without one. Every item still gets moved either way; the limit
+ * only controls how many get a classification call rather than the fallback.
  *
  * Lock handling: every reassigned item has category_locked cleared, even if it was
  * previously locked. The category the user locked it to is gone, so that lock has nothing
@@ -187,26 +197,46 @@ export async function deleteCategory(
 
   if (items && items.length > 0 && fallback) {
     const provider = createAIProvider()
-    await Promise.all(
-      items.map(async (item) => {
-        const text = `${item.subject ?? ''}\n\n${item.ai_summary ?? ''}`.trim()
-        let newCategoryName = fallback.name
-        if (text && names.length > 0) {
-          try {
-            const result = await provider.processText(text, [], names)
-            newCategoryName = result.category || fallback.name
-          } catch (err) {
-            log.warn('categories.delete_resort_classify_failed', { userId, itemId: item.id }, err instanceof Error ? err : undefined)
+    const toClassify = items.slice(0, RESORT_SCAN_LIMIT)
+    const overflow = items.slice(RESORT_SCAN_LIMIT)
+
+    for (let i = 0; i < toClassify.length; i += DELETE_RESORT_CONCURRENCY) {
+      const batch = toClassify.slice(i, i + DELETE_RESORT_CONCURRENCY)
+      await Promise.all(
+        batch.map(async (item) => {
+          const text = `${item.subject ?? ''}\n\n${item.ai_summary ?? ''}`.trim()
+          let newCategoryName = fallback.name
+          if (text && names.length > 0) {
+            try {
+              const result = await provider.processText(text, [], names)
+              newCategoryName = result.category || fallback.name
+            } catch (err) {
+              log.warn('categories.delete_resort_classify_failed', { userId, itemId: item.id }, err instanceof Error ? err : undefined)
+            }
           }
-        }
-        const match = remaining.find((c) => c.name === newCategoryName) ?? fallback
-        await db
-          .from('items')
-          .update({ category_id: match.id, category_locked: false })
-          .eq('id', item.id)
-          .eq('user_id', userId)
-      }),
-    )
+          const match = remaining.find((c) => c.name === newCategoryName) ?? fallback
+          const { error: updateError } = await db
+            .from('items')
+            .update({ category_id: match.id, category_locked: false })
+            .eq('id', item.id)
+            .eq('user_id', userId)
+          if (updateError) {
+            log.warn('categories.delete_resort_update_failed', { userId, itemId: item.id }, updateError)
+          }
+        }),
+      )
+    }
+
+    if (overflow.length > 0) {
+      const { error: overflowError } = await db
+        .from('items')
+        .update({ category_id: fallback.id, category_locked: false })
+        .in('id', overflow.map((item) => item.id))
+        .eq('user_id', userId)
+      if (overflowError) {
+        log.warn('categories.delete_resort_overflow_failed', { userId, categoryId }, overflowError)
+      }
+    }
   }
 
   const { error: deleteError } = await db.from('categories').delete().eq('id', categoryId).eq('user_id', userId)

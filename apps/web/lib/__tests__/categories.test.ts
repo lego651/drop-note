@@ -18,6 +18,8 @@ import {
   previewResort,
   applyResort,
   CATEGORY_CAP,
+  RESORT_SCAN_LIMIT,
+  DELETE_RESORT_CONCURRENCY,
   type UserCategory,
 } from '../categories'
 
@@ -242,6 +244,52 @@ describe('deleteCategory', () => {
 
     const categoryDeleteCall = chainsByTable.categories.find((c) => c.delete.mock.calls.length > 0)
     expect(categoryDeleteCall).toBeDefined()
+  })
+
+  it('caps concurrent AI calls at DELETE_RESORT_CONCURRENCY and skips the AI beyond RESORT_SCAN_LIMIT, moving overflow items straight to Other', async () => {
+    let inFlight = 0
+    let maxInFlight = 0
+    processText.mockImplementation(async () => {
+      inFlight++
+      maxInFlight = Math.max(maxInFlight, inFlight)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      inFlight--
+      return { summary: '', category: 'Tech', tags: [] }
+    })
+
+    const overflowCount = 10
+    const totalItems = RESORT_SCAN_LIMIT + overflowCount
+    const items = Array.from({ length: totalItems }, (_, i) => ({
+      id: `item-${i}`,
+      subject: 'something',
+      ai_summary: 'summary',
+    }))
+
+    const { from, chainsByTable } = makeClient({
+      categories: (calls) => {
+        if (calls.some((c) => c.method === 'delete')) return { data: null, error: null }
+        return { data: EIGHT_DEFAULTS, error: null }
+      },
+      items: (calls) => {
+        if (calls.some((c) => c.method === 'update')) return { data: null, error: null }
+        return { data: items, error: null }
+      },
+    })
+
+    const result = await deleteCategory('user-1', '7', { from } as any) // deletes "Learning & Work"
+    expect(result).toEqual({ ok: true, reassigned: totalItems })
+
+    // Only the first RESORT_SCAN_LIMIT items ever get an AI call; the rest skip it entirely.
+    expect(processText).toHaveBeenCalledTimes(RESORT_SCAN_LIMIT)
+    expect(maxInFlight).toBeLessThanOrEqual(DELETE_RESORT_CONCURRENCY)
+    expect(maxInFlight).toBeGreaterThan(1)
+
+    // The overflow items are moved to Other in one bulk update, without an AI call each.
+    const overflowUpdate = chainsByTable.items.find(
+      (c) => c.update.mock.calls.length > 0 && c.in.mock.calls.length > 0,
+    )
+    expect(overflowUpdate.update).toHaveBeenCalledWith({ category_id: 'other', category_locked: false })
+    expect(overflowUpdate.in).toHaveBeenCalledWith('id', items.slice(RESORT_SCAN_LIMIT).map((item) => item.id))
   })
 
   it('falls back to Other when the AI classification call fails', async () => {

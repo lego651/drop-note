@@ -22,12 +22,15 @@ describe('20261017000001_categories.sql', () => {
     expect(sql).toMatch(/ALTER TABLE public\.categories ENABLE ROW LEVEL SECURITY/)
   })
 
-  it('defines select/insert/update/delete policies scoped to auth.uid() = user_id', () => {
-    for (const action of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) {
-      expect(sql).toMatch(new RegExp(`ON public\\.categories FOR ${action}`))
+  it('defines a select-own policy scoped to auth.uid() = user_id', () => {
+    expect(sql).toMatch(/ON public\.categories FOR SELECT/)
+    expect(sql).toMatch(/auth\.uid\(\) = user_id/)
+  })
+
+  it('does NOT grant authenticated users insert/update/delete on categories (writes go through supabaseAdmin; this is what actually protects "Other" from direct PostgREST access)', () => {
+    for (const action of ['INSERT', 'UPDATE', 'DELETE']) {
+      expect(sql).not.toMatch(new RegExp(`ON public\\.categories FOR ${action}`))
     }
-    const ownUserMatches = sql.match(/auth\.uid\(\) = user_id/g) ?? []
-    expect(ownUserMatches.length).toBeGreaterThanOrEqual(4)
   })
 
   it('enforces a case-insensitive unique category name per user', () => {

@@ -13,10 +13,11 @@
 --   - "Other" is undeletable: enforced in application code (lib/categories.ts), NOT a DB
 --     trigger. A DB-level BEFORE DELETE trigger would also fire during full account
 --     deletion (apps/web/app/api/account/delete/route.ts), which deletes every category
---     including Other for a departing user — exactly the case we must allow. RLS already
---     restricts category deletes to the owning user (or the admin service-role client used
---     deliberately for account wipes), so the guardrail only needs to live in the one code
---     path users can actually reach.
+--     including Other for a departing user — exactly the case we must allow. Instead, the
+--     `authenticated` role gets a SELECT-only RLS policy below (no insert/update/delete),
+--     so a user can never reach `categories` directly via PostgREST at all — every write
+--     goes through lib/categories.ts (or the account-delete route) via the service-role
+--     client, making that app code the only path that can touch an "Other" row.
 
 CREATE TABLE public.categories (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -59,23 +60,19 @@ ALTER TABLE public.items
 
 CREATE INDEX idx_items_category_id ON public.items(category_id);
 
--- RLS on the new table, mirroring the existing tags policies.
+-- RLS on the new table. Every category write (create/rename/hide/delete, and the
+-- account-deletion wipe) goes through lib/categories.ts or the admin route, which use
+-- supabaseAdmin (the service-role client) and bypass RLS entirely — so the only policy
+-- the `authenticated` role needs is read access to its own rows. Deliberately NOT adding
+-- insert/update/delete policies for `authenticated`: an update policy would let a user
+-- PATCH `is_other`/`is_default` directly via PostgREST, and a delete policy would let them
+-- DELETE the "Other" row directly, both bypassing the undeletable-Other guardrail in
+-- deleteCategory() (see the comment above the table). Without those policies, that app
+-- code is the only path that can ever touch an "Other" row for a regular user.
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "categories: select own"
   ON public.categories FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "categories: insert own"
-  ON public.categories FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "categories: update own"
-  ON public.categories FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "categories: delete own"
-  ON public.categories FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Seed the 8 defaults for every existing user that doesn't already have them
