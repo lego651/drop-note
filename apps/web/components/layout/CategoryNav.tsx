@@ -135,6 +135,26 @@ export function CategoryNav({
     }
   }
 
+  // The sidebar's item_count is scoped to active, non-archived email_body items
+  // (for the badge), but deleteCategory reassigns every item with this category_id.
+  // Open the dialog immediately with the sidebar count, then correct it in place
+  // once the real deletion-scope count comes back, so the confirmation doesn't
+  // understate how many items are affected.
+  function handleDeleteRequest(category: CategoryWithCount) {
+    setDeleteTarget(category)
+    fetch(`/api/categories/${category.id}`)
+      .then((res) => (res.ok ? (res.json() as Promise<{ item_count?: number }>) : null))
+      .then((data) => {
+        if (typeof data?.item_count !== 'number') return
+        setDeleteTarget((prev) =>
+          prev && prev.id === category.id ? { ...prev, item_count: data.item_count! } : prev,
+        )
+      })
+      .catch(() => {
+        // Best-effort correction; keep the sidebar's count if the lookup fails.
+      })
+  }
+
   function handleDeleted(category: CategoryWithCount) {
     setItems((prev) => prev.filter((c) => c.id !== category.id))
     setDeleteTarget(null)
@@ -196,7 +216,7 @@ export function CategoryNav({
           side={menuSide}
           onRename={() => setRenamingId(category.id)}
           onToggleHidden={() => toggleHidden(category)}
-          onDeleteRequest={() => setDeleteTarget(category)}
+          onDeleteRequest={() => handleDeleteRequest(category)}
         />
       </>
     )

@@ -44,7 +44,32 @@ async function handleGET(request: NextRequest) {
       return NextResponse.json({ error: 'Search failed' }, { status: 500 })
     }
 
-    return NextResponse.json(items ?? [])
+    // search_items() returns the category fields flattened (SQL RETURNS TABLE can't
+    // nest a composite); rebuild the `category: {...} | null` shape ItemSummary and
+    // the card/picker components expect.
+    const shaped = (items ?? []).map((item: Record<string, unknown>) => {
+      const {
+        category_id,
+        category_name,
+        category_position,
+        category_is_other,
+        ...rest
+      } = item
+      return {
+        ...rest,
+        category_id,
+        category: category_id
+          ? {
+              id: category_id,
+              name: category_name,
+              position: category_position,
+              is_other: category_is_other,
+            }
+          : null,
+      }
+    })
+
+    return NextResponse.json(shaped)
   } catch (err) {
     log.error('items.search_failed', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

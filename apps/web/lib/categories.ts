@@ -102,6 +102,31 @@ export async function getCategoriesWithCounts(
   return categories.map((c, i) => ({ ...c, item_count: counts[i].count ?? 0 }))
 }
 
+/**
+ * Count of items `deleteCategory` would actually reassign: every item with this
+ * category_id, regardless of type/trash/archive state. Unlike
+ * `getCategoriesWithCounts` (scoped to active, non-archived email_body items, for
+ * the sidebar badge), this matches deleteCategory's own fetch scope exactly, so the
+ * delete confirmation doesn't understate how many items are affected.
+ */
+export async function getCategoryDeletionCount(
+  userId: string,
+  categoryId: string,
+  client?: AdminClient,
+): Promise<number> {
+  const db = client ?? (supabaseAdmin as unknown as AdminClient)
+  const { count, error } = await db
+    .from('items')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('category_id', categoryId)
+  if (error) {
+    log.warn('categories.deletion_count_failed', { userId, categoryId }, error)
+    throw new Error('Failed to count items in this category')
+  }
+  return count ?? 0
+}
+
 function validateName(name: string): { trimmed: string } | { error: string } {
   const trimmed = name.trim()
   if (!trimmed) return { error: 'Name is required' }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useTransition } from 'react'
 import { useRealtimeItems } from '@/hooks/useRealtimeItems'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -88,6 +88,7 @@ function ItemsPageClientInner({
   avatarColor = '215 16% 55%',
 }: ItemsPageClientProps) {
   const router = useRouter()
+  const [, startTransition] = useTransition()
   const searchParams = useSearchParams()
   const searchParamsStr = searchParams.toString()
 
@@ -109,27 +110,44 @@ function ItemsPageClientInner({
     setOptimisticItems(items)
   }, [items])
 
+  // Realtime payloads are raw `items` table rows (category_id, no joined `category`).
+  // Resolve the badge's category from the categories list the page already has so a
+  // card doesn't lose its badge on every realtime UPDATE/INSERT.
+  const resolveCategory = useCallback(
+    (categoryId: string | null | undefined): BadgeCategory | null => {
+      if (!categoryId) return null
+      const found = categories.find((c) => c.id === categoryId)
+      return found
+        ? { id: found.id, name: found.name, position: found.position, is_other: found.is_other }
+        : null
+    },
+    [categories],
+  )
+
   // Apply realtime updates to optimistic items
   useEffect(() => {
     if (updatedItems.length === 0) return
     setOptimisticItems(prev => prev.map(item => {
       const updated = updatedItems.find(u => u.id === item.id)
-      return updated ?? item
+      if (!updated) return item
+      return { ...updated, category: resolveCategory(updated.category_id) }
     }))
     clearUpdatedItems()
-  }, [updatedItems, clearUpdatedItems])
+  }, [updatedItems, clearUpdatedItems, resolveCategory])
 
   // Prepend new items (dedup)
   useEffect(() => {
     if (newItems.length === 0) return
     setOptimisticItems(prev => {
       const existingIds = new Set(prev.map(i => i.id))
-      const truly_new = newItems.filter(n => !existingIds.has(n.id))
+      const truly_new = newItems
+        .filter(n => !existingIds.has(n.id))
+        .map(n => ({ ...n, category: resolveCategory(n.category_id) }))
       if (truly_new.length === 0) return prev
       return [...truly_new, ...prev]
     })
     clearNewItems()
-  }, [newItems, clearNewItems])
+  }, [newItems, clearNewItems, resolveCategory])
 
   // Read view preference from localStorage on mount
   useEffect(() => {
@@ -271,8 +289,10 @@ function ItemsPageClientInner({
   const handleBulkMoved = useCallback(
     (ids: string[], category: BadgeCategory) => {
       ids.forEach((id) => applyCategoryMove(id, category, true))
+      deselectAll()
+      startTransition(() => router.refresh())
     },
-    [applyCategoryMove],
+    [applyCategoryMove, deselectAll, router],
   )
 
   const isSearchMode = searchQuery.length >= 2

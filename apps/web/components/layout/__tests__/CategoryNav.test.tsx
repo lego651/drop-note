@@ -206,9 +206,10 @@ describe('CategoryNav', () => {
 
   describe('delete', () => {
     it('opens the confirmation dialog and removes the row once deleted', async () => {
-      const fetchMock = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ reassigned: 3 }), { status: 200 }),
-      )
+      const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+        if (!init) return Promise.resolve(new Response(JSON.stringify({ item_count: 18 }), { status: 200 }))
+        return Promise.resolve(new Response(JSON.stringify({ reassigned: 3 }), { status: 200 }))
+      })
       vi.stubGlobal('fetch', fetchMock)
 
       render(<CategoryNav categories={base} activeCategoryId={null} />)
@@ -220,6 +221,44 @@ describe('CategoryNav', () => {
 
       await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/categories/cat-food', { method: 'DELETE' }))
       await waitFor(() => expect(screen.queryByText('Food & Drink')).not.toBeInTheDocument())
+    })
+
+    it('corrects the confirmation count to the actual deletion scope (DRO-105 Codex P2)', async () => {
+      // The sidebar's count (18, active/non-archived/email_body only) understates what
+      // deleteCategory would reassign (22, every item with this category_id).
+      const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+        if (!init) return Promise.resolve(new Response(JSON.stringify({ item_count: 22 }), { status: 200 }))
+        return Promise.resolve(new Response(JSON.stringify({ reassigned: 22 }), { status: 200 }))
+      })
+      vi.stubGlobal('fetch', fetchMock)
+
+      render(<CategoryNav categories={base} activeCategoryId={null} />)
+      openRowMenu('Food & Drink')
+      fireEvent.click(screen.getByText('Delete…'))
+
+      const dialog = await screen.findByRole('alertdialog')
+      expect(within(dialog).getByText(/Its 18 items will be re-sorted/)).toBeInTheDocument()
+
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/categories/cat-food'))
+      await waitFor(() =>
+        expect(within(dialog).getByText(/Its 22 items will be re-sorted/)).toBeInTheDocument(),
+      )
+    })
+
+    it('keeps the sidebar count if the deletion-scope lookup fails', async () => {
+      const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+        if (!init) return Promise.resolve(new Response('{}', { status: 500 }))
+        return Promise.resolve(new Response(JSON.stringify({ reassigned: 18 }), { status: 200 }))
+      })
+      vi.stubGlobal('fetch', fetchMock)
+
+      render(<CategoryNav categories={base} activeCategoryId={null} />)
+      openRowMenu('Food & Drink')
+      fireEvent.click(screen.getByText('Delete…'))
+
+      const dialog = await screen.findByRole('alertdialog')
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/categories/cat-food'))
+      expect(within(dialog).getByText(/Its 18 items will be re-sorted/)).toBeInTheDocument()
     })
   })
 })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock, Sparkles } from 'lucide-react'
 import { DropdownMenu, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -45,6 +45,14 @@ export function ItemCategoryControl({
   const displayCategory = override?.category ?? category
   const displayLocked = override?.locked ?? locked
 
+  // Once the server props catch up to the optimistic override (after a
+  // router.refresh()), drop the override so props become the source of truth again.
+  useEffect(() => {
+    if (override && category.id === override.category.id && locked === override.locked) {
+      setOverride(null)
+    }
+  }, [category.id, locked, override])
+
   async function handleSelect(picked: CategoryLite) {
     const nextCategory: BadgeCategory = {
       id: picked.id,
@@ -65,7 +73,8 @@ export function ItemCategoryControl({
       }
       toast({ title: `Moved to ${picked.name}.` })
       onMoved?.(itemId, nextCategory, true)
-      setOverride(null)
+      // Keep the override until the refreshed `category`/`locked` props match it
+      // (see the effect above) so the badge doesn't flip back then forward again.
       startTransition(() => router.refresh())
     } catch (err) {
       setOverride(null)
