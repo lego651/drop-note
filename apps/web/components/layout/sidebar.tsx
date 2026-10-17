@@ -1,26 +1,20 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useState, useEffect, Suspense } from 'react'
 import { cn } from '@/lib/utils'
-import { colorForTag } from '@/lib/design-tokens'
+import { CategoryNav } from '@/components/layout/CategoryNav'
+import type { CategoryWithCount } from '@/components/layout/CategoryNav'
+import { SectionLabel, ROW_BASE, ROW_INACTIVE, ROW_ACTIVE, COUNT, NavLink } from '@/components/layout/sidebar-ui'
 import {
   Inbox,
   Pin,
   Archive,
-  Hash,
   Settings,
   ChevronLeft,
   ChevronRight,
   Mail,
 } from 'lucide-react'
-
-interface TagWithCount {
-  id: string
-  name: string
-  item_count: number
-}
 
 interface MonthCount {
   month: string // 'YYYY-MM'
@@ -29,7 +23,8 @@ interface MonthCount {
 
 export interface SidebarProps {
   userEmail: string
-  tags?: TagWithCount[]
+  categories?: CategoryWithCount[]
+  categoriesError?: boolean
   monthCounts?: MonthCount[]
   trashCount?: number
   archiveCount?: number
@@ -37,47 +32,29 @@ export interface SidebarProps {
   pinnedCount?: number
   collapsed?: boolean
   onToggleCollapse?: () => void
+  /** True inside MobileSidebar's Sheet: menus flip side/align and links close the sheet. */
+  insideSheet?: boolean
 }
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="type-label px-3 pb-1.5 text-foreground">
-      {children}
-    </p>
-  )
-}
-
-// Nav items (AIRMAIL § 7): transparent outline → ink outline + small ink shadow when active.
-const ROW_BASE =
-  'flex items-center gap-3 rounded-lg border-stroke border-transparent px-3 py-2 text-sm transition-colors'
-const ROW_INACTIVE =
-  'text-foreground/80 hover:bg-muted hover:text-foreground'
-const ROW_ACTIVE = 'border-ink bg-accent font-semibold text-accent-foreground shadow-ink-sm'
-const COUNT =
-  'shrink-0 rounded-full border border-border bg-card px-1.5 font-mono text-[11px] tabular-nums text-muted-foreground'
-
-// Tags arrive ordered by item_count desc (get_tags_with_counts RPC) — the first N are
-// already the most-used ones, so capping here doubles as "top tags" without re-sorting.
-const TAGS_SHOWN_BY_DEFAULT = 8
 
 // Inner component that uses useSearchParams (requires Suspense boundary)
 export function SidebarNav({
-  tags = [],
+  categories = [],
+  categoriesError = false,
   archiveCount = 0,
   totalCount = 0,
   pinnedCount = 0,
   collapsed = false,
   onToggleCollapse,
+  insideSheet = false,
 }: SidebarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [showAllTags, setShowAllTags] = useState(false)
 
-  const activeTag = searchParams.get('tag')
+  const activeCategoryId = searchParams.get('category')
   const activeSort = searchParams.get('sort')
 
   const isItemsRoot =
-    pathname === '/items' && !activeTag && activeSort !== 'pinned'
+    pathname === '/items' && !activeCategoryId && activeSort !== 'pinned'
   const isPinned = pathname === '/items' && activeSort === 'pinned'
 
   const navItems = [
@@ -110,8 +87,9 @@ export function SidebarNav({
         <div className="space-y-0.5">
           {!collapsed && <SectionLabel>Navigation</SectionLabel>}
           {navItems.map(({ href, label, Icon, count, active }) => (
-            <Link
+            <NavLink
               key={label}
+              insideSheet={insideSheet}
               href={href}
               title={collapsed ? label : undefined}
               className={cn(
@@ -125,60 +103,24 @@ export function SidebarNav({
               {!collapsed && count > 0 && (
                 <span className={cn(COUNT, active && 'border-ink text-foreground')}>{count}</span>
               )}
-            </Link>
+            </NavLink>
           ))}
         </div>
 
-        {/* Tags section */}
-        {tags.length > 0 && (
-          <div className="space-y-0.5">
-            {!collapsed && <SectionLabel>Tags</SectionLabel>}
-            {(showAllTags ? tags : tags.slice(0, TAGS_SHOWN_BY_DEFAULT)).map((tag) => {
-              const active = activeTag === tag.id
-              return (
-                <Link
-                  key={tag.id}
-                  href={`/items?tag=${tag.id}`}
-                  title={collapsed ? tag.name : undefined}
-                  className={cn(
-                    ROW_BASE,
-                    'py-1.5',
-                    active ? ROW_ACTIVE : ROW_INACTIVE,
-                    collapsed && 'justify-center px-0',
-                  )}
-                >
-                  <Hash
-                    size={15}
-                    className="shrink-0"
-                    style={{ color: `hsl(${colorForTag(tag.name)})` }}
-                  />
-                  {!collapsed && <span className="flex-1 truncate">{tag.name}</span>}
-                  {!collapsed && (
-                    <span className={cn(COUNT, active && 'border-ink text-foreground')}>
-                      {tag.item_count}
-                    </span>
-                  )}
-                </Link>
-              )
-            })}
-            {!collapsed && tags.length > TAGS_SHOWN_BY_DEFAULT && (
-              <button
-                type="button"
-                onClick={() => setShowAllTags((prev) => !prev)}
-                className={cn(ROW_BASE, ROW_INACTIVE, 'w-full py-1.5 text-muted-foreground')}
-              >
-                <span className="flex-1 truncate">
-                  {showAllTags ? 'Show less' : `Show all (${tags.length})`}
-                </span>
-              </button>
-            )}
-          </div>
-        )}
+        {/* Categories section (A+: replaces the old Tags section; keywords are never listed here) */}
+        <CategoryNav
+          categories={categories}
+          categoriesError={categoriesError}
+          activeCategoryId={activeCategoryId}
+          collapsed={collapsed}
+          insideSheet={insideSheet}
+        />
       </nav>
 
       {/* Footer */}
       <div className="space-y-0.5 border-t-stroke border-ink px-3 py-3">
-        <Link
+        <NavLink
+          insideSheet={insideSheet}
           href="/settings"
           title={collapsed ? 'Settings' : undefined}
           className={cn(
@@ -189,7 +131,7 @@ export function SidebarNav({
         >
           <Settings size={17} className="shrink-0" />
           {!collapsed && 'Settings'}
-        </Link>
+        </NavLink>
         {onToggleCollapse && (
           <button
             type="button"

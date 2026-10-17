@@ -3,8 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MobileSidebar } from '@/components/layout/MobileSidebar'
 import { OverCapBanner } from '@/components/OverCapBanner'
+import { getCategoriesWithCounts } from '@/lib/categories'
 import { TIER_ITEM_LIMITS } from '@drop-note/shared'
 import type { Tier } from '@drop-note/shared'
+import type { CategoryWithCount } from '@/components/layout/CategoryNav'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -16,10 +18,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/login')
   }
 
+  let categories: CategoryWithCount[] = []
+  let categoriesError = false
+  try {
+    categories = await getCategoriesWithCounts(user.id)
+  } catch {
+    categoriesError = true
+  }
+
   const [
     { data: userData },
     { count: itemCount },
-    { data: tagsData },
     { data: monthData },
     { count: trashCount },
     { count: archiveCount },
@@ -32,7 +41,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
       .select('*', { count: 'exact', head: true })
       .is('deleted_at', null),
     // RLS: items policy enforces user_id = auth.uid(), no need for .eq()
-    supabase.rpc('get_tags_with_counts'),
     supabase.rpc('get_month_counts'),
     supabase
       .from('items')
@@ -77,7 +85,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </a>
       <Sidebar
         userEmail={user.email ?? ''}
-        tags={tagsData ?? []}
+        categories={categories}
+        categoriesError={categoriesError}
         monthCounts={monthData ?? []}
         trashCount={trashCount ?? 0}
         archiveCount={archiveCount ?? 0}
@@ -92,7 +101,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         >
           <MobileSidebar
             userEmail={user.email ?? ''}
-            tags={tagsData ?? []}
+            categories={categories}
+            categoriesError={categoriesError}
             monthCounts={monthData ?? []}
             trashCount={trashCount ?? 0}
             archiveCount={archiveCount ?? 0}

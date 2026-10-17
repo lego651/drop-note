@@ -9,19 +9,23 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { VideoModal } from '@/components/VideoModal'
 import { ItemFavicon } from '@/components/ItemFavicon'
-import { TagRow } from '@/components/TagRow'
+import { ItemCategoryControl } from '@/components/categories/ItemCategoryControl'
+import { CategoryBadge, type BadgeCategory } from '@/components/categories/CategoryBadge'
 import { cn } from '@/lib/utils'
 import { colorForTagHsl } from '@/lib/design-tokens'
 import type { ItemSummary } from '@/lib/items'
+import type { CategoryLite } from '@/lib/category-display'
 import { extractYouTubeId } from '@drop-note/shared'
 
 interface GalleryCardProps {
   item: ItemSummary
   isBulkMode?: boolean
   isSelected?: boolean
+  categories?: CategoryLite[]
   onSelectChange?: (id: string, checked: boolean) => void
   onPinChange?: (id: string, pinned: boolean) => void
   onDelete?: (id: string) => void
+  onCategoryMoved?: (itemId: string, category: BadgeCategory, locked: boolean) => void
 }
 
 const PIN = 'hsl(var(--color-pin))'
@@ -54,16 +58,13 @@ export function GalleryCard({
   item,
   isBulkMode = false,
   isSelected = false,
+  categories = [],
   onSelectChange,
   onPinChange,
   onDelete,
+  onCategoryMoved,
 }: GalleryCardProps) {
   const [videoOpen, setVideoOpen] = useState(false)
-
-  const tags =
-    item.item_tags
-      ?.map((it) => it.tags)
-      .filter((t): t is { id: string; name: string } => t !== null) ?? []
 
   const isFailed = item.status === 'failed'
   const isProcessing = item.status === 'processing' || item.status === 'pending'
@@ -208,8 +209,23 @@ export function GalleryCard({
         </p>
       )}
 
-      {/* Tags */}
-      {tags.length > 0 && <TagRow tags={tags} />}
+      {/* Category badge */}
+      {item.category ? (
+        isBulkMode ? (
+          <CategoryBadge category={item.category} />
+        ) : (
+          <ItemCategoryControl
+            itemId={item.id}
+            category={item.category}
+            locked={item.category_locked ?? false}
+            categories={categories}
+            insideLink
+            onMoved={onCategoryMoved}
+          />
+        )
+      ) : isProcessing ? (
+        <Skeleton className="h-[22px] w-24 rounded-full" />
+      ) : null}
 
       {/* Divider + full date */}
       {/* Postmark divider + mono date + mini airmail stripe (AIRMAIL § 7) */}

@@ -16,7 +16,7 @@ export function MobileSidebar(props: SidebarProps) {
       </SheetTrigger>
       <SheetContent side="left" className="stripe-top w-64 border-r-stroke border-ink p-0">
         <Suspense fallback={null}>
-          <SidebarNav {...props} />
+          <SidebarNav {...props} insideSheet />
         </Suspense>
       </SheetContent>
     </Sheet>

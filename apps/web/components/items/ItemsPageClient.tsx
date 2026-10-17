@@ -19,10 +19,13 @@ import { ItemsPageHeader } from '@/components/items/ItemsPageHeader'
 import { TagFilterBar } from '@/components/items/TagFilterBar'
 import { SortDropdown } from '@/components/items/SortDropdown'
 import { FiltersButton, SOURCE_LABELS } from '@/components/items/FiltersButton'
+import { FolderOpen } from 'lucide-react'
 import type { ViewMode } from '@/components/items/ViewSwitcher'
 import type { SortOption } from '@/components/items/SortDropdown'
 import type { SourceFilter } from '@/components/items/FiltersButton'
 import type { ItemSummary } from '@/lib/items'
+import type { CategoryLite } from '@/lib/category-display'
+import type { BadgeCategory } from '@/components/categories/CategoryBadge'
 import type { Tier } from '@drop-note/shared'
 
 interface StatsBarData {
@@ -40,6 +43,9 @@ interface ItemsPageClientProps {
   activeTagName?: string
   activeTagId?: string
   tags?: { id: string; name: string; count: number }[]
+  categories?: CategoryLite[]
+  activeCategoryId?: string
+  activeCategoryName?: string
   activeSort?: SortOption
   activeSource?: SourceFilter
   userTier?: Tier
@@ -67,6 +73,9 @@ function ItemsPageClientInner({
   initialQuery = '',
   activeTagId,
   tags = [],
+  categories = [],
+  activeCategoryId,
+  activeCategoryName,
   activeSort = 'newest',
   activeSource = 'all',
   userTier = 'free',
@@ -235,6 +244,37 @@ function ItemsPageClientInner({
     // Tags are applied server-side; no optimistic update needed for tag display
   }, [])
 
+  // Shared by the single-item picker (optimistic) and bulk move (after the server confirms):
+  // patch the item's badge/lock locally, and drop it from the list if a category filter is
+  // active and it no longer matches.
+  const applyCategoryMove = useCallback(
+    (itemId: string, category: BadgeCategory, locked: boolean) => {
+      setOptimisticItems((prev) => {
+        if (activeCategoryId && activeCategoryId !== category.id) {
+          return prev.filter((item) => item.id !== itemId)
+        }
+        return prev.map((item) =>
+          item.id === itemId ? { ...item, category, category_locked: locked } : item,
+        )
+      })
+    },
+    [activeCategoryId],
+  )
+
+  const handleCategoryMoved = useCallback(
+    (itemId: string, category: BadgeCategory, locked: boolean) => {
+      applyCategoryMove(itemId, category, locked)
+    },
+    [applyCategoryMove],
+  )
+
+  const handleBulkMoved = useCallback(
+    (ids: string[], category: BadgeCategory) => {
+      ids.forEach((id) => applyCategoryMove(id, category, true))
+    },
+    [applyCategoryMove],
+  )
+
   const isSearchMode = searchQuery.length >= 2
   const displayItems = isSearchMode && searchResults !== null ? searchResults : optimisticItems
   const showPagination = !isSearchMode && totalCount > 25
@@ -250,9 +290,11 @@ function ItemsPageClientInner({
   const bulkProps = {
     isBulkMode,
     selectedIds,
+    categories,
     onSelectChange: toggle,
     onPinChange: handlePinChange,
     onDelete: handleDelete,
+    onCategoryMoved: handleCategoryMoved,
   }
 
   function renderLayout() {
@@ -306,7 +348,7 @@ function ItemsPageClientInner({
           />
           <Input
             type="search"
-            placeholder="Search items, summaries, tags…"
+            placeholder="Search items, summaries, keywords…"
             value={searchQuery}
             onChange={handleSearchChange}
             className="h-11 pl-11 pr-4 text-sm"
@@ -350,8 +392,10 @@ function ItemsPageClientInner({
           selectedIds={selectedIds}
           allPageIds={allPageIds}
           userTier={userTier}
+          categories={categories}
           onDeleted={handleBulkDeleted}
           onTagged={handleBulkTagged}
+          onMoved={handleBulkMoved}
           onSelectAll={selectAll}
           onDeselectAll={deselectAll}
         />
@@ -368,6 +412,13 @@ function ItemsPageClientInner({
                 <span className="type-display text-[22px] leading-none text-foreground">{searchResults.length}</span>
                 <span className="type-label text-[12px] text-foreground">result{searchResults.length === 1 ? '' : 's'}</span>
               </>
+            ) : activeCategoryId && activeCategoryName ? (
+              <>
+                <span className="type-display text-[22px] leading-none text-foreground">{displayItems.length}</span>
+                <span className="type-label truncate text-[12px] text-foreground" style={{ maxWidth: '20ch' }} title={activeCategoryName}>
+                  items in &ldquo;{activeCategoryName}&rdquo;
+                </span>
+              </>
             ) : (
               <>
                 <span className="type-display text-[22px] leading-none text-foreground">{displayItems.length}</span>
@@ -382,8 +433,22 @@ function ItemsPageClientInner({
         </div>
       )}
 
+      {/* Empty filtered-by-category state */}
+      {isEmpty && !isSearchMode && activeCategoryId && activeCategoryName && (
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full border-stroke border-dashed border-ink">
+            <FolderOpen size={16} className="text-muted-foreground" aria-hidden="true" />
+          </span>
+          <p className="text-sm text-foreground">Nothing in &ldquo;{activeCategoryName}&rdquo; yet.</p>
+          <p className="text-sm text-muted-foreground">New items that fit will be filed here automatically.</p>
+          <Button variant="link" size="sm" asChild>
+            <Link href="/items">View all items</Link>
+          </Button>
+        </div>
+      )}
+
       {/* Empty state */}
-      {isEmpty && !isSearchMode && (
+      {isEmpty && !isSearchMode && !(activeCategoryId && activeCategoryName) && (
         <div className="flex flex-col items-center gap-4 py-16 text-center">
           {/* Steps */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
