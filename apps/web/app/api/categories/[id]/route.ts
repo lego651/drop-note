@@ -1,7 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { renameCategory, setCategoryHidden, deleteCategory } from '@/lib/categories'
+import { renameCategory, setCategoryHidden, deleteCategory, getCategoryDeletionCount } from '@/lib/categories'
 import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
+
+// GET /api/categories/[id] — the item count deleting this category would actually
+// reassign (see getCategoryDeletionCount), for the delete confirmation dialog.
+async function handleGET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    setLogUser(user.id)
+
+    const item_count = await getCategoryDeletionCount(user.id, id)
+    return NextResponse.json({ item_count })
+  } catch (err) {
+    log.error('categories.deletion_count_fetch_failed', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
 
 // PATCH /api/categories/[id]
 // Body: { name?: string, hidden?: boolean }
@@ -67,5 +88,6 @@ async function handleDELETE(
   }
 }
 
+export const GET = withRouteLogging('GET /api/categories/[id]', handleGET)
 export const PATCH = withRouteLogging('PATCH /api/categories/[id]', handlePATCH)
 export const DELETE = withRouteLogging('DELETE /api/categories/[id]', handleDELETE)

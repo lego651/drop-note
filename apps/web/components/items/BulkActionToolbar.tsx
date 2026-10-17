@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2, Tag, X } from 'lucide-react'
+import { Trash2, Tag, X, FolderInput, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -21,15 +21,23 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { DropdownMenu, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { CategoryPickerContent } from '@/components/categories/CategoryPicker'
+import type { BadgeCategory } from '@/components/categories/CategoryBadge'
 import { toast } from '@/hooks/use-toast'
+import type { CategoryLite } from '@/lib/category-display'
 import type { Tier } from '@drop-note/shared'
+
+const BULK_MOVE_LIMIT = 100
 
 interface BulkActionToolbarProps {
   selectedIds: Set<string>
   allPageIds: string[]
   userTier: Tier
+  categories?: CategoryLite[]
   onDeleted: (deletedIds: string[]) => void
   onTagged: (tagName: string) => void
+  onMoved?: (ids: string[], category: BadgeCategory) => void
   onSelectAll: (ids: string[]) => void
   onDeselectAll: () => void
 }
@@ -38,8 +46,10 @@ export function BulkActionToolbar({
   selectedIds,
   allPageIds,
   userTier,
+  categories = [],
   onDeleted,
   onTagged,
+  onMoved,
   onSelectAll,
   onDeselectAll,
 }: BulkActionToolbarProps) {
@@ -47,11 +57,42 @@ export function BulkActionToolbar({
   const [tagInput, setTagInput] = useState('')
   const [isTagging, setIsTagging] = useState(false)
   const [tagPopoverOpen, setTagPopoverOpen] = useState(false)
+  const [isMoving, setIsMoving] = useState(false)
+  const [movePopoverOpen, setMovePopoverOpen] = useState(false)
 
   const count = selectedIds.size
   const allPageSelected = allPageIds.length > 0 && allPageIds.every(id => selectedIds.has(id))
+  const overMoveLimit = count > BULK_MOVE_LIMIT
 
   if (count === 0) return null
+
+  async function handleMove(category: CategoryLite) {
+    setMovePopoverOpen(false)
+    setIsMoving(true)
+    const ids = Array.from(selectedIds)
+    try {
+      const res = await fetch('/api/items/bulk-move-category', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, categoryId: category.id }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error ?? 'Failed to move items')
+      }
+      const data: { moved: number } = await res.json()
+      toast({ title: `Moved ${data.moved} items to ${category.name}.` })
+      onMoved?.(ids, { id: category.id, name: category.name, position: category.position, is_other: category.is_other })
+    } catch (err) {
+      toast({
+        title: 'Move failed',
+        description: err instanceof Error ? err.message : 'Something went wrong.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsMoving(false)
+    }
+  }
 
   const deleteDescription =
     userTier === 'free'
@@ -162,6 +203,38 @@ export function BulkActionToolbar({
             </div>
           </PopoverContent>
         </Popover>
+
+        {/* Move to category */}
+        <DropdownMenu open={movePopoverOpen} onOpenChange={setMovePopoverOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isMoving || overMoveLimit}
+              aria-disabled={overMoveLimit}
+              aria-label={`Move ${count} items to a category`}
+              title={overMoveLimit ? 'You can move up to 100 items at a time.' : undefined}
+            >
+              {isMoving ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <FolderInput size={14} />
+              )}
+              <span className="hidden sm:inline">{isMoving ? 'Moving…' : 'Move to…'}</span>
+              {overMoveLimit && (
+                <span className="sr-only">You can move up to 100 items at a time.</span>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <CategoryPickerContent
+            categories={categories}
+            onSelect={handleMove}
+            label={`Move ${count} ${count === 1 ? 'item' : 'items'} to`}
+            footer="Moving them locks them. AI won't re-sort them."
+            align="end"
+            side="bottom"
+          />
+        </DropdownMenu>
 
         {/* Delete with confirmation */}
         <AlertDialog>

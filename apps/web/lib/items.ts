@@ -16,6 +16,9 @@ export type ItemSummary = {
   source_url: string | null
   thumbnail_url: string | null
   item_tags?: { tags: { id: string; name: string } | null }[] | null
+  category?: { id: string; name: string; position: number; is_other: boolean } | null
+  category_id?: string | null
+  category_locked?: boolean
 }
 
 export type ItemGroup = {

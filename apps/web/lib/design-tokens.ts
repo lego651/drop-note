@@ -51,6 +51,45 @@ export function colorForTagHsl(name: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Category color palette
+// Stable per category: keyed on position (not name), so a rename never
+// changes its color. "Other" is always neutral ink, never a hue.
+// ---------------------------------------------------------------------------
+
+export const CATEGORY_PALETTE = [
+  'orange',
+  'green',
+  'indigo',
+  'pink',
+  'blue',
+  'teal',
+  'yellow',
+  'purple',
+] as const
+
+export function colorForCategoryHsl(c: { position: number; is_other: boolean }): string {
+  if (c.is_other) return 'var(--muted-foreground)'
+  const i = c.position < 8 ? c.position : c.position + 7
+  return `var(--color-tag-${CATEGORY_PALETTE[i % 8]})`
+}
+
+/**
+ * The glyph shown in category swatches: the first grapheme of the name,
+ * uppercased when it's a Latin letter. Falls back to Array.from for
+ * environments without Intl.Segmenter.
+ */
+export function categoryGlyph(name: string): string {
+  let first = ''
+  if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
+    const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+    first = [...segmenter.segment(name)][0]?.segment ?? ''
+  } else {
+    first = Array.from(name)[0] ?? ''
+  }
+  return first.toUpperCase()
+}
+
+// ---------------------------------------------------------------------------
 // Source type dot colors
 // ---------------------------------------------------------------------------
 

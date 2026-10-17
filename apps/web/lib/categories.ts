@@ -2,9 +2,9 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { createAIProvider } from '@drop-note/shared'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { log } from './observability/logger'
+import { CATEGORY_CAP, CATEGORY_NAME_MAX_LENGTH } from './category-display'
 
-export const CATEGORY_CAP = 15
-export const CATEGORY_NAME_MAX_LENGTH = 40
+export { CATEGORY_CAP, CATEGORY_NAME_MAX_LENGTH }
 // Bounds how many of a category's items get an AI re-sort call, in both deleteCategory and
 // previewResort: cheap for the handful of custom categories users will actually delete, but
 // classifying an unbounded number of items would turn one click into hundreds of AI calls.
@@ -57,6 +57,74 @@ export function orderedCategoryNamesForAI(categories: UserCategory[]): string[] 
   const visible = categories.filter((c) => !c.hidden || c.is_other)
   const sorted = [...visible].sort((a, b) => Number(a.is_other) - Number(b.is_other))
   return sorted.map((c) => c.name)
+}
+
+export type CategoryWithCount = UserCategory & { item_count: number }
+
+/**
+ * Categories with item counts in the same scope as "All Items": active
+ * (not deleted, not archived), email_body items only. Items with
+ * category_id = null (pre-backfill) aren't counted under any category.
+ * One count query per category — cheap at the 15-category cap, and avoids
+ * needing a DB function for a simple per-user GROUP BY.
+ */
+export async function getCategoriesWithCounts(
+  userId: string,
+  client?: AdminClient,
+): Promise<CategoryWithCount[]> {
+  const db = client ?? (supabaseAdmin as unknown as AdminClient)
+  // Query directly (rather than via getCategories, which swallows errors and returns [])
+  // so a genuine DB failure throws instead of looking like "the user has no categories".
+  const { data, error } = await db
+    .from('categories')
+    .select('id, name, position, hidden, is_default, is_other')
+    .eq('user_id', userId)
+    .order('position')
+  if (error) {
+    log.warn('categories.list_with_counts_failed', { userId }, error)
+    throw new Error('Failed to load categories')
+  }
+  const categories = (data ?? []) as UserCategory[]
+
+  const counts = await Promise.all(
+    categories.map((c) =>
+      db
+        .from('items')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('category_id', c.id)
+        .is('deleted_at', null)
+        .is('archived_at', null)
+        .eq('type', 'email_body'),
+    ),
+  )
+
+  return categories.map((c, i) => ({ ...c, item_count: counts[i].count ?? 0 }))
+}
+
+/**
+ * Count of items `deleteCategory` would actually reassign: every item with this
+ * category_id, regardless of type/trash/archive state. Unlike
+ * `getCategoriesWithCounts` (scoped to active, non-archived email_body items, for
+ * the sidebar badge), this matches deleteCategory's own fetch scope exactly, so the
+ * delete confirmation doesn't understate how many items are affected.
+ */
+export async function getCategoryDeletionCount(
+  userId: string,
+  categoryId: string,
+  client?: AdminClient,
+): Promise<number> {
+  const db = client ?? (supabaseAdmin as unknown as AdminClient)
+  const { count, error } = await db
+    .from('items')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('category_id', categoryId)
+  if (error) {
+    log.warn('categories.deletion_count_failed', { userId, categoryId }, error)
+    throw new Error('Failed to count items in this category')
+  }
+  return count ?? 0
 }
 
 function validateName(name: string): { trimmed: string } | { error: string } {

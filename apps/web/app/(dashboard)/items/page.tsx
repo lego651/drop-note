@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ItemsPageClient } from '@/components/items/ItemsPageClient'
 import { colorForTag } from '@/lib/design-tokens'
+import { getCategories } from '@/lib/categories'
 import { applySortOrder } from './sort-helpers'
 import type { Tier, SourceType } from '@drop-note/shared'
 import type { ItemSummary } from '@/lib/items'
@@ -14,6 +15,7 @@ interface ItemsPageProps {
   searchParams?: Promise<{
     page?: string
     tag?: string
+    category?: string
     year?: string
     month?: string
     q?: string
@@ -35,6 +37,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   const params = (await searchParams) ?? {}
 
   const tagId = params.tag
+  const categoryId = params.category
   const year = params.year
   const month = params.month
   const q = params.q
@@ -69,6 +72,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     { count: priorWeekCount },
     { count: processingCount },
     { data: topTagData },
+    categories,
   ] = await Promise.all([
     supabase.from('users').select('tier').eq('id', user.id).single(),
     supabase
@@ -95,7 +99,12 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       .is('archived_at', null)
       .in('status', ['pending', 'processing']),
     supabase.rpc('get_tags_with_counts'),
+    getCategories(user.id),
   ])
+
+  const activeCategoryName = categoryId
+    ? categories.find((c) => c.id === categoryId)?.name
+    : undefined
 
   const weekDelta = (thisWeekCount ?? 0) - (priorWeekCount ?? 0)
 
@@ -135,6 +144,9 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
         activeTagName={activeTagName}
         activeTagId={tagId}
         tags={tags}
+        categories={categories}
+        activeCategoryId={categoryId}
+        activeCategoryName={activeCategoryName}
         activeSort={activeSort}
         activeSource={activeSource}
         userTier={userTier}
@@ -157,7 +169,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   let query = supabase
     .from('items')
     .select(
-      'id, subject, sender_email, ai_summary, status, error_message, pinned, created_at, source_type, source_url, thumbnail_url, item_tags(tags(id, name))',
+      'id, subject, sender_email, ai_summary, status, error_message, pinned, created_at, source_type, source_url, thumbnail_url, category_id, category_locked, item_tags(tags(id, name)), categories(id, name, position, is_other)',
       { count: 'exact' },
     )
     .eq('user_id', user.id)
@@ -169,6 +181,10 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
 
   if (tagFilterIds !== null) {
     query = query.in('id', tagFilterIds)
+  }
+
+  if (categoryId) {
+    query = query.eq('category_id', categoryId)
   }
 
   // Source filter — legacy rows (null source_type) are treated as email
@@ -191,10 +207,14 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   }
 
   const { data: rawItems, count } = await query.range(offset, offset + 24)
-  const items = rawItems?.map((item) => ({
-    ...item,
-    source_type: item.source_type as SourceType | null,
-  })) as ItemSummary[] | null
+  const items = rawItems?.map((item) => {
+    const { categories: category, ...rest } = item
+    return {
+      ...rest,
+      category: category as ItemSummary['category'],
+      source_type: item.source_type as SourceType | null,
+    }
+  }) as ItemSummary[] | null
 
   return (
     <ItemsPageClient
@@ -205,6 +225,9 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       activeTagName={activeTagName}
       activeTagId={tagId}
       tags={tags}
+      categories={categories}
+      activeCategoryId={categoryId}
+      activeCategoryName={activeCategoryName}
       activeSort={activeSort}
       activeSource={activeSource}
       userTier={userTier}

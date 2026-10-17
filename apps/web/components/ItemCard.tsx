@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { VideoModal } from '@/components/VideoModal'
 import { ItemThumbnail } from '@/components/ItemThumbnail'
 import { ItemFavicon } from '@/components/ItemFavicon'
-import { TagRow } from '@/components/TagRow'
+import { CategoryBadge } from '@/components/categories/CategoryBadge'
 import { cn } from '@/lib/utils'
 import { openExternalUrl } from '@/lib/open-external'
 import { SOURCE_DOT } from '@/lib/design-tokens'
@@ -36,10 +36,6 @@ export function ItemCard({
   onDelete,
 }: ItemCardProps) {
   const [videoOpen, setVideoOpen] = useState(false)
-
-  const tags = item.item_tags
-    ?.map((it) => it.tags)
-    .filter((t): t is { id: string; name: string } => t !== null) ?? []
 
   function compactAge(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime()
@@ -209,9 +205,9 @@ export function ItemCard({
         </>
       )}
 
-      {/* Footer: tags + date */}
+      {/* Footer: category + date */}
       <div className="flex items-center justify-between gap-2 pt-0.5 min-w-0">
-        <TagRow tags={tags} />
+        {item.category ? <CategoryBadge category={item.category} /> : <div className="flex-1" />}
         <time
           dateTime={item.created_at}
           className="shrink-0 text-xs text-muted-foreground"

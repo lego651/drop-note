@@ -4,17 +4,22 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Clock, FileText } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ItemCategoryControl } from '@/components/categories/ItemCategoryControl'
+import { CategoryBadge, type BadgeCategory } from '@/components/categories/CategoryBadge'
 import { cn } from '@/lib/utils'
 import { colorForTagHsl, SOURCE_DOT } from '@/lib/design-tokens'
 import type { ItemSummary } from '@/lib/items'
+import type { CategoryLite } from '@/lib/category-display'
 
 interface CompactListLayoutProps {
   items: ItemSummary[]
   isBulkMode?: boolean
   selectedIds?: Set<string>
+  categories?: CategoryLite[]
   onSelectChange?: (id: string, checked: boolean) => void
   onPinChange?: (id: string, pinned: boolean) => void
   onDelete?: (id: string) => void
+  onCategoryMoved?: (itemId: string, category: BadgeCategory, locked: boolean) => void
 }
 
 const PIN = 'hsl(var(--color-pin))'
@@ -35,20 +40,18 @@ function CompactRow({
   item,
   isBulkMode,
   isSelected,
+  categories,
   onSelectChange,
+  onCategoryMoved,
 }: {
   item: ItemSummary
   isBulkMode: boolean
   isSelected: boolean
+  categories: CategoryLite[]
   onSelectChange?: (id: string, checked: boolean) => void
+  onCategoryMoved?: (itemId: string, category: BadgeCategory, locked: boolean) => void
 }) {
   const isDone = item.status === 'done'
-  const tags =
-    item.item_tags
-      ?.map((it) => it.tags)
-      .filter((t): t is { id: string; name: string } => t !== null) ?? []
-  const firstTag = tags[0]
-  const tagHsl = firstTag ? colorForTagHsl(firstTag.name) : ''
 
   const readMin =
     isDone && item.ai_summary
@@ -120,16 +123,20 @@ function CompactRow({
               </span>
             </>
           )}
-          {firstTag && (
-            <span
-              className="ml-0.5 shrink-0 rounded-full border px-1.5 py-[3px] font-sans text-[11px] font-semibold leading-none"
-              style={{
-                backgroundColor: `hsl(${tagHsl} / 0.08)`,
-                borderColor: `hsl(${tagHsl} / 0.45)`,
-                color: `hsl(${tagHsl})`,
-              }}
-            >
-              #{firstTag.name}
+          {item.category && (
+            <span className="ml-0.5 min-w-0 max-w-[10rem] shrink-0">
+              {isBulkMode ? (
+                <CategoryBadge category={item.category} />
+              ) : (
+                <ItemCategoryControl
+                  itemId={item.id}
+                  category={item.category}
+                  locked={item.category_locked ?? false}
+                  categories={categories}
+                  insideLink
+                  onMoved={onCategoryMoved}
+                />
+              )}
             </span>
           )}
         </div>
@@ -151,7 +158,9 @@ export function CompactListLayout({
   items,
   isBulkMode = false,
   selectedIds,
+  categories = [],
   onSelectChange,
+  onCategoryMoved,
 }: CompactListLayoutProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -161,7 +170,9 @@ export function CompactListLayout({
           item={item}
           isBulkMode={isBulkMode}
           isSelected={selectedIds?.has(item.id) ?? false}
+          categories={categories}
           onSelectChange={onSelectChange}
+          onCategoryMoved={onCategoryMoved}
         />
       ))}
     </div>

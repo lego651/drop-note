@@ -4,6 +4,9 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { ItemDetailEditor } from '@/components/ItemDetailEditor'
 import { AttachmentsSection } from '@/components/AttachmentsSection'
+import { ItemCategorySection } from '@/components/categories/ItemCategorySection'
+import type { BadgeCategory } from '@/components/categories/CategoryBadge'
+import { getCategories } from '@/lib/categories'
 import { format } from 'date-fns'
 import { ExternalLink } from 'lucide-react'
 import { extractYouTubeId } from '@drop-note/shared'
@@ -32,7 +35,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
 
   const { data: item } = await supabase
     .from('items')
-    .select('*, item_tags(tags(id, name))')
+    .select('*, item_tags(tags(id, name)), categories(id, name, position, is_other)')
     .eq('id', id)
     .eq('user_id', user.id)
     .is('deleted_at', null)
@@ -40,13 +43,15 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
 
   if (!item) notFound()
 
-  // Fetch all user tags for type-ahead, and prev/next navigation in parallel
-  const [{ data: userTags }, { data: prev }, { data: next }] = await Promise.all([
+  // Fetch all user tags for type-ahead, the user's categories for the picker, and
+  // prev/next navigation, in parallel
+  const [{ data: userTags }, categories, { data: prev }, { data: next }] = await Promise.all([
     supabase
       .from('tags')
       .select('id, name')
       .eq('user_id', user.id)
       .order('name'),
+    getCategories(user.id),
     supabase
       .from('items')
       .select('id')
@@ -107,6 +112,9 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
   const videoId = item.source_type === 'youtube' && item.source_url
     ? extractYouTubeId(item.source_url)
     : null
+
+  const itemCategory = (item.categories as BadgeCategory | null) ?? null
+  const isProcessing = item.status === 'pending' || item.status === 'processing'
 
   return (
     <div className="max-w-3xl mx-auto p-6">
@@ -172,6 +180,15 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
           </a>
         )}
       </div>
+
+      {/* Category */}
+      <ItemCategorySection
+        itemId={item.id}
+        category={itemCategory}
+        locked={item.category_locked ?? false}
+        isProcessing={isProcessing}
+        categories={categories}
+      />
 
       {/* Editable fields */}
       <ItemDetailEditor
