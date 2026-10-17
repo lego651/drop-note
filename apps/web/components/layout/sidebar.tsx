@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useState, useEffect, Suspense } from 'react'
 import { cn } from '@/lib/utils'
+import { colorForTag } from '@/lib/design-tokens'
 import {
   Inbox,
   Pin,
@@ -40,17 +41,20 @@ export interface SidebarProps {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+    <p className="type-label px-3 pb-1.5 text-foreground">
       {children}
     </p>
   )
 }
 
+// Nav items (AIRMAIL § 7): transparent outline → ink outline + small ink shadow when active.
 const ROW_BASE =
-  'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors'
+  'flex items-center gap-3 rounded-lg border-stroke border-transparent px-3 py-2 text-sm transition-colors'
 const ROW_INACTIVE =
-  'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-const ROW_ACTIVE = 'bg-muted font-medium text-foreground'
+  'text-foreground/80 hover:bg-muted hover:text-foreground'
+const ROW_ACTIVE = 'border-ink bg-accent font-semibold text-accent-foreground shadow-ink-sm'
+const COUNT =
+  'shrink-0 rounded-full border border-border bg-card px-1.5 font-mono text-[11px] tabular-nums text-muted-foreground'
 
 // Inner component that uses useSearchParams (requires Suspense boundary)
 export function SidebarNav({
@@ -80,17 +84,23 @@ export function SidebarNav({
   return (
     <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2.5 border-b border-border px-4">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-foreground text-background">
+      {/* h-14 + the 8px stripe on <aside> = 64px, aligned with the h-16 page header */}
+      <div className="flex h-14 items-center gap-2.5 border-b-stroke border-ink px-4">
+        <span
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+          style={{ boxShadow: '0 0 0 2px hsl(var(--card)), 0 0 0 3.5px hsl(var(--ink))' }}
+        >
           <Mail size={15} />
         </span>
         {!collapsed && (
-          <span className="text-sm font-semibold tracking-tight">drop-note</span>
+          <span className="font-display text-[17px] font-extrabold tracking-tight [font-stretch:125%]">
+            drop-note
+          </span>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4 [scrollbar-width:thin]">
         {/* Navigation section */}
         <div className="space-y-0.5">
           {!collapsed && <SectionLabel>Navigation</SectionLabel>}
@@ -108,9 +118,7 @@ export function SidebarNav({
               <Icon size={17} className="shrink-0" />
               {!collapsed && <span className="flex-1 truncate">{label}</span>}
               {!collapsed && count > 0 && (
-                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                  {count}
-                </span>
+                <span className={cn(COUNT, active && 'border-ink text-foreground')}>{count}</span>
               )}
             </Link>
           ))}
@@ -134,10 +142,14 @@ export function SidebarNav({
                     collapsed && 'justify-center px-0',
                   )}
                 >
-                  <Hash size={15} className="shrink-0 text-muted-foreground" />
+                  <Hash
+                    size={15}
+                    className="shrink-0"
+                    style={{ color: `hsl(${colorForTag(tag.name)})` }}
+                  />
                   {!collapsed && <span className="flex-1 truncate">{tag.name}</span>}
                   {!collapsed && (
-                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    <span className={cn(COUNT, active && 'border-ink text-foreground')}>
                       {tag.item_count}
                     </span>
                   )}
@@ -149,7 +161,7 @@ export function SidebarNav({
       </nav>
 
       {/* Footer */}
-      <div className="space-y-0.5 border-t border-border px-3 py-3">
+      <div className="space-y-0.5 border-t-stroke border-ink px-3 py-3">
         <Link
           href="/settings"
           title={collapsed ? 'Settings' : undefined}
@@ -215,12 +227,12 @@ export function Sidebar(props: SidebarProps) {
   return (
     <Suspense
       fallback={
-        <aside className="hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-background md:flex" />
+        <aside className="stripe-top hidden h-screen w-60 shrink-0 flex-col border-r-stroke border-ink md:flex" />
       }
     >
       <aside
         className={cn(
-          'hidden h-screen shrink-0 flex-col border-r border-border bg-background transition-[width] duration-200 md:flex',
+          'stripe-top hidden h-screen shrink-0 flex-col border-r-stroke border-ink transition-[width] duration-200 md:flex',
           collapsed ? 'w-[72px]' : 'w-60',
         )}
       >

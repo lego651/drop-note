@@ -86,7 +86,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
       />
       <div className="flex flex-col flex-1 min-w-0">
         {/* Mobile top bar */}
-        <header className="md:hidden flex items-center gap-2 border-b border-border px-3 py-2 shrink-0">
+        <header
+          className="stripe-top md:hidden flex items-center gap-2 border-b-stroke border-ink px-3 py-2 shrink-0"
+          style={{ '--stripe-h': '5px' } as React.CSSProperties}
+        >
           <MobileSidebar
             userEmail={user.email ?? ''}
             tags={tagsData ?? []}
@@ -96,9 +99,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
             totalCount={allItemsCount ?? 0}
             pinnedCount={pinnedCount ?? 0}
           />
-          <span className="text-sm font-semibold">drop-note</span>
+          <span className="font-display text-base font-extrabold [font-stretch:125%]">drop-note</span>
         </header>
-        <main id="main" className="flex-1 min-w-0 overflow-y-auto bg-canvas">
+        <main id="main" className="flex-1 min-w-0 overflow-y-auto bg-canvas bg-dot-grid">
           {isOverCap && <OverCapBanner itemCount={itemCount ?? 0} tier={tier} />}
           {children}
         </main>

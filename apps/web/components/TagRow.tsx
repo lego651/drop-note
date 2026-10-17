@@ -20,9 +20,10 @@ export function TagRow({ tags }: TagRowProps) {
         return (
           <span
             key={tag.id}
-            className="shrink-0 rounded-md text-[11px] py-0.5 px-1.5 leading-none font-medium"
+            className="shrink-0 rounded-full border text-[11px] py-[3px] px-1.5 leading-none font-semibold"
             style={{
-              backgroundColor: `hsl(${hsl} / 0.12)`,
+              backgroundColor: `hsl(${hsl} / 0.08)`,
+              borderColor: `hsl(${hsl} / 0.45)`,
               color: `hsl(${hsl})`,
             }}
           >

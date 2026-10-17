@@ -44,7 +44,22 @@ const config: Config = {
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
   			success: 'hsl(var(--color-success))',
-  			canvas: 'hsl(var(--content-bg))'
+  			canvas: 'hsl(var(--content-bg))',
+  			ink: 'hsl(var(--ink))'
+  		},
+  		fontFamily: {
+  			sans: ['var(--font-sans)'],
+  			display: ['var(--font-display)'],
+  			mono: ['var(--font-mono)']
+  		},
+  		borderWidth: {
+  			stroke: 'var(--stroke)'
+  		},
+  		boxShadow: {
+  			'ink-sm': 'var(--shadow-sm)',
+  			'ink-md': 'var(--shadow-md)',
+  			'ink-lg': 'var(--shadow-lg)',
+  			'ink-hover': 'var(--shadow-hover)'
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

@@ -81,7 +81,7 @@ export function ListCard({
   const placeholderHsl = colorForTagHsl(item.subject ?? sourceLabel(item))
 
   const media = (
-    <div className="relative h-[104px] w-[148px] shrink-0 overflow-hidden rounded-2xl bg-muted">
+    <div className="relative h-[104px] w-[148px] shrink-0 overflow-hidden rounded-lg border-stroke border-ink bg-muted">
       {isDone && item.thumbnail_url ? (
         <>
           <Image
@@ -100,10 +100,13 @@ export function ListCard({
                 e.stopPropagation()
                 setVideoOpen(true)
               }}
-              className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors hover:bg-black/30"
+              className="absolute inset-0 flex items-center justify-center"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60">
-                <Play size={14} className="fill-white text-white" />
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                style={{ boxShadow: '0 0 0 2px hsl(var(--badge-ring))' }}
+              >
+                <Play size={14} className="ml-0.5 fill-current" />
               </span>
             </button>
           )}
@@ -122,7 +125,7 @@ export function ListCard({
   const body = (
     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
       {/* Meta row: dot · domain · read time · date */}
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-mono text-[11px] text-muted-foreground">
         <span
           className="h-2 w-2 shrink-0 rounded-full"
           style={{ backgroundColor: SOURCE_DOT[item.source_type ?? 'default'] }}
@@ -166,10 +169,10 @@ export function ListCard({
   const card = (
     <article
       className={cn(
-        'group relative flex items-start gap-5 rounded-2xl bg-card p-4 shadow-sm transition-shadow hover:shadow-md',
-        isSelected && 'ring-2 ring-ring',
+        'lift group relative flex items-start gap-5 rounded-xl border-stroke border-ink bg-card p-4 shadow-ink-lg',
+        isSelected && 'ring-2 ring-ring ring-offset-2',
       )}
-      style={item.pinned ? { boxShadow: `0 0 0 2px ${PIN}` } : undefined}
+      style={item.pinned ? { borderColor: PIN } : undefined}
     >
       {/* Bulk checkbox */}
       {isBulkMode && (
@@ -195,7 +198,7 @@ export function ListCard({
               e.stopPropagation()
               onPinChange?.(item.id, !item.pinned)
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+            className="flex h-7 w-7 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-foreground"
           >
             <Pin size={13} className={cn(item.pinned && 'fill-foreground text-foreground')} />
           </button>
@@ -207,7 +210,7 @@ export function ListCard({
               e.stopPropagation()
               onDelete?.(item.id)
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-muted-foreground shadow-sm transition-colors hover:text-destructive"
+            className="flex h-7 w-7 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-destructive"
           >
             <Trash2 size={13} />
           </button>

@@ -40,19 +40,19 @@ describe('TagFilterBar', () => {
   it('All pill has active styling when no activeTagId', () => {
     render(<TagFilterBar tags={tags} totalCount={247} />)
     const allBtn = screen.getByText(/All/).closest('button')
-    expect(allBtn?.className).toContain('bg-foreground')
+    expect(allBtn?.className).toContain('bg-primary')
   })
 
   it('tag pill has active styling when activeTagId matches', () => {
     render(<TagFilterBar tags={tags} totalCount={247} activeTagId="tag-1" />)
     const aiBtn = screen.getByText(/ai/).closest('button')
-    expect(aiBtn?.className).toContain('bg-foreground')
+    expect(aiBtn?.className).toContain('bg-primary')
   })
 
   it('All pill does NOT have active styling when a tag is active', () => {
     render(<TagFilterBar tags={tags} totalCount={247} activeTagId="tag-1" />)
     const allBtn = screen.getByText(/All/).closest('button')
-    expect(allBtn?.className).not.toContain('bg-foreground')
+    expect(allBtn?.className).not.toContain('bg-primary')
   })
 
   it('clicking a tag calls router.push with ?tag= param', () => {

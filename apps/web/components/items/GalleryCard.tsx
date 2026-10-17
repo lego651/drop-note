@@ -29,7 +29,7 @@ const PIN = 'hsl(var(--color-pin))'
 function formatDate(dateStr: string): string {
   try {
     return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'long',
+      month: 'short',
       day: 'numeric',
       year: 'numeric',
     })
@@ -82,7 +82,7 @@ export function GalleryCard({
   const placeholderHsl = colorForTagHsl(item.subject ?? sourceLabel(item))
 
   const media = (
-    <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
+    <div className="relative aspect-[16/10] w-full overflow-hidden border-b-stroke border-ink bg-muted">
       {isDone && item.thumbnail_url ? (
         <>
           <Image
@@ -101,10 +101,13 @@ export function GalleryCard({
                 e.stopPropagation()
                 setVideoOpen(true)
               }}
-              className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors hover:bg-black/30"
+              className="absolute inset-0 flex items-center justify-center"
             >
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60">
-                <Play size={20} className="fill-white text-white" />
+              <span
+                className="flex h-[46px] w-[46px] items-center justify-center rounded-full bg-primary text-primary-foreground"
+                style={{ boxShadow: '0 0 0 2.5px hsl(var(--badge-ring))' }}
+              >
+                <Play size={20} className="ml-0.5 fill-current" />
               </span>
             </button>
           )}
@@ -120,14 +123,14 @@ export function GalleryCard({
 
       {/* Pinned badge */}
       {item.pinned && (
-        <span className="absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-background shadow-sm">
+        <span className="absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border-stroke border-ink bg-card">
           <Pin size={13} style={{ color: PIN, fill: PIN }} />
         </span>
       )}
 
       {/* Bulk checkbox */}
       {isBulkMode && (
-        <span className="absolute right-3 top-3 rounded bg-background/90 p-0.5">
+        <span className="absolute right-3 top-3 rounded bg-card/90 p-0.5">
           <Checkbox
             checked={isSelected}
             onCheckedChange={(c) => onSelectChange?.(item.id, c === true)}
@@ -147,7 +150,7 @@ export function GalleryCard({
               e.stopPropagation()
               onPinChange?.(item.id, !item.pinned)
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+            className="flex h-7 w-7 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-foreground"
           >
             <Pin
               size={13}
@@ -162,7 +165,7 @@ export function GalleryCard({
               e.stopPropagation()
               onDelete?.(item.id)
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-muted-foreground shadow-sm transition-colors hover:text-destructive"
+            className="flex h-7 w-7 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-destructive"
           >
             <Trash2 size={13} />
           </button>
@@ -178,7 +181,7 @@ export function GalleryCard({
       </h3>
 
       {/* Source meta */}
-      <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+      <div className="flex min-w-0 items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
         <ItemFavicon sourceUrl={item.source_url} sourceType={item.source_type} size={14} />
         <span className="truncate">{sourceLabel(item)}</span>
         {readMin && (
@@ -209,10 +212,15 @@ export function GalleryCard({
       {tags.length > 0 && <TagRow tags={tags} />}
 
       {/* Divider + full date */}
-      <div className="mt-auto border-t border-border pt-3">
-        <time dateTime={item.created_at} className="text-xs text-muted-foreground">
+      {/* Postmark divider + mono date + mini airmail stripe (AIRMAIL § 7) */}
+      <div className="mt-auto flex items-center justify-between border-t-stroke border-dashed border-ink/35 pt-3">
+        <time
+          dateTime={item.created_at}
+          className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted-foreground"
+        >
           {formatDate(item.created_at)}
         </time>
+        <span className="stripe-mini" aria-hidden="true" />
       </div>
     </div>
   )
@@ -220,14 +228,14 @@ export function GalleryCard({
   const card = (
     <article
       className={cn(
-        'group relative flex h-full flex-col overflow-hidden rounded-2xl bg-card shadow-sm transition-shadow hover:shadow-md',
-        isSelected && 'ring-2 ring-ring',
+        'lift group relative flex h-full flex-col overflow-hidden rounded-xl border-stroke border-ink bg-card shadow-ink-lg',
+        isSelected && 'ring-2 ring-ring ring-offset-2',
       )}
       style={
         item.pinned
-          ? { boxShadow: `0 0 0 2px ${PIN}` }
+          ? { borderColor: PIN }
           : isFailed
-            ? { boxShadow: '0 0 0 1px hsl(var(--destructive))' }
+            ? { borderColor: 'hsl(var(--destructive))' }
             : undefined
       }
     >

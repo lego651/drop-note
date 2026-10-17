@@ -48,20 +48,20 @@ export function FiltersButton({ activeSource }: FiltersButtonProps) {
           variant="outline"
           disabled={isPending}
           className={cn(
-            'h-11 shrink-0 gap-2 rounded-full border-border px-5 text-sm font-normal',
-            isActive && 'bg-foreground text-background border-foreground',
+            'h-11 shrink-0 gap-2 px-5 text-sm font-semibold',
+            isActive && 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground',
             isPending && 'opacity-50',
           )}
         >
           <SlidersHorizontal
             size={15}
-            className={cn(isActive ? 'text-background' : 'text-muted-foreground')}
+            className={cn(isActive ? 'text-primary-foreground' : 'text-muted-foreground')}
           />
           {isActive ? SOURCE_LABELS[activeSource] : 'Filters'}
           {isActive && (
             <X
               size={14}
-              className="text-background/70 hover:text-background"
+              className="text-primary-foreground/70 hover:text-primary-foreground"
               onClick={(e) => {
                 e.stopPropagation()
                 handleSelect('all')

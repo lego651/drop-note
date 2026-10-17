@@ -277,10 +277,15 @@ function ItemsPageClientInner({
       {/* Page title row */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Your inbox</h1>
-          <p className="text-sm text-muted-foreground">Everything you&apos;ve saved, organized by AI</p>
+          <h1 className="type-display text-[32px] leading-none text-foreground sm:text-[42px]">
+            Your <span className="text-primary">inbox</span>
+          </h1>
+          <p className="mt-2 text-[15px] text-foreground">Everything you&apos;ve saved, organized by AI</p>
         </div>
-        <span className="text-xs text-muted-foreground shrink-0 pt-1">Updated just now</span>
+        {/* Postmark (AIRMAIL § 6.3) — passive, so dashed */}
+        <span className="hidden shrink-0 rounded-full border-stroke border-dashed border-ink/55 bg-card px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] text-foreground sm:inline-block">
+          Updated just now
+        </span>
       </div>
 
       {/* Stats cards */}
@@ -304,7 +309,7 @@ function ItemsPageClientInner({
             placeholder="Search items, summaries, tags…"
             value={searchQuery}
             onChange={handleSearchChange}
-            className="h-11 rounded-full border-border bg-card pl-11 pr-4 text-sm"
+            className="h-11 pl-11 pr-4 text-sm"
             aria-label="Search items"
           />
         </div>
@@ -355,17 +360,18 @@ function ItemsPageClientInner({
       {/* List header: item count (left) + sort + view controls (right) */}
       {!isEmpty && (
         <div className="flex items-center justify-between gap-4 pt-1">
-          <p className="text-sm text-muted-foreground">
+          <p className="flex items-baseline gap-2 whitespace-nowrap text-muted-foreground">
             {isSearching ? (
               'Searching…'
             ) : isSearchMode && searchResults !== null ? (
               <>
-                <span className="font-semibold text-foreground">{searchResults.length}</span>{' '}
-                result{searchResults.length === 1 ? '' : 's'}
+                <span className="type-display text-[22px] leading-none text-foreground">{searchResults.length}</span>
+                <span className="type-label text-[12px] text-foreground">result{searchResults.length === 1 ? '' : 's'}</span>
               </>
             ) : (
               <>
-                <span className="font-semibold text-foreground">{displayItems.length}</span> saved items
+                <span className="type-display text-[22px] leading-none text-foreground">{displayItems.length}</span>
+                <span className="type-label whitespace-nowrap text-[12px] text-foreground">saved items</span>
               </>
             )}
           </p>
@@ -408,7 +414,7 @@ function ItemsPageClientInner({
             <input
               readOnly
               value="drop@dropnote.me"
-              className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 font-mono text-sm text-foreground"
+              className="flex-1 rounded-[10px] border-stroke border-ink bg-card px-3 py-1.5 font-mono text-sm text-foreground"
             />
             <Button variant="outline" size="sm" onClick={handleCopyEmail} className="shrink-0 gap-1.5">
               {copied ? (
@@ -450,7 +456,7 @@ function ItemsPageClientInner({
           aria-label="Searching items"
         >
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-40 animate-pulse rounded-xl bg-muted" />
+            <div key={i} className="h-40 animate-pulse rounded-xl border-stroke border-ink bg-muted shadow-ink-lg" />
           ))}
         </div>
       )}
