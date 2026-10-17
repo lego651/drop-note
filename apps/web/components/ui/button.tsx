@@ -20,7 +20,7 @@ const buttonVariants = cva(
           // Airmail (§ 7): secondary = card fill + ink outline + shadow-ink-md, same as outline
           "border-stroke border-ink bg-card text-foreground shadow-ink-md hover:bg-accent hover:text-accent-foreground active:translate-x-px active:translate-y-px active:shadow-ink-sm",
         ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+        link: "text-link underline-offset-4 hover:underline",
       },
       size: {
         default: "h-9 px-4 py-2",

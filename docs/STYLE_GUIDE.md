@@ -81,7 +81,7 @@ Use as Tailwind tokens (`bg-x`, `text-x`) where wired in `tailwind.config.ts`, o
 | `shadow-ink-sm/md/lg/hover` | hard offset shadows (nav/chip, controls, cards, hover) — never write a box-shadow by hand |
 | `lift` | card hover: −2px lift + `shadow-ink-hover`, reduced-motion safe |
 | `type-display` | Archivo 125% display cut — H1, big numbers (≥ 22px only) |
-| `type-label` | mono uppercase section label — sidebar groups, stat labels only |
+| `type-label` | mono uppercase section label — sidebar groups, stat labels, in-panel group labels (settings), marketing eyebrows |
 | `font-mono` | metadata: dates, counts, domains, read time |
 | `bg-dot-grid`, `stripe-top`, `stripe-mini`, `stamp` + `stamp-in` | the postal motifs (AIRMAIL § 6) |
 

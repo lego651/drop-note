@@ -53,7 +53,7 @@ in the same order. A token that exists in one block must exist in the other.
 | `--muted-foreground` | `#485270` | Secondary text, meta |
 | `--border` | `#CDD3E4` | Hairline dividers inside containers only |
 | `--input` | `#0F1938` | Input/control outlines (= ink) |
-| `--primary` | `#1A40D5` | Cobalt: primary buttons, active chip, active view toggle, play badge, links |
+| `--primary` | `#1A40D5` | Cobalt: primary buttons, active chip, active view toggle, play badge |
 | `--accent` / `--accent-foreground` | `#E2E7FE` / `#1431A3` | Hover and selected backgrounds |
 | `--color-pin` | `#E61927` | Airmail red: pin, YouTube mark, the red stripe band |
 | `--destructive` | `#D11A26` | Delete and errors only |

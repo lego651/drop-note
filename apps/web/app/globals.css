@@ -210,7 +210,7 @@
     font-weight: 800;
     letter-spacing: -0.025em;
   }
-  /* Mono section label (§ 4): sidebar group names, stat labels only */
+  /* Mono section label (§ 4, D-5): sidebar groups, stat labels, in-panel group labels, marketing eyebrows */
   .type-label {
     font-family: var(--font-mono);
     font-size: 10.5px;
