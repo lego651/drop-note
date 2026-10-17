@@ -10,7 +10,7 @@ export function TrendChart({ title, data }: { title: string; data: TrendPoint[] 
   const max = Math.max(1, ...data.map((point) => point.count))
 
   return (
-    <div className="rounded-md border border-border p-4 space-y-3">
+    <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-4 space-y-3">
       <p className="text-sm font-medium">{title}</p>
       <div className="flex items-end gap-1.5 h-24">
         {data.map((point) => (
@@ -23,13 +23,13 @@ export function TrendChart({ title, data }: { title: string; data: TrendPoint[] 
               className="w-full rounded-t-sm"
               style={{
                 height: `${Math.max(4, (point.count / max) * 100)}%`,
-                backgroundColor: 'hsl(var(--color-tag-blue))',
+                backgroundColor: 'hsl(var(--color-chart-1))',
               }}
             />
           </div>
         ))}
       </div>
-      <div className="flex justify-between text-[10px] text-muted-foreground">
+      <div className="flex justify-between font-mono text-[11px] text-muted-foreground">
         <span>{formatShortDate(data[0]?.date)}</span>
         <span>{formatShortDate(data[data.length - 1]?.date)}</span>
       </div>

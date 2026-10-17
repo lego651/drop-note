@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import type { TrendPoint } from '@/lib/admin/stats'
 import { TrendChart } from './TrendChart'
 
@@ -53,7 +54,7 @@ export function StatsClient() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">System Stats</h1>
+        <h1 className="type-display text-[32px] sm:text-[42px]">System Stats</h1>
         <Button size="sm" variant="outline" onClick={fetchStats} disabled={loading}>
           {loading ? 'Loading\u2026' : 'Refresh'}
         </Button>
@@ -61,6 +62,17 @@ export function StatsClient() {
 
       {error && (
         <p className="text-sm text-destructive-text">{error}</p>
+      )}
+
+      {loading && !stats && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-4 space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-7 w-14" />
+            </div>
+          ))}
+        </div>
       )}
 
       {stats && (
@@ -76,9 +88,9 @@ export function StatsClient() {
               { label: 'DAU (proxy)', value: stats.dauProxy },
               { label: 'WAU (proxy)', value: stats.wauProxy },
             ].map(({ label, value }) => (
-              <div key={label} className="rounded-md border border-border p-4">
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="text-2xl font-semibold mt-1">{value}</p>
+              <div key={label} className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-4">
+                <p className="type-label text-muted-foreground">{label}</p>
+                <p className="type-display text-[28px] sm:text-[36px] font-black tabular-nums mt-1">{value}</p>
               </div>
             ))}
           </div>
@@ -88,7 +100,7 @@ export function StatsClient() {
             <TrendChart title="Signups (Last 14 Days)" data={stats.signupsTrend} />
           </div>
 
-          <div className="rounded-md border border-border p-4 space-y-2">
+          <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg p-4 space-y-2">
             <p className="text-sm font-medium">Queue Depth</p>
             {stats.queueError ? (
               <p className="text-sm text-muted-foreground">
@@ -99,7 +111,7 @@ export function StatsClient() {
                 {Object.entries(stats.queue).map(([key, val]) => (
                   <div key={key} className="text-sm">
                     <span className="text-muted-foreground capitalize">{key}: </span>
-                    <span className="font-medium">{val}</span>
+                    <span className="font-medium tabular-nums">{val}</span>
                   </div>
                 ))}
               </div>

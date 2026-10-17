@@ -12,8 +12,8 @@ export default async function AdminBlocksPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Block List</h1>
-        <span className="text-sm text-muted-foreground">{blocks?.length ?? 0} entries</span>
+        <h1 className="type-display text-[32px] sm:text-[42px]">Block List</h1>
+        <span className="font-mono text-[11px] text-muted-foreground">{blocks?.length ?? 0} entries</span>
       </div>
 
       <div className="rounded-md border border-border bg-muted/20 p-3 text-xs text-muted-foreground">

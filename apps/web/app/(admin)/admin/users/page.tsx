@@ -40,24 +40,24 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Users</h1>
-        <span className="text-sm text-muted-foreground">{totalCount} total</span>
+        <h1 className="type-display text-[32px] sm:text-[42px]">Users</h1>
+        <span className="font-mono text-[11px] text-muted-foreground">{totalCount} total</span>
       </div>
 
-      <div className="rounded-md border border-border overflow-hidden">
+      <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-muted/50">
+          <thead className="bg-muted">
             <tr>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground">Email</th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground">Tier</th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground">Items</th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground">Joined</th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground">Actions</th>
+              <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Email</th>
+              <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Tier</th>
+              <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Items</th>
+              <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Joined</th>
+              <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {userList.map((u) => (
-              <tr key={u.id} className="hover:bg-muted/30">
+              <tr key={u.id} className="hover:bg-accent/50">
                 <td className="px-4 py-2 truncate max-w-[200px]">
                   {u.email}
                   {u.is_admin && (
@@ -65,7 +65,7 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
                   )}
                 </td>
                 <td className="px-4 py-2">{u.tier}</td>
-                <td className="px-4 py-2">{itemCountMap.get(u.id) ?? 0}</td>
+                <td className="px-4 py-2 tabular-nums">{itemCountMap.get(u.id) ?? 0}</td>
                 <td className="px-4 py-2 text-muted-foreground">
                   {u.created_at ? format(new Date(u.created_at), 'MMM d, yyyy') : '—'}
                 </td>
