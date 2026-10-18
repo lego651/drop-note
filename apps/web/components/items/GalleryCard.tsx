@@ -212,7 +212,7 @@ export function GalleryCard({
       {/* Category badge */}
       {item.category ? (
         isBulkMode ? (
-          <CategoryBadge category={item.category} />
+          <CategoryBadge category={item.category} className="self-start" />
         ) : (
           <ItemCategoryControl
             itemId={item.id}

@@ -32,4 +32,9 @@ describe('CategoryBadge', () => {
     render(<CategoryBadge category={{ ...category, name: longName }} />)
     expect(screen.getByText(longName)).toHaveClass('truncate')
   })
+
+  it('forces a sans font so it reads correctly inside a mono-font ancestor (e.g. the timeline meta row)', () => {
+    render(<CategoryBadge category={category} />)
+    expect(screen.getByText('Food & Drink').parentElement).toHaveClass('font-sans')
+  })
 })

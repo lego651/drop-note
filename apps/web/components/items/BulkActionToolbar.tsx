@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Trash2, Tag, X, FolderInput, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
@@ -27,6 +27,7 @@ import type { BadgeCategory } from '@/components/categories/CategoryBadge'
 import { toast } from '@/hooks/use-toast'
 import type { CategoryLite } from '@/lib/category-display'
 import type { Tier } from '@drop-note/shared'
+import { cn } from '@/lib/utils'
 
 const BULK_MOVE_LIMIT = 100
 
@@ -154,7 +155,7 @@ export function BulkActionToolbar({
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
+    <div className="flex items-center gap-2 rounded-[10px] border-stroke border-ink bg-card px-3 py-2 shadow-ink-md">
       {/* Select all on page checkbox */}
       <label className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer select-none">
         <Checkbox
@@ -257,7 +258,7 @@ export function BulkActionToolbar({
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                className={cn(buttonVariants({ variant: 'destructive' }))}
               >
                 {userTier === 'free' ? 'Delete permanently' : 'Move to trash'}
               </AlertDialogAction>
