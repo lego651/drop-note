@@ -29,7 +29,7 @@ export function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // Nav items (AIRMAIL § 7): transparent outline → ink outline + small ink shadow when active.
 export const ROW_BASE =
-  'flex items-center gap-3 rounded-lg border-stroke border-transparent px-3 py-2 text-sm transition-colors'
+  'flex items-center gap-3 rounded-lg border-stroke border-transparent px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background'
 export const ROW_INACTIVE = 'text-foreground/80 hover:bg-muted hover:text-foreground'
 export const ROW_ACTIVE = 'border-ink bg-accent font-semibold text-accent-foreground shadow-ink-sm'
 export const COUNT =
