@@ -16,7 +16,6 @@ import { BulkActionToolbar } from '@/components/items/BulkActionToolbar'
 import { WelcomeModal } from '@/components/dashboard/WelcomeModal'
 import { StatsBar } from '@/components/items/StatsBar'
 import { ItemsPageHeader } from '@/components/items/ItemsPageHeader'
-import { TagFilterBar } from '@/components/items/TagFilterBar'
 import { SortDropdown } from '@/components/items/SortDropdown'
 import { FiltersButton, SOURCE_LABELS } from '@/components/items/FiltersButton'
 import { FolderOpen } from 'lucide-react'
@@ -41,8 +40,6 @@ interface ItemsPageClientProps {
   page: number
   initialQuery?: string
   activeTagName?: string
-  activeTagId?: string
-  tags?: { id: string; name: string; count: number }[]
   categories?: CategoryLite[]
   activeCategoryId?: string
   activeCategoryName?: string
@@ -71,8 +68,6 @@ function ItemsPageClientInner({
   totalCount,
   page,
   initialQuery = '',
-  activeTagId,
-  tags = [],
   categories = [],
   activeCategoryId,
   activeCategoryName,
@@ -377,11 +372,6 @@ function ItemsPageClientInner({
         </div>
         <FiltersButton activeSource={activeSource} />
       </div>
-
-      {/* Tag filter bar */}
-      {tags.length > 0 && (
-        <TagFilterBar tags={tags} totalCount={totalCount} activeTagId={activeTagId} />
-      )}
 
       {/* Active source filter chip — visible indicator of what's filtered */}
       {activeSource !== 'all' && (

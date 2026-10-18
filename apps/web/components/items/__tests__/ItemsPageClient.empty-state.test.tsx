@@ -106,25 +106,3 @@ describe('ItemsPageClient with items', () => {
     expect(screen.getByRole('searchbox', { name: /search items/i })).toBeInTheDocument()
   })
 })
-
-describe('ItemsPageClient tag filter bar', () => {
-  it('renders the tag filter bar (tag pill + All) when tags are provided', () => {
-    render(
-      <ItemsPageClient
-        {...defaultProps}
-        items={[mockItem]}
-        totalCount={1}
-        tags={[{ id: 't1', name: 'productivity', count: 3 }]}
-        activeTagId="t1"
-      />
-    )
-    // TagFilterBar renders the tag name as a filter pill + an "All" pill to clear
-    expect(screen.getByRole('button', { name: /productivity/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /^All/i })).toBeInTheDocument()
-  })
-
-  it('does NOT render tag pills when there are no tags', () => {
-    render(<ItemsPageClient {...defaultProps} items={[mockItem]} totalCount={1} />)
-    expect(screen.queryByRole('button', { name: /productivity/i })).not.toBeInTheDocument()
-  })
-})
