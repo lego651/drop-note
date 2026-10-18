@@ -1,10 +1,9 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import Link from 'next/link'
 import type { EnvelopeBody, EnvelopeLeaf } from '@drop-note/shared'
 import { countEnvelopeChecklistProgress, updateEnvelopeLeaf } from '@drop-note/shared'
-import { EnvelopeLeafRow, type CitationLabels } from './EnvelopeLeafRow'
+import { EnvelopeLeafRow, EnvelopeCitationChips, EnvelopeMissingBadge, type CitationLabels } from './EnvelopeLeafRow'
 import { toast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 
@@ -128,7 +127,7 @@ export function EnvelopeBodyView({ envelopeId, body: initialBody, citationLabels
                   <thead className="bg-muted">
                     <tr>
                       {block.columns.map((column, c) => (
-                        <th key={c} className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        <th key={c} className="whitespace-nowrap px-4 py-2 text-left text-xs font-semibold text-muted-foreground">
                           {column}
                         </th>
                       ))}
@@ -192,20 +191,8 @@ function EnvelopeTableCell({ leaf, citationLabels }: { leaf: EnvelopeLeaf; citat
           )}
         />
         <span className="text-sm text-foreground">{leaf.text}</span>
-        {leaf.sourceItemIds.map((itemId) => (
-          <Link
-            key={itemId}
-            href={`/items/${itemId}`}
-            className="inline-flex items-center rounded-full border-stroke border-ink bg-card px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted"
-          >
-            {citationLabels[itemId] ?? 'Source'}
-          </Link>
-        ))}
-        {leaf.missing && (
-          <span className="inline-flex items-center rounded-full border-stroke border-dashed border-ink/55 bg-card px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
-            Missing: {leaf.missing}
-          </span>
-        )}
+        <EnvelopeCitationChips sourceItemIds={leaf.sourceItemIds} citationLabels={citationLabels} />
+        {leaf.missing && <EnvelopeMissingBadge missing={leaf.missing} />}
       </div>
     </td>
   )

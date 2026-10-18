@@ -88,7 +88,7 @@ describe('parseEnvelopeBody', () => {
     expect(result.success).toBe(false)
   })
 
-  it('accepts a table block (schema arm exists even though the renderer is optional this slice)', () => {
+  it('accepts a valid table block', () => {
     const raw = {
       sections: [
         {

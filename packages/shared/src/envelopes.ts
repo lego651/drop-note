@@ -62,9 +62,10 @@ const ListBlockSchema = z.object({
   items: z.array(EnvelopeLeafSchema).min(1),
 })
 
-// Full table rendering is DRO-196 — this arm only needs to parse so the model
-// isn't forced into checklist/notes shapes it doesn't fit; the envelope page
-// doesn't render it yet.
+// Rendered end-to-end as of DRO-196 (EnvelopeBodyView's table case); the
+// row/column cell-count cross-check lives in parseEnvelopeBody below, not
+// here, since discriminatedUnion requires every member to stay a plain
+// ZodObject.
 const TableBlockSchema = z.object({
   type: z.literal('table'),
   heading: z.string().optional(),

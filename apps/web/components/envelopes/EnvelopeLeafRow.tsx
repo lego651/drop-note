@@ -10,6 +10,38 @@ import { cn } from '@/lib/utils'
 
 export type CitationLabels = Record<string, string>
 
+/** The citation chip row shared by EnvelopeLeafRow and EnvelopeTableCell (DRO-196). */
+export function EnvelopeCitationChips({
+  sourceItemIds,
+  citationLabels,
+}: {
+  sourceItemIds: string[]
+  citationLabels: CitationLabels
+}) {
+  return (
+    <>
+      {sourceItemIds.map((itemId) => (
+        <Link
+          key={itemId}
+          href={`/items/${itemId}`}
+          className="inline-flex items-center rounded-full border-stroke border-ink bg-card px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted"
+        >
+          {citationLabels[itemId] ?? 'Source'}
+        </Link>
+      ))}
+    </>
+  )
+}
+
+/** The "Missing: ..." badge shared by EnvelopeLeafRow and EnvelopeTableCell (DRO-196). */
+export function EnvelopeMissingBadge({ missing }: { missing: string }) {
+  return (
+    <span className="inline-flex items-center rounded-full border-stroke border-dashed border-ink/55 bg-card px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
+      Missing: {missing}
+    </span>
+  )
+}
+
 interface EnvelopeLeafRowProps {
   leaf: EnvelopeLeaf
   citationLabels: CitationLabels
@@ -121,21 +153,9 @@ export function EnvelopeLeafRow({
             Edited
           </span>
         ) : (
-          leaf.sourceItemIds.map((itemId) => (
-            <Link
-              key={itemId}
-              href={`/items/${itemId}`}
-              className="inline-flex items-center rounded-full border-stroke border-ink bg-card px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted"
-            >
-              {citationLabels[itemId] ?? 'Source'}
-            </Link>
-          ))
+          <EnvelopeCitationChips sourceItemIds={leaf.sourceItemIds} citationLabels={citationLabels} />
         )}
-        {leaf.missing && (
-          <span className="inline-flex items-center rounded-full border-stroke border-dashed border-ink/55 bg-card px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
-            Missing: {leaf.missing}
-          </span>
-        )}
+        {leaf.missing && <EnvelopeMissingBadge missing={leaf.missing} />}
       </div>
     </li>
   )
