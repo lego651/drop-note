@@ -54,6 +54,7 @@ beforeEach(() => {
 })
 
 import { ItemsPageClient } from '../ItemsPageClient'
+import { BulkSelectProvider } from '../BulkSelectProvider'
 
 const defaultProps = {
   items: [],
@@ -81,12 +82,12 @@ const mockItem = {
 
 describe('ItemsPageClient empty state', () => {
   it('shows the drop address when items list is empty', () => {
-    render(<ItemsPageClient {...defaultProps} />)
+    render(<BulkSelectProvider><ItemsPageClient {...defaultProps} /></BulkSelectProvider>)
     expect(screen.getByDisplayValue('drop@dropnote.me')).toBeInTheDocument()
   })
 
   it('shows the 3-step pill labels when items list is empty', () => {
-    render(<ItemsPageClient {...defaultProps} />)
+    render(<BulkSelectProvider><ItemsPageClient {...defaultProps} /></BulkSelectProvider>)
     expect(screen.getByText('Send it')).toBeInTheDocument()
     expect(screen.getByText('AI tags it')).toBeInTheDocument()
     expect(screen.getByText('Find it here')).toBeInTheDocument()
@@ -95,13 +96,13 @@ describe('ItemsPageClient empty state', () => {
 
 describe('ItemsPageClient with items', () => {
   it('does NOT show empty state when items exist', () => {
-    render(<ItemsPageClient {...defaultProps} items={[mockItem]} totalCount={1} />)
+    render(<BulkSelectProvider><ItemsPageClient {...defaultProps} items={[mockItem]} totalCount={1} /></BulkSelectProvider>)
     expect(screen.queryByDisplayValue('drop@dropnote.me')).not.toBeInTheDocument()
     expect(screen.queryByText('Send it')).not.toBeInTheDocument()
   })
 
   it('renders the search input regardless of items state', () => {
-    render(<ItemsPageClient {...defaultProps} items={[mockItem]} totalCount={1} />)
+    render(<BulkSelectProvider><ItemsPageClient {...defaultProps} items={[mockItem]} totalCount={1} /></BulkSelectProvider>)
     // input[type="search"] has role searchbox in ARIA
     expect(screen.getByRole('searchbox', { name: /search items/i })).toBeInTheDocument()
   })

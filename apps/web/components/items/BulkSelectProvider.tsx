@@ -8,6 +8,7 @@ interface BulkSelectContextType {
   isBulkMode: boolean
   toggle: (id: string) => void
   selectAll: (ids: string[]) => void
+  deselectIds: (ids: string[]) => void
   deselectAll: () => void
 }
 
@@ -31,8 +32,19 @@ export function BulkSelectProvider({ children }: { children: React.ReactNode }) 
     })
   }, [])
 
+  // Merges into the existing cross-category selection (DRO-194) rather than
+  // replacing it, so checking "select all" on one category page doesn't drop
+  // picks already made on another category page.
   const selectAll = useCallback((ids: string[]) => {
-    setSelectedIds(new Set(ids))
+    setSelectedIds(prev => new Set([...prev, ...ids]))
+  }, [])
+
+  const deselectIds = useCallback((ids: string[]) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      ids.forEach(id => next.delete(id))
+      return next
+    })
   }, [])
 
   const deselectAll = useCallback(() => {
@@ -45,6 +57,7 @@ export function BulkSelectProvider({ children }: { children: React.ReactNode }) 
       isBulkMode: selectedIds.size > 0,
       toggle,
       selectAll,
+      deselectIds,
       deselectAll,
     }}>
       {children}

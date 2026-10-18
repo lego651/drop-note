@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2, Tag, X, FolderInput, Loader2, Sparkles } from 'lucide-react'
+import { Trash2, Tag, X, FolderInput, Loader2 } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -24,10 +24,9 @@ import {
 import { DropdownMenu, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { CategoryPickerContent } from '@/components/categories/CategoryPicker'
 import type { BadgeCategory } from '@/components/categories/CategoryBadge'
-import { PurposeDialog } from '@/components/envelopes/PurposeDialog'
 import { toast } from '@/hooks/use-toast'
 import type { CategoryLite } from '@/lib/category-display'
-import { ENVELOPE_MAX_ITEMS, ENVELOPE_MIN_ITEMS, type Tier } from '@drop-note/shared'
+import type { Tier } from '@drop-note/shared'
 import { cn } from '@/lib/utils'
 
 const BULK_MOVE_LIMIT = 100
@@ -40,7 +39,11 @@ interface BulkActionToolbarProps {
   onDeleted: (deletedIds: string[]) => void
   onTagged: (tagName: string) => void
   onMoved?: (ids: string[], category: BadgeCategory) => void
+  /** Adds this page's ids to the (possibly cross-category) selection. */
   onSelectAll: (ids: string[]) => void
+  /** Removes just this page's ids — unlike onDeselectAll, leaves picks from other categories intact. */
+  onDeselectPage: () => void
+  /** Clears the entire selection, across every category. */
   onDeselectAll: () => void
 }
 
@@ -53,6 +56,7 @@ export function BulkActionToolbar({
   onTagged,
   onMoved,
   onSelectAll,
+  onDeselectPage,
   onDeselectAll,
 }: BulkActionToolbarProps) {
   const [isDeleting, setIsDeleting] = useState(false)
@@ -61,12 +65,10 @@ export function BulkActionToolbar({
   const [tagPopoverOpen, setTagPopoverOpen] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
   const [movePopoverOpen, setMovePopoverOpen] = useState(false)
-  const [purposeDialogOpen, setPurposeDialogOpen] = useState(false)
 
   const count = selectedIds.size
   const allPageSelected = allPageIds.length > 0 && allPageIds.every(id => selectedIds.has(id))
   const overMoveLimit = count > BULK_MOVE_LIMIT
-  const canMakePlan = count >= ENVELOPE_MIN_ITEMS && count <= ENVELOPE_MAX_ITEMS
 
   if (count === 0) return null
 
@@ -165,7 +167,7 @@ export function BulkActionToolbar({
           checked={allPageSelected}
           onCheckedChange={(checked) => {
             if (checked) onSelectAll(allPageIds)
-            else onDeselectAll()
+            else onDeselectPage()
           }}
           aria-label="Select all on this page"
         />
@@ -177,19 +179,6 @@ export function BulkActionToolbar({
       </span>
 
       <div className="ml-auto flex items-center gap-1.5">
-        {/* Make a plan (envelopes, DRO-193) — needs 2-8 items */}
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!canMakePlan}
-          aria-disabled={!canMakePlan}
-          title={canMakePlan ? undefined : `Select ${ENVELOPE_MIN_ITEMS}-${ENVELOPE_MAX_ITEMS} items to make a plan.`}
-          onClick={() => setPurposeDialogOpen(true)}
-        >
-          <Sparkles size={14} />
-          <span className="hidden sm:inline">Make a plan</span>
-        </Button>
-
         {/* Add tag popover */}
         <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
           <PopoverTrigger asChild>
@@ -287,12 +276,6 @@ export function BulkActionToolbar({
           <X size={14} />
         </Button>
       </div>
-
-      <PurposeDialog
-        open={purposeDialogOpen}
-        onOpenChange={setPurposeDialogOpen}
-        itemIds={Array.from(selectedIds)}
-      />
     </div>
   )
 }

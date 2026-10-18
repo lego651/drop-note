@@ -63,6 +63,7 @@ beforeEach(() => {
 })
 
 import { ItemsPageClient } from '../ItemsPageClient'
+import { BulkSelectProvider } from '../BulkSelectProvider'
 
 // A mock item with pinned: false
 const mockItem = {
@@ -91,12 +92,14 @@ describe('ItemsPageClient pin optimistic update', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValue(fetchPromise))
 
     render(
-      <ItemsPageClient
-        items={[mockItem]}
-        totalCount={1}
-        page={1}
-        userId="user-test"
-      />
+      <BulkSelectProvider>
+        <ItemsPageClient
+          items={[mockItem]}
+          totalCount={1}
+          page={1}
+          userId="user-test"
+        />
+      </BulkSelectProvider>
     )
 
     // Find pin button — GalleryCard renders it as an aria-label "Pin" button
@@ -138,12 +141,14 @@ describe('ItemsPageClient pin optimistic update', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     render(
-      <ItemsPageClient
-        items={[mockItem]}
-        totalCount={1}
-        page={1}
-        userId="user-test"
-      />
+      <BulkSelectProvider>
+        <ItemsPageClient
+          items={[mockItem]}
+          totalCount={1}
+          page={1}
+          userId="user-test"
+        />
+      </BulkSelectProvider>
     )
 
     const pinButtons = screen.getAllByRole('button', { name: /pin/i })

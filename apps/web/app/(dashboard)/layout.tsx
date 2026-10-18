@@ -2,7 +2,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MobileSidebar } from '@/components/layout/MobileSidebar'
-import { OverCapBanner } from '@/components/OverCapBanner'
+import { DashboardMain } from '@/components/layout/DashboardMain'
+import { BulkSelectProvider } from '@/components/items/BulkSelectProvider'
+import { EnvelopeTray } from '@/components/envelopes/EnvelopeTray'
 import { getCategoriesWithCounts } from '@/lib/categories'
 import { TIER_ITEM_LIMITS } from '@drop-note/shared'
 import type { Tier } from '@drop-note/shared'
@@ -76,46 +78,48 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const isOverCap = (itemCount ?? 0) > TIER_ITEM_LIMITS[tier]
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:rounded-md focus:px-3 focus:py-2 focus:bg-background focus:text-foreground focus:text-sm focus:font-medium focus:ring-2 focus:ring-ring"
-      >
-        Skip to content
-      </a>
-      <Sidebar
-        userEmail={user.email ?? ''}
-        categories={categories}
-        categoriesError={categoriesError}
-        monthCounts={monthData ?? []}
-        trashCount={trashCount ?? 0}
-        archiveCount={archiveCount ?? 0}
-        totalCount={allItemsCount ?? 0}
-        pinnedCount={pinnedCount ?? 0}
-      />
-      <div className="flex flex-col flex-1 min-w-0">
-        {/* Mobile top bar */}
-        <header
-          className="stripe-top md:hidden flex items-center gap-2 border-b-stroke border-ink px-3 py-2 shrink-0"
-          style={{ '--stripe-h': '5px' } as React.CSSProperties}
+    <BulkSelectProvider>
+      <div className="flex h-screen overflow-hidden bg-background">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:rounded-md focus:px-3 focus:py-2 focus:bg-background focus:text-foreground focus:text-sm focus:font-medium focus:ring-2 focus:ring-ring"
         >
-          <MobileSidebar
-            userEmail={user.email ?? ''}
-            categories={categories}
-            categoriesError={categoriesError}
-            monthCounts={monthData ?? []}
-            trashCount={trashCount ?? 0}
-            archiveCount={archiveCount ?? 0}
-            totalCount={allItemsCount ?? 0}
-            pinnedCount={pinnedCount ?? 0}
-          />
-          <span className="font-display text-base font-extrabold [font-stretch:125%]">drop-note</span>
-        </header>
-        <main id="main" className="flex-1 min-w-0 overflow-y-auto bg-canvas bg-dot-grid">
-          {isOverCap && <OverCapBanner itemCount={itemCount ?? 0} tier={tier} />}
-          {children}
-        </main>
+          Skip to content
+        </a>
+        <Sidebar
+          userEmail={user.email ?? ''}
+          categories={categories}
+          categoriesError={categoriesError}
+          monthCounts={monthData ?? []}
+          trashCount={trashCount ?? 0}
+          archiveCount={archiveCount ?? 0}
+          totalCount={allItemsCount ?? 0}
+          pinnedCount={pinnedCount ?? 0}
+        />
+        <div className="flex flex-col flex-1 min-w-0">
+          {/* Mobile top bar */}
+          <header
+            className="stripe-top md:hidden flex items-center gap-2 border-b-stroke border-ink px-3 py-2 shrink-0"
+            style={{ '--stripe-h': '5px' } as React.CSSProperties}
+          >
+            <MobileSidebar
+              userEmail={user.email ?? ''}
+              categories={categories}
+              categoriesError={categoriesError}
+              monthCounts={monthData ?? []}
+              trashCount={trashCount ?? 0}
+              archiveCount={archiveCount ?? 0}
+              totalCount={allItemsCount ?? 0}
+              pinnedCount={pinnedCount ?? 0}
+            />
+            <span className="font-display text-base font-extrabold [font-stretch:125%]">drop-note</span>
+          </header>
+          <DashboardMain isOverCap={isOverCap} itemCount={itemCount ?? 0} tier={tier}>
+            {children}
+          </DashboardMain>
+        </div>
       </div>
-    </div>
+      <EnvelopeTray />
+    </BulkSelectProvider>
   )
 }
