@@ -14,7 +14,7 @@ beforeEach(() => {
 })
 
 function Harness() {
-  const { selectedIds, isBulkMode, selectAll, deselectIds, deselectAll } = useBulkSelect()
+  const { selectedIds, isBulkMode, selectAll, deselectIds, deselectAll, enterSelectMode, exitSelectMode } = useBulkSelect()
   return (
     <div>
       <span data-testid="selected">{Array.from(selectedIds).sort().join(',')}</span>
@@ -23,6 +23,8 @@ function Harness() {
       <button onClick={() => selectAll(['cat-b-1', 'cat-b-2'])}>select cat B page</button>
       <button onClick={() => deselectIds(['cat-b-1', 'cat-b-2'])}>deselect cat B page</button>
       <button onClick={deselectAll}>clear all</button>
+      <button onClick={enterSelectMode}>enter select mode</button>
+      <button onClick={exitSelectMode}>exit select mode</button>
     </div>
   )
 }
@@ -82,5 +84,45 @@ describe('BulkSelectProvider — cross-category picking (DRO-194)', () => {
       </BulkSelectProvider>,
     )
     expect(screen.getByTestId('selected').textContent).toBe('cat-a-1,cat-a-2')
+  })
+})
+
+describe('BulkSelectProvider — explicit selection entry point (DRO-213)', () => {
+  it('enterSelectMode turns on isBulkMode with nothing selected', () => {
+    renderHarness()
+
+    expect(screen.getByTestId('bulk-mode').textContent).toBe('false')
+    fireEvent.click(screen.getByText('enter select mode'))
+
+    expect(screen.getByTestId('bulk-mode').textContent).toBe('true')
+    expect(screen.getByTestId('selected').textContent).toBe('')
+  })
+
+  it('exitSelectMode turns off isBulkMode and clears any selection', () => {
+    renderHarness()
+
+    fireEvent.click(screen.getByText('enter select mode'))
+    fireEvent.click(screen.getByText('select cat A page'))
+    expect(screen.getByTestId('selected').textContent).toBe('cat-a-1,cat-a-2')
+
+    fireEvent.click(screen.getByText('exit select mode'))
+
+    expect(screen.getByTestId('bulk-mode').textContent).toBe('false')
+    expect(screen.getByTestId('selected').textContent).toBe('')
+  })
+
+  it('resets select mode on navigation, same as the selection itself', () => {
+    const { rerender } = renderHarness()
+    fireEvent.click(screen.getByText('enter select mode'))
+    expect(screen.getByTestId('bulk-mode').textContent).toBe('true')
+
+    pathname = '/categories'
+    rerender(
+      <BulkSelectProvider>
+        <Harness />
+      </BulkSelectProvider>,
+    )
+
+    expect(screen.getByTestId('bulk-mode').textContent).toBe('false')
   })
 })

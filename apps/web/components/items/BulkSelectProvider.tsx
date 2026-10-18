@@ -10,17 +10,25 @@ interface BulkSelectContextType {
   selectAll: (ids: string[]) => void
   deselectIds: (ids: string[]) => void
   deselectAll: () => void
+  enterSelectMode: () => void
+  exitSelectMode: () => void
 }
 
 const BulkSelectContext = createContext<BulkSelectContextType | null>(null)
 
 export function BulkSelectProvider({ children }: { children: React.ReactNode }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  // Explicit entry point (DRO-213) — lets a user show checkboxes with 0
+  // selected. Without this, isBulkMode could only ever become true after
+  // something was already selected, but nothing could call toggle() while
+  // checkboxes were hidden, so selection could never start.
+  const [selectMode, setSelectMode] = useState(false)
   const pathname = usePathname()
 
   // Reset on page navigation
   useEffect(() => {
     setSelectedIds(new Set())
+    setSelectMode(false)
   }, [pathname])
 
   const toggle = useCallback((id: string) => {
@@ -30,6 +38,15 @@ export function BulkSelectProvider({ children }: { children: React.ReactNode }) 
       else next.add(id)
       return next
     })
+  }, [])
+
+  const enterSelectMode = useCallback(() => {
+    setSelectMode(true)
+  }, [])
+
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false)
+    setSelectedIds(new Set())
   }, [])
 
   // Merges into the existing cross-category selection (DRO-194) rather than
@@ -54,11 +71,13 @@ export function BulkSelectProvider({ children }: { children: React.ReactNode }) 
   return (
     <BulkSelectContext.Provider value={{
       selectedIds,
-      isBulkMode: selectedIds.size > 0,
+      isBulkMode: selectMode || selectedIds.size > 0,
       toggle,
       selectAll,
       deselectIds,
       deselectAll,
+      enterSelectMode,
+      exitSelectMode,
     }}>
       {children}
     </BulkSelectContext.Provider>
