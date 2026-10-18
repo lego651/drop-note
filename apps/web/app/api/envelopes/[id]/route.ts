@@ -4,15 +4,17 @@ import { ENVELOPE_TEXT_MAX_LENGTH, parseEnvelopeBody, updateEnvelopeLeaf } from 
 import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
 // PATCH /api/envelopes/[id]
-// Body: { action: 'toggle', sectionIndex: number, itemIndex: number }
+// Body: { action: 'toggle', sectionIndex: number, itemIndex: number, checked: boolean }
 //     | { action: 'edit', sectionIndex: number, itemIndex: number, text: string }
 //
-// Toggles or edits a single checklist/list/notes leaf and persists it back
-// into the envelope's `body` JSON (DRO-195). Writes go through the caller's
-// own authenticated client, never supabaseAdmin — RLS's "envelopes: update
-// own" policy is the real ownership gate; the explicit .eq('user_id', ...)
-// below just turns another user's envelope into a 404 instead of a silent
-// no-op.
+// Sets (never flips) or edits a single checklist/list/notes leaf and persists
+// it back into the envelope's `body` JSON (DRO-195). The client sends the
+// target `checked` value rather than asking the server to invert the
+// previous one, so retries/out-of-order delivery are idempotent instead of
+// double-toggling. Writes go through the caller's own authenticated client,
+// never supabaseAdmin — RLS's "envelopes: update own" policy is the real
+// ownership gate; the explicit .eq('user_id', ...) below just turns another
+// user's envelope into a 404 instead of a silent no-op.
 async function handlePATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   try {
@@ -21,20 +23,24 @@ async function handlePATCH(request: NextRequest, { params }: { params: Promise<{
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     setLogUser(user.id)
 
-    let raw: { action?: unknown; sectionIndex?: unknown; itemIndex?: unknown; text?: unknown }
+    let raw: { action?: unknown; sectionIndex?: unknown; itemIndex?: unknown; text?: unknown; checked?: unknown }
     try {
       raw = await request.json()
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
 
-    const { action, sectionIndex, itemIndex, text } = raw
+    const { action, sectionIndex, itemIndex, text, checked } = raw
     if (action !== 'toggle' && action !== 'edit') {
       return NextResponse.json({ error: 'action must be "toggle" or "edit"' }, { status: 400 })
     }
     if (typeof sectionIndex !== 'number' || typeof itemIndex !== 'number' || sectionIndex < 0 || itemIndex < 0) {
       return NextResponse.json({ error: 'sectionIndex and itemIndex must be non-negative numbers' }, { status: 400 })
     }
+    if (action === 'toggle' && typeof checked !== 'boolean') {
+      return NextResponse.json({ error: 'checked must be a boolean' }, { status: 400 })
+    }
+    const nextChecked = typeof checked === 'boolean' ? checked : false
     const trimmedText = typeof text === 'string' ? text.trim() : ''
     if (action === 'edit' && (trimmedText.length === 0 || trimmedText.length > ENVELOPE_TEXT_MAX_LENGTH)) {
       return NextResponse.json({ error: `text must be 1-${ENVELOPE_TEXT_MAX_LENGTH} characters` }, { status: 400 })
@@ -66,7 +72,7 @@ async function handlePATCH(request: NextRequest, { params }: { params: Promise<{
     }
 
     const updatedBody = updateEnvelopeLeaf(parsed.data, sectionIndex, itemIndex, (leaf) =>
-      action === 'toggle' ? { ...leaf, checked: !leaf.checked } : { ...leaf, text: trimmedText, edited: true },
+      action === 'toggle' ? { ...leaf, checked: nextChecked } : { ...leaf, text: trimmedText, edited: true },
     )
     if (!updatedBody) {
       return NextResponse.json({ error: 'Invalid itemIndex' }, { status: 400 })

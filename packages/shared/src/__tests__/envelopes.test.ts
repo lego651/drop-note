@@ -8,6 +8,8 @@ import {
   appendValidationRetryNote,
   updateEnvelopeLeaf,
   countEnvelopeChecklistProgress,
+  stripEnvelopeProgressFields,
+  carryForwardEnvelopeProgress,
   EnvelopeIntentInputSchema,
   type EnvelopeBody,
 } from '../envelopes'
@@ -400,5 +402,131 @@ describe('buildEnvelopeRegenerationContext (DRO-195)', () => {
       ],
     }
     expect(buildEnvelopeRegenerationContext(body)).toBe('')
+  })
+})
+
+describe('stripEnvelopeProgressFields (DRO-195)', () => {
+  it('removes checked and edited from every leaf, including inside table rows', () => {
+    const body: EnvelopeBody = {
+      sections: [
+        {
+          type: 'checklist',
+          items: [{ text: 'a', sourceItemIds: [], confidence: 'suggested', checked: true, edited: true }],
+        },
+        {
+          type: 'table',
+          columns: ['x'],
+          rows: [[{ text: 'cell', sourceItemIds: [], confidence: 'suggested', checked: true }]],
+        },
+      ],
+    }
+    const stripped = stripEnvelopeProgressFields(body)
+    const checklist = stripped.sections[0]
+    if (checklist.type !== 'checklist') throw new Error('expected checklist')
+    expect(checklist.items[0].checked).toBeUndefined()
+    expect(checklist.items[0].edited).toBeUndefined()
+    const table = stripped.sections[1]
+    if (table.type !== 'table') throw new Error('expected table')
+    expect(table.rows[0][0].checked).toBeUndefined()
+  })
+
+  it('leaves a leaf with neither field untouched', () => {
+    const body: EnvelopeBody = {
+      sections: [{ type: 'notes', items: [{ text: 'a', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    expect(stripEnvelopeProgressFields(body)).toEqual(body)
+  })
+})
+
+describe('carryForwardEnvelopeProgress (DRO-195)', () => {
+  it('carries checked/edited onto a fresh leaf with matching text', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [
+        {
+          type: 'checklist',
+          items: [
+            { text: 'Pack boots', sourceItemIds: [], confidence: 'suggested', checked: true },
+            { text: 'Pack tent', sourceItemIds: [], confidence: 'suggested', edited: true },
+          ],
+        },
+      ],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [
+        {
+          type: 'checklist',
+          items: [
+            { text: '  pack boots  ', sourceItemIds: ['item-1'], confidence: 'from_item' },
+            { text: 'Pack tent', sourceItemIds: [], confidence: 'suggested' },
+            { text: 'Brand new line', sourceItemIds: [], confidence: 'suggested' },
+          ],
+        },
+      ],
+    }
+
+    const result = carryForwardEnvelopeProgress(freshBody, previousBody)
+    const section = result.sections[0]
+    if (section.type !== 'checklist') throw new Error('expected checklist')
+    expect(section.items[0].checked).toBe(true)
+    expect(section.items[1].edited).toBe(true)
+    expect(section.items[2].checked).toBeUndefined()
+    expect(section.items[2].edited).toBeUndefined()
+  })
+
+  it('does not double-claim the same previous leaf for two identical-text fresh leaves', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'Buy milk', sourceItemIds: [], confidence: 'suggested', checked: true }] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [
+        {
+          type: 'checklist',
+          items: [
+            { text: 'Buy milk', sourceItemIds: [], confidence: 'suggested' },
+            { text: 'Buy milk', sourceItemIds: [], confidence: 'suggested' },
+          ],
+        },
+      ],
+    }
+
+    const result = carryForwardEnvelopeProgress(freshBody, previousBody)
+    const section = result.sections[0]
+    if (section.type !== 'checklist') throw new Error('expected checklist')
+    expect(section.items[0].checked).toBe(true)
+    expect(section.items[1].checked).toBeUndefined()
+  })
+
+  it('ignores untouched previous leaves (not checked or edited) as match candidates', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'Untouched', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'Untouched', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    const result = carryForwardEnvelopeProgress(freshBody, previousBody)
+    expect(result).toEqual(freshBody)
+  })
+
+  it('leaves table rows untouched', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'Row', sourceItemIds: [], confidence: 'suggested', checked: true }] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'table', columns: ['a'], rows: [[{ text: 'Row', sourceItemIds: [], confidence: 'suggested' }]] }],
+    }
+    const result = carryForwardEnvelopeProgress(freshBody, previousBody)
+    const table = result.sections[0]
+    if (table.type !== 'table') throw new Error('expected table')
+    expect(table.rows[0][0].checked).toBeUndefined()
+  })
+
+  it('returns freshBody unchanged when previousBody has no checked/edited leaves', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'a', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'a', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    expect(carryForwardEnvelopeProgress(freshBody, previousBody)).toBe(freshBody)
   })
 })

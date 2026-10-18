@@ -4,8 +4,10 @@ import {
   buildEnvelopeRegenerationContext,
   buildEnvelopeSystemPrompt,
   buildEnvelopeUserPrompt,
+  carryForwardEnvelopeProgress,
   enforceEnvelopeCitations,
   parseEnvelopeBody,
+  stripEnvelopeProgressFields,
   type AIProvider,
   type EnvelopeBody,
   type EnvelopeSourceItem,
@@ -86,6 +88,10 @@ const RETRY_TIME_BUDGET_MS = 20_000
  * checked/edited leaves are appended to the prompt as a preservation hint
  * (see buildEnvelopeRegenerationContext) — the fresh output still goes
  * through the same citation enforcement below, same as first-time generation.
+ * Any checked/edited the model echoed back is stripped (stripEnvelopeProgressFields)
+ * and then deterministically re-applied by matching leaf text against
+ * `previousBody` (carryForwardEnvelopeProgress), so a regenerate doesn't
+ * reset the user's progress even though the hint above is prompt-only.
  */
 export async function runEnvelopeGeneration(
   provider: AIProvider,
@@ -139,9 +145,10 @@ export async function runEnvelopeGeneration(
     return { status: 'failed', errorMessage: result.error }
   }
 
-  const { body, stripped } = enforceEnvelopeCitations(result.body, allowedItemIds)
+  const { body: citedBody, stripped } = enforceEnvelopeCitations(stripEnvelopeProgressFields(result.body), allowedItemIds)
   if (stripped) {
     log.warn('envelopes.citations_stripped', { itemIds: Array.from(allowedItemIds) })
   }
+  const body = previousBody ? carryForwardEnvelopeProgress(citedBody, previousBody) : citedBody
   return { status: stripped ? 'partial' : 'done', body }
 }

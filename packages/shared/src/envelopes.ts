@@ -213,6 +213,77 @@ export function buildEnvelopeRegenerationContext(previousBody: EnvelopeBody): st
   ].join('\n')
 }
 
+/**
+ * Strips any `checked`/`edited` the AI provider may have set on a freshly
+ * parsed body (DRO-195). The schema comment on EnvelopeLeafSchema says these
+ * fields are never set by the model, but that's only a convention the schema
+ * doesn't enforce — a model response could still include them, which would
+ * let the AI claim a line "done" without the user actually checking it off.
+ * Call this on every fresh generation/regeneration result before it's stored
+ * or merged with carryForwardEnvelopeProgress below.
+ */
+export function stripEnvelopeProgressFields(body: EnvelopeBody): EnvelopeBody {
+  function strip(leaf: EnvelopeLeaf): EnvelopeLeaf {
+    if (leaf.checked === undefined && leaf.edited === undefined) return leaf
+    return {
+      text: leaf.text,
+      sourceItemIds: leaf.sourceItemIds,
+      confidence: leaf.confidence,
+      missing: leaf.missing,
+    }
+  }
+  const sections: EnvelopeBlock[] = body.sections.map((block) => {
+    if (block.type === 'table') return { ...block, rows: block.rows.map((row) => row.map(strip)) }
+    return { ...block, items: block.items.map(strip) }
+  })
+  return { sections }
+}
+
+function normalizeLeafTextForProgressMatch(text: string): string {
+  return text.trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+/**
+ * Carries `checked`/`edited` forward from `previousBody` onto `freshBody`'s
+ * leaves after a regenerate (DRO-195), so a regeneration doesn't silently
+ * reset the user's progress to 0/N. `freshBody` must already have had any
+ * model-supplied checked/edited stripped (stripEnvelopeProgressFields) —
+ * this is the only source of truth for those fields on the result.
+ *
+ * Matches leaves by normalized (trimmed/collapsed/lowercased) text, first
+ * -unclaimed-match-wins, since a regeneration can reorder or reshape
+ * sections entirely and there's nothing structurally stable to key on
+ * otherwise. Table rows are left untouched (not editable yet, DRO-196).
+ */
+export function carryForwardEnvelopeProgress(freshBody: EnvelopeBody, previousBody: EnvelopeBody): EnvelopeBody {
+  const previousLeaves: EnvelopeLeaf[] = []
+  for (const block of previousBody.sections) {
+    if (block.type === 'table') continue
+    for (const leaf of block.items) {
+      if (leaf.checked || leaf.edited) previousLeaves.push(leaf)
+    }
+  }
+  if (previousLeaves.length === 0) return freshBody
+
+  const claimed = new Set<number>()
+  function claim(leaf: EnvelopeLeaf): EnvelopeLeaf {
+    const normalized = normalizeLeafTextForProgressMatch(leaf.text)
+    const matchIndex = previousLeaves.findIndex(
+      (prev, i) => !claimed.has(i) && normalizeLeafTextForProgressMatch(prev.text) === normalized,
+    )
+    if (matchIndex === -1) return leaf
+    claimed.add(matchIndex)
+    const match = previousLeaves[matchIndex]
+    return { ...leaf, checked: match.checked, edited: match.edited }
+  }
+
+  const sections: EnvelopeBlock[] = freshBody.sections.map((block) => {
+    if (block.type === 'table') return block
+    return { ...block, items: block.items.map(claim) }
+  })
+  return { sections }
+}
+
 export interface EnvelopeSourceItem {
   id: string
   subject: string | null

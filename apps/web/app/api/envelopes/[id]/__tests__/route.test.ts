@@ -102,6 +102,18 @@ describe('PATCH /api/envelopes/[id] — auth + validation', () => {
     const res = await callPatch({ action: 'edit', sectionIndex: 0, itemIndex: 0, text: 'a'.repeat(501) })
     expect(res.status).toBe(400)
   })
+
+  it('400s on a toggle with no "checked" boolean', async () => {
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, []))
+    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0 })
+    expect(res.status).toBe(400)
+  })
+
+  it('400s on a toggle with a non-boolean "checked"', async () => {
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, []))
+    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0, checked: 'true' })
+    expect(res.status).toBe(400)
+  })
 })
 
 describe('PATCH /api/envelopes/[id] — ownership', () => {
@@ -109,7 +121,7 @@ describe('PATCH /api/envelopes/[id] — ownership', () => {
     // User B's PATCH on user A's envelope: the authenticated-client select,
     // scoped by both RLS and the explicit .eq('user_id', ...), finds nothing.
     from.mockImplementation(makeFrom(null, []))
-    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0 })
+    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0, checked: true })
     expect(res.status).toBe(404)
   })
 })
@@ -117,23 +129,23 @@ describe('PATCH /api/envelopes/[id] — ownership', () => {
 describe('PATCH /api/envelopes/[id] — status gate', () => {
   it('409s when the envelope is still generating', async () => {
     from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'generating', body: null }, []))
-    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0 })
+    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0, checked: true })
     expect(res.status).toBe(409)
   })
 
   it('409s when the envelope failed', async () => {
     from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'failed', body: null }, []))
-    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0 })
+    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0, checked: true })
     expect(res.status).toBe(409)
   })
 })
 
 describe('PATCH /api/envelopes/[id] — toggle', () => {
-  it('toggles a checklist leaf\'s checked state and persists the updated body', async () => {
+  it('sets a checklist leaf\'s checked state (from the explicit "checked" value, not a flip) and persists the updated body', async () => {
     const updates: unknown[] = []
     from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, updates))
 
-    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0 })
+    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0, checked: true })
     expect(res.status).toBe(200)
 
     const json = await res.json()
@@ -144,37 +156,54 @@ describe('PATCH /api/envelopes/[id] — toggle', () => {
     expect((updates[0] as { body: { sections: { items: { checked?: boolean }[] }[] } }).body.sections[0].items[0].checked).toBe(true)
   })
 
-  it('round-trips: toggling twice returns the leaf to unchecked', async () => {
+  it('is idempotent: sending checked: true twice leaves the leaf checked (no flip-based double-toggle)', async () => {
     const updates: unknown[] = []
     const row = { id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }
     from.mockImplementation(makeFrom(row, updates))
 
-    const first = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0 })
+    const first = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0, checked: true })
     const firstBody = (await first.json()).body
+    expect(firstBody.sections[0].items[0].checked).toBe(true)
 
-    // Simulate the row being reloaded with the persisted state (as a real PATCH → reload would see).
+    // Simulate a retry/out-of-order redelivery of the same "checked: true" request
+    // against the row as persisted after the first call.
     from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: firstBody }, updates))
-    const second = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0 })
+    const second = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0, checked: true })
     const secondBody = (await second.json()).body
 
-    expect(secondBody.sections[0].items[0].checked).toBe(false)
+    expect(secondBody.sections[0].items[0].checked).toBe(true)
+  })
+
+  it('can set a leaf back to unchecked by sending checked: false', async () => {
+    const updates: unknown[] = []
+    const checkedBody = {
+      sections: [
+        { ...CHECKLIST_BODY.sections[0], items: [{ ...CHECKLIST_BODY.sections[0].items[0], checked: true }, CHECKLIST_BODY.sections[0].items[1]] },
+        CHECKLIST_BODY.sections[1],
+      ],
+    }
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: checkedBody }, updates))
+
+    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0, checked: false })
+    const json = await res.json()
+    expect(json.body.sections[0].items[0].checked).toBe(false)
   })
 
   it('400s when toggling a non-checklist (notes) leaf', async () => {
     from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, []))
-    const res = await callPatch({ action: 'toggle', sectionIndex: 1, itemIndex: 0 })
+    const res = await callPatch({ action: 'toggle', sectionIndex: 1, itemIndex: 0, checked: true })
     expect(res.status).toBe(400)
   })
 
   it('400s on an out-of-range itemIndex', async () => {
     from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, []))
-    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 99 })
+    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 99, checked: true })
     expect(res.status).toBe(400)
   })
 
   it('500s when the DB update fails', async () => {
     from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, [], new Error('db down')))
-    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0 })
+    const res = await callPatch({ action: 'toggle', sectionIndex: 0, itemIndex: 0, checked: true })
     expect(res.status).toBe(500)
   })
 })

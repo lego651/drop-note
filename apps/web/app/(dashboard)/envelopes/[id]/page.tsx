@@ -21,7 +21,7 @@ export default async function EnvelopeDetailPage({ params }: { params: Promise<{
 
   const { data: envelope } = await supabase
     .from('envelopes')
-    .select('id, intent_input, status, body, error_message, created_at')
+    .select('id, intent_input, status, body, error_message, created_at, updated_at')
     .eq('id', id)
     .eq('user_id', user.id)
     .single()
@@ -88,7 +88,14 @@ export default async function EnvelopeDetailPage({ params }: { params: Promise<{
             if (!parsed.success) {
               return <p className="text-sm text-muted-foreground">This plan&apos;s content couldn&apos;t be read.</p>
             }
-            return <EnvelopeBodyView envelopeId={envelope.id} body={parsed.data} citationLabels={citationLabels} />
+            return (
+              <EnvelopeBodyView
+                key={envelope.updated_at}
+                envelopeId={envelope.id}
+                body={parsed.data}
+                citationLabels={citationLabels}
+              />
+            )
           })()}
         </>
       )}

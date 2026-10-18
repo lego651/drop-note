@@ -262,5 +262,51 @@ describe('runEnvelopeGeneration', () => {
       expect(section.items[0].sourceItemIds).toEqual([])
       expect(section.items[0].confidence).toBe('suggested')
     })
+
+    it('carries a checked leaf\'s progress onto the matching fresh leaf by text, so regenerating does not reset it to 0/N', async () => {
+      const provider = fakeProvider([
+        JSON.stringify({
+          sections: [
+            {
+              type: 'checklist',
+              items: [
+                { text: 'Pack boots', sourceItemIds: ['item-2'], confidence: 'from_item' },
+                { text: 'Pack map', sourceItemIds: ['item-1'], confidence: 'from_item' },
+              ],
+            },
+          ],
+        }),
+      ])
+      const previousBody = {
+        sections: [{ type: 'checklist' as const, items: [{ text: 'Pack boots', sourceItemIds: ['item-2'], confidence: 'from_item' as const, checked: true }] }],
+      }
+
+      const result = await runEnvelopeGeneration(provider, ITEMS, 'make a checklist', null, Date.now, previousBody)
+      if (result.status === 'failed') throw new Error('expected success')
+      const section = result.body.sections[0]
+      if (section.type !== 'checklist') throw new Error('expected checklist')
+      expect(section.items[0].checked).toBe(true)
+      expect(section.items[1].checked).toBeUndefined()
+    })
+
+    it('strips any checked/edited the model echoed back before carrying forward, so the model cannot claim a line done on its own', async () => {
+      const provider = fakeProvider([
+        JSON.stringify({
+          sections: [
+            {
+              type: 'checklist',
+              items: [{ text: 'Model-claimed line', sourceItemIds: [], confidence: 'suggested', checked: true, edited: true }],
+            },
+          ],
+        }),
+      ])
+
+      const result = await runEnvelopeGeneration(provider, ITEMS, 'make a checklist', null)
+      if (result.status === 'failed') throw new Error('expected success')
+      const section = result.body.sections[0]
+      if (section.type !== 'checklist') throw new Error('expected checklist')
+      expect(section.items[0].checked).toBeUndefined()
+      expect(section.items[0].edited).toBeUndefined()
+    })
   })
 })
