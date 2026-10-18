@@ -106,6 +106,20 @@ describe('parseEnvelopeBody', () => {
     const result = parseEnvelopeBody(raw)
     expect(result.success).toBe(true)
   })
+
+  it('rejects a table row whose cell count does not match the column count', () => {
+    const raw = {
+      sections: [
+        {
+          type: 'table',
+          columns: ['Item', 'Qty'],
+          rows: [[{ text: 'Milk', sourceItemIds: [], confidence: 'suggested' }]],
+        },
+      ],
+    }
+    const result = parseEnvelopeBody(raw)
+    expect(result.success).toBe(false)
+  })
 })
 
 describe('EnvelopeIntentInputSchema', () => {
@@ -243,6 +257,15 @@ describe('buildEnvelopeSystemPrompt / buildEnvelopeUserPrompt', () => {
     expect(prompt).toContain('"list"')
     expect(prompt).toContain('"notes"')
     expect(prompt).toContain('do NOT force a checklist shape')
+  })
+
+  it('system prompt describes the table shape and when to use it (DRO-196)', () => {
+    const prompt = buildEnvelopeSystemPrompt()
+    expect(prompt).toContain('"table"')
+    expect(prompt).toContain('"columns"')
+    expect(prompt).toContain('"rows"')
+    expect(prompt).toContain('comparison')
+    expect(prompt).toContain('one leaf per column')
   })
 
   it('user prompt includes every item id and the free text, and free text is noted as winning over the hint', () => {

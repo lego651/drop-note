@@ -95,3 +95,47 @@ describe('EnvelopeBodyView (DRO-195)', () => {
     expect(checkboxes[1]).toHaveAttribute('data-state', 'checked')
   })
 })
+
+describe('EnvelopeBodyView table block (DRO-196)', () => {
+  function tableBody(): EnvelopeBody {
+    return {
+      sections: [
+        {
+          type: 'table',
+          heading: 'Recipe comparison',
+          columns: ['Recipe', 'Prep time'],
+          rows: [
+            [
+              { text: 'Pasta primavera', sourceItemIds: ['item-1'], confidence: 'from_item' },
+              { text: '20 min', sourceItemIds: [], confidence: 'suggested', missing: 'exact time' },
+            ],
+          ],
+        },
+      ],
+    }
+  }
+
+  it('renders the heading, column headers, and row cells with citation chips', () => {
+    render(
+      <EnvelopeBodyView
+        envelopeId="env-1"
+        body={tableBody()}
+        citationLabels={{ 'item-1': 'Pasta recipe' }}
+      />,
+    )
+
+    expect(screen.getByText('Recipe comparison')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Recipe' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Prep time' })).toBeInTheDocument()
+    expect(screen.getByText('Pasta primavera')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Pasta recipe' })).toHaveAttribute('href', '/items/item-1')
+    expect(screen.getByText('Missing: exact time')).toBeInTheDocument()
+  })
+
+  it('does not render a checkbox or editable input for table cells', () => {
+    render(<EnvelopeBodyView envelopeId="env-1" body={tableBody()} citationLabels={{}} />)
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText('20 min'))
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
+})

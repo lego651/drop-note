@@ -1,10 +1,12 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import Link from 'next/link'
 import type { EnvelopeBody, EnvelopeLeaf } from '@drop-note/shared'
 import { countEnvelopeChecklistProgress, updateEnvelopeLeaf } from '@drop-note/shared'
 import { EnvelopeLeafRow, type CitationLabels } from './EnvelopeLeafRow'
 import { toast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 
 interface EnvelopeBodyViewProps {
   envelopeId: string
@@ -15,9 +17,11 @@ interface EnvelopeBodyViewProps {
 type LeafPatchPayload = { action: 'toggle'; checked: boolean } | { action: 'edit'; text: string }
 
 /**
- * Renders checklist + notes blocks (this slice); list renders like a checklist
- * without the checkbox bullet. Table is schema-valid but not rendered yet
- * (DRO-196).
+ * Renders checklist + list + notes + table blocks. List renders like a
+ * checklist without the checkbox bullet. Table (DRO-196) renders read-only —
+ * citations and the from_item/suggested marker still show per cell, but
+ * cells aren't editable/tickable: there's no leaf address scheme for "row R,
+ * column C" in updateEnvelopeLeaf, so PATCH/edit stays checklist/list/notes-only.
  *
  * Ticking a checklist item or editing a leaf's text (DRO-195) is optimistic:
  * local state updates immediately, then PATCHes /api/envelopes/[id]. PATCHes
@@ -113,9 +117,35 @@ export function EnvelopeBodyView({ envelopeId, body: initialBody, citationLabels
       {body.sections.map((block, i) => {
         if (block.type === 'table') {
           return (
-            <p key={i} className="text-sm text-muted-foreground">
-              This plan includes a table, which isn&apos;t shown here yet.
-            </p>
+            <section key={i} className="overflow-hidden rounded-xl border-stroke border-ink bg-card shadow-ink-lg">
+              {block.heading && (
+                <h2 className="border-b border-border px-4 py-2.5 text-[15px] font-semibold text-foreground">
+                  {block.heading}
+                </h2>
+              )}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      {block.columns.map((column, c) => (
+                        <th key={c} className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground">
+                          {column}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {block.rows.map((row, r) => (
+                      <tr key={r} className="hover:bg-accent/50">
+                        {row.map((leaf, c) => (
+                          <EnvelopeTableCell key={c} leaf={leaf} citationLabels={citationLabels} />
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           )
         }
 
@@ -140,5 +170,43 @@ export function EnvelopeBodyView({ envelopeId, body: initialBody, citationLabels
         )
       })}
     </div>
+  )
+}
+
+/**
+ * One <td> for a table block (DRO-196). Mirrors EnvelopeLeafRow's citation
+ * chip / "suggested" dashed-marker / missing-note treatment so a table cell
+ * reads as the same kind of leaf as a checklist/list line, just laid out
+ * inline instead of as a bulleted row — there's no edit affordance here
+ * (see the component doc comment above).
+ */
+function EnvelopeTableCell({ leaf, citationLabels }: { leaf: EnvelopeLeaf; citationLabels: CitationLabels }) {
+  return (
+    <td className="px-4 py-2 align-top">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span
+          aria-hidden="true"
+          className={cn(
+            'h-2 w-2 shrink-0 rounded-full border-stroke border-ink',
+            leaf.confidence === 'suggested' && 'border-dashed',
+          )}
+        />
+        <span className="text-sm text-foreground">{leaf.text}</span>
+        {leaf.sourceItemIds.map((itemId) => (
+          <Link
+            key={itemId}
+            href={`/items/${itemId}`}
+            className="inline-flex items-center rounded-full border-stroke border-ink bg-card px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted"
+          >
+            {citationLabels[itemId] ?? 'Source'}
+          </Link>
+        ))}
+        {leaf.missing && (
+          <span className="inline-flex items-center rounded-full border-stroke border-dashed border-ink/55 bg-card px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
+            Missing: {leaf.missing}
+          </span>
+        )}
+      </div>
+    </td>
   )
 }

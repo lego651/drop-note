@@ -102,11 +102,25 @@ export type ParseEnvelopeBodyResult =
   | { success: true; data: EnvelopeBody }
   | { success: false; error: string }
 
-/** Parses + validates a raw (already JSON.parse'd) AI response against the envelope body shape. */
+/**
+ * Parses + validates a raw (already JSON.parse'd) AI response against the
+ * envelope body shape. Also rejects a table block whose row doesn't have
+ * exactly one cell per column — the zod union can't express that
+ * cross-field check (a `.refine()` on a union member isn't a plain
+ * `ZodObject` anymore, which `discriminatedUnion` requires), so it's
+ * enforced here instead, before a misaligned row ever reaches the renderer.
+ */
 export function parseEnvelopeBody(raw: unknown): ParseEnvelopeBodyResult {
   const result = EnvelopeBodySchema.safeParse(raw)
-  if (result.success) return { success: true, data: result.data }
-  return { success: false, error: result.error.message }
+  if (!result.success) return { success: false, error: result.error.message }
+
+  for (const block of result.data.sections) {
+    if (block.type === 'table' && block.rows.some((row) => row.length !== block.columns.length)) {
+      return { success: false, error: 'table row cell count must match column count' }
+    }
+  }
+
+  return { success: true, data: result.data }
 }
 
 /**
@@ -315,14 +329,15 @@ Respond ONLY with a JSON object of this exact shape:
 Each <block> is EXACTLY ONE of these shapes (pick whichever fits the request best):
 - Checklist: { "type": "checklist", "heading": "optional string", "items": [ <leaf>, ... ] }
 - List: { "type": "list", "heading": "optional string", "items": [ <leaf>, ... ] }
+- Table: { "type": "table", "heading": "optional string", "columns": ["string", ...], "rows": [ [ <leaf>, ... ], ... ] } — each row is an array of leaves with exactly one leaf per column, in the same order as "columns".
 - Notes: { "type": "notes", "items": [ <leaf>, ... ] } — never include "heading" on a notes block.
 
-Every <leaf> is: { "text": "string", "sourceItemIds": ["..."], "confidence": "from_item" | "suggested", "missing": "optional string" }
+Every <leaf> is: { "text": "string", "sourceItemIds": ["..."], "confidence": "from_item" | "suggested", "missing": "optional string" } — this applies to every leaf everywhere, including each cell inside a table row.
 - "sourceItemIds" lists the id(s) (from the items given below) that this line is based on. Use [] if it isn't based on a specific item.
 - "confidence" is "from_item" only when the line is directly supported by the content of a cited item; otherwise use "suggested".
 - "missing" is an optional short note naming information the user would need to supply (e.g. a date, a quantity) that isn't in the cited items.
 
-Use a "checklist" or "list" block when the request maps naturally onto one. If the request is open-ended, conversational, or doesn't fit a checklist/list/table (e.g. "what do you think of these" or "summarize these"), respond with a single "notes" block instead — do NOT force a checklist shape onto content that doesn't fit one.
+Use a "checklist" or "list" block when the request maps naturally onto one. Use a "table" block when the request calls for a side-by-side comparison across several items (e.g. "compare these 3 recipes" or "which of these has the best reviews") — each column is a point of comparison and each row is one of the things being compared. If the request is open-ended, conversational, or doesn't fit a checklist/list/table (e.g. "what do you think of these" or "summarize these"), respond with a single "notes" block instead — do NOT force a checklist shape onto content that doesn't fit one.
 
 Only use items ids that are given to you below. Never invent an item id.`
 }
