@@ -120,5 +120,5 @@ export const STAT_CARD_ACCENT = {
   totalSaved: 'var(--color-stat-total)',
   thisWeek: 'var(--color-stat-week)',
   processing: 'var(--color-stat-processing)',
-  topTag: 'var(--color-stat-tag)',
+  topCategory: 'var(--color-stat-tag)',
 } as const

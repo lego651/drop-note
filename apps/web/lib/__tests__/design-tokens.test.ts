@@ -138,7 +138,7 @@ describe('STAT_CARD_ACCENT', () => {
     expect(STAT_CARD_ACCENT).toHaveProperty('totalSaved')
     expect(STAT_CARD_ACCENT).toHaveProperty('thisWeek')
     expect(STAT_CARD_ACCENT).toHaveProperty('processing')
-    expect(STAT_CARD_ACCENT).toHaveProperty('topTag')
+    expect(STAT_CARD_ACCENT).toHaveProperty('topCategory')
   })
 
   it('all values are CSS variable strings', () => {

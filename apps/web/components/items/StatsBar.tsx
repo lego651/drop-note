@@ -7,7 +7,7 @@ interface StatsBarProps {
   totalCount: number
   thisWeekCount: number
   processingCount: number
-  topTag: { name: string; count: number } | null
+  topCategory: { name: string; count: number } | null
   weekDelta?: number
 }
 
@@ -48,7 +48,7 @@ export function StatsBar({
   totalCount,
   thisWeekCount,
   processingCount,
-  topTag,
+  topCategory,
   weekDelta,
 }: StatsBarProps) {
   const weekSub =
@@ -81,10 +81,10 @@ export function StatsBar({
         Icon={Clock}
       />
       <StatCard
-        label="Top tag"
-        value={topTag ? `#${topTag.name}` : '#—'}
-        sub={topTag ? `${topTag.count} items` : 'no tags yet'}
-        accent={STAT_CARD_ACCENT.topTag}
+        label="Top category"
+        value={topCategory ? topCategory.name : '—'}
+        sub={topCategory ? `${topCategory.count} items` : 'no items yet'}
+        accent={STAT_CARD_ACCENT.topCategory}
         Icon={Tag}
         tilt="rotate-[0.9deg]"
       />

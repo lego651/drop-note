@@ -9,7 +9,7 @@ describe('StatsBar', () => {
     totalCount: 247,
     thisWeekCount: 18,
     processingCount: 3,
-    topTag: { name: 'ai', count: 38 },
+    topCategory: { name: 'Tech', count: 38 },
   }
 
   it('renders all 4 stat cards', () => {
@@ -17,7 +17,7 @@ describe('StatsBar', () => {
     expect(screen.getByText('Total saved')).toBeDefined()
     expect(screen.getByText('This week')).toBeDefined()
     expect(screen.getByText('Processing')).toBeDefined()
-    expect(screen.getByText('Top tag')).toBeDefined()
+    expect(screen.getByText('Top category')).toBeDefined()
   })
 
   it('shows totalCount value', () => {
@@ -35,24 +35,24 @@ describe('StatsBar', () => {
     expect(screen.getByText('3')).toBeDefined()
   })
 
-  it('shows #tagname when topTag is provided', () => {
+  it('shows the category name without a # prefix when topCategory is provided', () => {
     render(<StatsBar {...baseProps} />)
-    expect(screen.getByText('#ai')).toBeDefined()
+    expect(screen.getByText('Tech')).toBeDefined()
   })
 
-  it('shows tag count subtext', () => {
+  it('shows category count subtext', () => {
     render(<StatsBar {...baseProps} />)
     expect(screen.getByText('38 items')).toBeDefined()
   })
 
-  it('shows "#—" when topTag is null', () => {
-    render(<StatsBar {...baseProps} topTag={null} />)
-    expect(screen.getByText('#—')).toBeDefined()
+  it('shows "—" when topCategory is null', () => {
+    render(<StatsBar {...baseProps} topCategory={null} />)
+    expect(screen.getByText('—')).toBeDefined()
   })
 
-  it('shows "no tags yet" subtext when topTag is null', () => {
-    render(<StatsBar {...baseProps} topTag={null} />)
-    expect(screen.getByText('no tags yet')).toBeDefined()
+  it('shows "no items yet" subtext when topCategory is null', () => {
+    render(<StatsBar {...baseProps} topCategory={null} />)
+    expect(screen.getByText('no items yet')).toBeDefined()
   })
 
   it('shows "all time" subtext for total saved', () => {
@@ -71,7 +71,7 @@ describe('StatsBar', () => {
         totalCount={0}
         thisWeekCount={0}
         processingCount={0}
-        topTag={null}
+        topCategory={null}
       />
     )
     expect(screen.getAllByText('0').length).toBeGreaterThan(0)

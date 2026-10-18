@@ -30,7 +30,7 @@ import type { Tier } from '@drop-note/shared'
 interface StatsBarData {
   thisWeekCount: number
   processingCount: number
-  topTag: { name: string; count: number } | null
+  topCategory: { name: string; count: number } | null
   weekDelta?: number
 }
 
@@ -350,7 +350,7 @@ function ItemsPageClientInner({
         totalCount={totalCount}
         thisWeekCount={statsData?.thisWeekCount ?? 0}
         processingCount={statsData?.processingCount ?? 0}
-        topTag={statsData?.topTag ?? null}
+        topCategory={statsData?.topCategory ?? null}
         weekDelta={statsData?.weekDelta}
       />
 
