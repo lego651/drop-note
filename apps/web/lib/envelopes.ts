@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   appendValidationRetryNote,
+  buildEnvelopeRegenerationContext,
   buildEnvelopeSystemPrompt,
   buildEnvelopeUserPrompt,
   enforceEnvelopeCitations,
@@ -80,6 +81,11 @@ const RETRY_TIME_BUDGET_MS = 20_000
  * Never throws — provider/network failures resolve to `{ status: 'failed' }`
  * like a schema failure would, since both leave the user with nothing to
  * render otherwise.
+ *
+ * `previousBody` (DRO-195, regenerate-with-edits): when given, its
+ * checked/edited leaves are appended to the prompt as a preservation hint
+ * (see buildEnvelopeRegenerationContext) — the fresh output still goes
+ * through the same citation enforcement below, same as first-time generation.
  */
 export async function runEnvelopeGeneration(
   provider: AIProvider,
@@ -87,9 +93,11 @@ export async function runEnvelopeGeneration(
   text: string,
   purposeHint: PurposeHint | null,
   now: () => number = Date.now,
+  previousBody?: EnvelopeBody,
 ): Promise<EnvelopeGenerationResult> {
   const systemPrompt = buildEnvelopeSystemPrompt()
-  const userPrompt = buildEnvelopeUserPrompt(items, text, purposeHint)
+  const baseUserPrompt = buildEnvelopeUserPrompt(items, text, purposeHint)
+  const userPrompt = previousBody ? baseUserPrompt + buildEnvelopeRegenerationContext(previousBody) : baseUserPrompt
   const allowedItemIds = new Set(items.map((item) => item.id))
 
   async function attempt(prompt: string): Promise<{ ok: true; body: EnvelopeBody } | { ok: false; error: string }> {

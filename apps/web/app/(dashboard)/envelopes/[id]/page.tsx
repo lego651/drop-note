@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { parseEnvelopeBody } from '@drop-note/shared'
 import { EnvelopeBodyView } from '@/components/envelopes/EnvelopeBodyView'
 import { GeneratingPoller } from '@/components/envelopes/GeneratingPoller'
+import { RegenerateButton } from '@/components/envelopes/RegenerateButton'
 import type { CitationLabels } from '@/components/envelopes/EnvelopeLeafRow'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -72,17 +73,22 @@ export default async function EnvelopeDetailPage({ params }: { params: Promise<{
 
       {(envelope.status === 'done' || envelope.status === 'partial') && (
         <>
-          {envelope.status === 'partial' && (
-            <p className="inline-flex items-center rounded-full border-stroke border-dashed border-ink/55 bg-card px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
-              Some lines couldn&apos;t be verified against your items
-            </p>
-          )}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {envelope.status === 'partial' ? (
+              <p className="inline-flex items-center rounded-full border-stroke border-dashed border-ink/55 bg-card px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
+                Some lines couldn&apos;t be verified against your items
+              </p>
+            ) : (
+              <span />
+            )}
+            <RegenerateButton envelopeId={envelope.id} />
+          </div>
           {(() => {
             const parsed = parseEnvelopeBody(envelope.body)
             if (!parsed.success) {
               return <p className="text-sm text-muted-foreground">This plan&apos;s content couldn&apos;t be read.</p>
             }
-            return <EnvelopeBodyView body={parsed.data} citationLabels={citationLabels} />
+            return <EnvelopeBodyView envelopeId={envelope.id} body={parsed.data} citationLabels={citationLabels} />
           })()}
         </>
       )}

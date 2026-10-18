@@ -210,4 +210,57 @@ describe('runEnvelopeGeneration', () => {
     expect(section.items[0].sourceItemIds).toEqual([])
     expect(section.items[0].confidence).toBe('suggested')
   })
+
+  describe('regenerate-with-edits (DRO-195)', () => {
+    it('appends the previous body\'s checked/edited state to the prompt when previousBody is given', async () => {
+      const provider = fakeProvider([
+        JSON.stringify({ sections: [{ type: 'checklist', items: [{ text: 'Pack boots', sourceItemIds: ['item-2'], confidence: 'from_item' }] }] }),
+      ])
+      const previousBody = {
+        sections: [
+          {
+            type: 'checklist' as const,
+            items: [{ text: 'Pack boots', sourceItemIds: ['item-2'], confidence: 'from_item' as const, checked: true }],
+          },
+        ],
+      }
+
+      await runEnvelopeGeneration(provider, ITEMS, 'make a checklist', null, Date.now, previousBody)
+
+      const [, userPrompt] = (provider.generateStructured as ReturnType<typeof vi.fn>).mock.calls[0]
+      expect(userPrompt).toContain('previous version of this plan')
+      expect(userPrompt).toContain('Pack boots')
+      expect(userPrompt).toContain('checked off')
+    })
+
+    it('does not append any regeneration note when previousBody is omitted (first-time generation)', async () => {
+      const provider = fakeProvider([
+        JSON.stringify({ sections: [{ type: 'notes', items: [{ text: 'ok', sourceItemIds: [], confidence: 'suggested' }] }] }),
+      ])
+
+      await runEnvelopeGeneration(provider, ITEMS, 'make a checklist', null)
+
+      const [, userPrompt] = (provider.generateStructured as ReturnType<typeof vi.fn>).mock.calls[0]
+      expect(userPrompt).not.toContain('previous version of this plan')
+    })
+
+    it('still strips a spoofed citation on a regenerated body, same as first-time generation', async () => {
+      const provider = fakeProvider([
+        JSON.stringify({
+          sections: [{ type: 'checklist', items: [{ text: 'Suspicious line', sourceItemIds: ['not-a-real-item'], confidence: 'from_item' }] }],
+        }),
+      ])
+      const previousBody = {
+        sections: [{ type: 'checklist' as const, items: [{ text: 'Old line', sourceItemIds: [], confidence: 'suggested' as const, checked: true }] }],
+      }
+
+      const result = await runEnvelopeGeneration(provider, ITEMS, 'make a checklist', null, Date.now, previousBody)
+      expect(result.status).toBe('partial')
+      if (result.status === 'failed') throw new Error('expected success')
+      const section = result.body.sections[0]
+      if (section.type !== 'checklist') throw new Error('expected checklist')
+      expect(section.items[0].sourceItemIds).toEqual([])
+      expect(section.items[0].confidence).toBe('suggested')
+    })
+  })
 })

@@ -4,7 +4,10 @@ import {
   enforceEnvelopeCitations,
   buildEnvelopeSystemPrompt,
   buildEnvelopeUserPrompt,
+  buildEnvelopeRegenerationContext,
   appendValidationRetryNote,
+  updateEnvelopeLeaf,
+  countEnvelopeChecklistProgress,
   EnvelopeIntentInputSchema,
   type EnvelopeBody,
 } from '../envelopes'
@@ -271,5 +274,131 @@ describe('appendValidationRetryNote', () => {
     const note = appendValidationRetryNote('original prompt', 'items[0].confidence: invalid enum value')
     expect(note).toContain('original prompt')
     expect(note).toContain('items[0].confidence: invalid enum value')
+  })
+})
+
+describe('updateEnvelopeLeaf (DRO-195)', () => {
+  const body: EnvelopeBody = {
+    sections: [
+      {
+        type: 'checklist',
+        heading: 'Pack',
+        items: [
+          { text: 'Tent', sourceItemIds: ['item-1'], confidence: 'from_item' },
+          { text: 'Stove', sourceItemIds: [], confidence: 'suggested' },
+        ],
+      },
+      {
+        type: 'table',
+        columns: ['a'],
+        rows: [[{ text: 'row', sourceItemIds: [], confidence: 'suggested' }]],
+      },
+    ],
+  }
+
+  it('toggles a leaf and persists it round-trip through parseEnvelopeBody', () => {
+    const toggled = updateEnvelopeLeaf(body, 0, 0, (leaf) => ({ ...leaf, checked: !leaf.checked }))
+    expect(toggled).not.toBeNull()
+    expect((toggled!.sections[0] as { items: { checked?: boolean }[] }).items[0].checked).toBe(true)
+    // Round-trip: stored body (e.g. read back from Postgres jsonb) still parses and keeps the checked state.
+    const reparsed = parseEnvelopeBody(JSON.parse(JSON.stringify(toggled)))
+    expect(reparsed.success).toBe(true)
+    if (reparsed.success) {
+      expect((reparsed.data.sections[0] as { items: { checked?: boolean }[] }).items[0].checked).toBe(true)
+    }
+    // The other leaf and sections are untouched.
+    expect((toggled!.sections[0] as { items: { checked?: boolean }[] }).items[1].checked).toBeUndefined()
+    expect(toggled!.sections[1]).toEqual(body.sections[1])
+  })
+
+  it('edits a leaf\'s text and marks it edited, leaving checked state alone', () => {
+    const checkedFirst = updateEnvelopeLeaf(body, 0, 0, (leaf) => ({ ...leaf, checked: true }))!
+    const edited = updateEnvelopeLeaf(checkedFirst, 0, 0, (leaf) => ({ ...leaf, text: 'New tent', edited: true }))
+    const leaf = (edited!.sections[0] as { items: { text: string; checked?: boolean; edited?: boolean }[] }).items[0]
+    expect(leaf.text).toBe('New tent')
+    expect(leaf.edited).toBe(true)
+    expect(leaf.checked).toBe(true)
+  })
+
+  it('returns null for an out-of-range sectionIndex', () => {
+    expect(updateEnvelopeLeaf(body, 5, 0, (leaf) => leaf)).toBeNull()
+  })
+
+  it('returns null for an out-of-range itemIndex', () => {
+    expect(updateEnvelopeLeaf(body, 0, 5, (leaf) => leaf)).toBeNull()
+  })
+
+  it('returns null when the section is a table (table rows are not addressable)', () => {
+    expect(updateEnvelopeLeaf(body, 1, 0, (leaf) => leaf)).toBeNull()
+  })
+})
+
+describe('countEnvelopeChecklistProgress (DRO-195)', () => {
+  it('counts checked vs total across checklist blocks only', () => {
+    const body: EnvelopeBody = {
+      sections: [
+        {
+          type: 'checklist',
+          items: [
+            { text: 'a', sourceItemIds: [], confidence: 'suggested', checked: true },
+            { text: 'b', sourceItemIds: [], confidence: 'suggested', checked: false },
+            { text: 'c', sourceItemIds: [], confidence: 'suggested' },
+          ],
+        },
+        {
+          type: 'list',
+          items: [{ text: 'not a checklist', sourceItemIds: [], confidence: 'suggested', checked: true }],
+        },
+      ],
+    }
+    expect(countEnvelopeChecklistProgress(body)).toEqual({ checked: 1, total: 3 })
+  })
+
+  it('returns 0/0 when there are no checklist blocks', () => {
+    const body: EnvelopeBody = { sections: [{ type: 'notes', items: [{ text: 'x', sourceItemIds: [], confidence: 'suggested' }] }] }
+    expect(countEnvelopeChecklistProgress(body)).toEqual({ checked: 0, total: 0 })
+  })
+})
+
+describe('buildEnvelopeRegenerationContext (DRO-195)', () => {
+  it('returns an empty string when nothing was checked or edited', () => {
+    const body: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'a', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    expect(buildEnvelopeRegenerationContext(body)).toBe('')
+  })
+
+  it('includes checked and edited leaves with their marks, and omits untouched ones', () => {
+    const body: EnvelopeBody = {
+      sections: [
+        {
+          type: 'checklist',
+          items: [
+            { text: 'Checked item', sourceItemIds: [], confidence: 'suggested', checked: true },
+            { text: 'Untouched item', sourceItemIds: [], confidence: 'suggested' },
+            { text: 'Edited item', sourceItemIds: [], confidence: 'suggested', edited: true },
+          ],
+        },
+      ],
+    }
+    const context = buildEnvelopeRegenerationContext(body)
+    expect(context).toContain('Checked item')
+    expect(context).toContain('checked off')
+    expect(context).toContain('Edited item')
+    expect(context).toContain('edited by the user')
+    expect(context).not.toContain('Untouched item')
+  })
+
+  it('skips table rows', () => {
+    const body: EnvelopeBody = {
+      sections: [
+        {
+          type: 'table',
+          columns: ['a'],
+          rows: [[{ text: 'Table cell', sourceItemIds: [], confidence: 'suggested', checked: true }]],
+        },
+      ],
+    }
+    expect(buildEnvelopeRegenerationContext(body)).toBe('')
   })
 })

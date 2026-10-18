@@ -36,11 +36,17 @@ export type EnvelopeIntentInput = z.infer<typeof EnvelopeIntentInputSchema>
 // Every leaf item in every block shape carries the same citation contract, so
 // citation enforcement (see enforceEnvelopeCitations below) can walk all block
 // types uniformly.
+//
+// `checked` and `edited` (DRO-195) are never set by the AI provider — they're
+// added/flipped only by updateEnvelopeLeaf, once a leaf already exists in a
+// stored envelope. They default to false/absent on a freshly generated body.
 const EnvelopeLeafSchema = z.object({
   text: z.string().min(1),
   sourceItemIds: z.array(z.string()),
   confidence: z.enum(['from_item', 'suggested']),
   missing: z.string().optional(),
+  checked: z.boolean().optional(),
+  edited: z.boolean().optional(),
 })
 export type EnvelopeLeaf = z.infer<typeof EnvelopeLeafSchema>
 
@@ -137,6 +143,74 @@ export function enforceEnvelopeCitations(
   })
 
   return { body: { sections }, stripped }
+}
+
+/**
+ * Applies `updater` to a single leaf addressed by section/item index
+ * (DRO-195: tick/edit persistence). Returns null if either index is out of
+ * range or the section is a table block — table rows aren't editable yet
+ * (DRO-196), so there's no leaf to address at `itemIndex` there.
+ */
+export function updateEnvelopeLeaf(
+  body: EnvelopeBody,
+  sectionIndex: number,
+  itemIndex: number,
+  updater: (leaf: EnvelopeLeaf) => EnvelopeLeaf,
+): EnvelopeBody | null {
+  const section = body.sections[sectionIndex]
+  if (!section || section.type === 'table') return null
+  if (!section.items[itemIndex]) return null
+
+  const sections = body.sections.map((block, i) => {
+    if (i !== sectionIndex || block.type === 'table') return block
+    return { ...block, items: block.items.map((leaf, j) => (j === itemIndex ? updater(leaf) : leaf)) }
+  })
+  return { sections }
+}
+
+/** Checklist tick progress across all checklist blocks (DRO-195) — the "X/Y done" count on the envelope page. List/notes/table leaves don't count: only checklist blocks render a checkbox. */
+export function countEnvelopeChecklistProgress(body: EnvelopeBody): { checked: number; total: number } {
+  let checked = 0
+  let total = 0
+  for (const block of body.sections) {
+    if (block.type !== 'checklist') continue
+    for (const leaf of block.items) {
+      total += 1
+      if (leaf.checked) checked += 1
+    }
+  }
+  return { checked, total }
+}
+
+/**
+ * Appended to the regenerate prompt (DRO-195) so the AI sees what the user
+ * already checked off or edited by hand, and is asked to preserve it where
+ * it still fits. This is a prompt hint, not a structural merge: a
+ * regeneration can reshape sections entirely, so there's nothing stable on
+ * the old body to merge field-by-field onto the new one. Untouched leaves
+ * are omitted to keep the hint short and signal-only. Table rows are
+ * skipped — tables aren't editable yet (DRO-196).
+ */
+export function buildEnvelopeRegenerationContext(previousBody: EnvelopeBody): string {
+  const lines: string[] = []
+  for (const block of previousBody.sections) {
+    if (block.type === 'table') continue
+    for (const leaf of block.items) {
+      if (!leaf.checked && !leaf.edited) continue
+      const marks = [leaf.checked ? 'checked off' : null, leaf.edited ? 'edited by the user' : null]
+        .filter((mark): mark is string => mark !== null)
+        .join(', ')
+      lines.push(`- "${leaf.text}" (${marks})`)
+    }
+  }
+  if (lines.length === 0) return ''
+
+  return [
+    '',
+    'The user already has a previous version of this plan and has made these manual changes to it:',
+    ...lines,
+    'Preserve their checked-off and edited lines where they still fit the request below; otherwise regenerate freely.',
+  ].join('\n')
 }
 
 export interface EnvelopeSourceItem {
