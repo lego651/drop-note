@@ -65,18 +65,28 @@ export type EnvelopeGenerationResult =
   | { status: 'done' | 'partial'; body: EnvelopeBody; errorMessage?: undefined }
   | { status: 'failed'; body?: undefined; errorMessage: string }
 
+// Each AI call aborts after 30s (packages/shared/src/ai-provider.ts). If the
+// first attempt alone eats most of that, a full-length retry would push the
+// combined AI time toward 60s and leave the route's `maxDuration = 60` with
+// no room for the DB writes around it (DRO-197) — so skip the retry rather
+// than risk the serverless function getting killed mid-write.
+const RETRY_TIME_BUDGET_MS = 20_000
+
 /**
  * Builds the prompt, calls the AI provider, validates the response against the
  * envelope body schema (one retry with the validation error appended on
- * failure), and applies server-side citation enforcement. Never throws —
- * provider/network failures resolve to `{ status: 'failed' }` like a schema
- * failure would, since both leave the user with nothing to render otherwise.
+ * failure, skipped if the first attempt already used most of the time budget
+ * — see RETRY_TIME_BUDGET_MS), and applies server-side citation enforcement.
+ * Never throws — provider/network failures resolve to `{ status: 'failed' }`
+ * like a schema failure would, since both leave the user with nothing to
+ * render otherwise.
  */
 export async function runEnvelopeGeneration(
   provider: AIProvider,
   items: EnvelopeSourceItem[],
   text: string,
   purposeHint: PurposeHint | null,
+  now: () => number = Date.now,
 ): Promise<EnvelopeGenerationResult> {
   const systemPrompt = buildEnvelopeSystemPrompt()
   const userPrompt = buildEnvelopeUserPrompt(items, text, purposeHint)
@@ -102,7 +112,15 @@ export async function runEnvelopeGeneration(
     return { ok: true, body: result.data }
   }
 
+  const firstAttemptStartedAt = now()
   let result = await attempt(userPrompt)
+  const firstAttemptElapsedMs = now() - firstAttemptStartedAt
+
+  if (!result.ok && firstAttemptElapsedMs >= RETRY_TIME_BUDGET_MS) {
+    log.error('envelopes.generation_failed_no_retry_budget', new Error(result.error), { firstAttemptElapsedMs })
+    return { status: 'failed', errorMessage: result.error }
+  }
+
   if (!result.ok) {
     log.warn('envelopes.generation_retry', { error: result.error })
     result = await attempt(appendValidationRetryNote(userPrompt, result.error))

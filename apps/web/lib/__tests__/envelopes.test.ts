@@ -153,6 +153,37 @@ describe('runEnvelopeGeneration', () => {
     expect(provider.generateStructured).toHaveBeenCalledTimes(2)
   })
 
+  it('skips the retry (fails fast) when the first attempt already used most of the time budget, so the route stays well under maxDuration=60 (DRO-197)', async () => {
+    const provider = fakeProvider(['not json', 'still not json'])
+    let now = 0
+    const clock = () => {
+      const current = now
+      now += 21_000 // first attempt "took" 21s, over RETRY_TIME_BUDGET_MS
+      return current
+    }
+
+    const result = await runEnvelopeGeneration(provider, ITEMS, 'make a checklist', null, clock)
+    expect(result.status).toBe('failed')
+    expect(provider.generateStructured).toHaveBeenCalledTimes(1)
+  })
+
+  it('still retries when the first attempt was fast', async () => {
+    const provider = fakeProvider([
+      JSON.stringify({ sections: [{ type: 'checklist', items: [{ text: 'x', sourceItemIds: [], confidence: 'certain' }] }] }), // invalid confidence
+      JSON.stringify({ sections: [{ type: 'checklist', items: [{ text: 'x', sourceItemIds: [], confidence: 'suggested' }] }] }),
+    ])
+    let now = 0
+    const clock = () => {
+      const current = now
+      now += 1_000 // first attempt "took" 1s, well under the budget
+      return current
+    }
+
+    const result = await runEnvelopeGeneration(provider, ITEMS, 'make a checklist', null, clock)
+    expect(result.status).toBe('done')
+    expect(provider.generateStructured).toHaveBeenCalledTimes(2)
+  })
+
   it('returns status "failed" when the AI provider throws', async () => {
     const provider: AIProvider = {
       processText: vi.fn(),

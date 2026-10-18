@@ -10,6 +10,12 @@ import {
 } from '@drop-note/shared'
 import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
+// Generation runs synchronously inline (same D11 pattern as /api/ingest).
+// runEnvelopeGeneration bounds its own retry so combined AI time plus the DB
+// work around it stays comfortably under this limit (DRO-197).
+export const maxDuration = 60
+export const runtime = 'nodejs'
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // POST /api/envelopes/generate

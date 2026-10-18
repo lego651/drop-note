@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { parseEnvelopeBody } from '@drop-note/shared'
 import { EnvelopeBodyView } from '@/components/envelopes/EnvelopeBodyView'
@@ -56,15 +56,7 @@ export default async function EnvelopeDetailPage({ params }: { params: Promise<{
         )}
       </div>
 
-      {envelope.status === 'generating' && (
-        <>
-          <GeneratingPoller envelopeId={envelope.id} />
-          <div className="flex flex-col items-center gap-3 rounded-xl border-stroke border-ink bg-card py-16 text-center shadow-ink-lg">
-            <Loader2 size={20} className="animate-spin text-muted-foreground" aria-hidden="true" />
-            <p className="text-sm text-foreground">Making your plan…</p>
-          </div>
-        </>
-      )}
+      {envelope.status === 'generating' && <GeneratingPoller envelopeId={envelope.id} />}
 
       {envelope.status === 'failed' && (
         <div
