@@ -17,6 +17,8 @@ import {
   moveItems,
   previewResort,
   applyResort,
+  getActiveItemCategoryIds,
+  computeTopCategory,
   CATEGORY_CAP,
   RESORT_SCAN_LIMIT,
   DELETE_RESORT_CONCURRENCY,
@@ -395,5 +397,73 @@ describe('getCategories', () => {
     })
     const result = await getCategories('user-1', { from } as any)
     expect(result).toEqual([])
+  })
+})
+
+describe('getActiveItemCategoryIds', () => {
+  it('scopes the query to non-deleted, non-archived email_body items', async () => {
+    const { from, chainsByTable } = makeClient({
+      items: () => ({ data: [{ category_id: '1' }], error: null }),
+    })
+    const result = await getActiveItemCategoryIds('user-1', { from } as any)
+    expect(result).toEqual([{ category_id: '1' }])
+    const calls = chainsByTable.items[0].__calls
+    expect(calls).toEqual(
+      expect.arrayContaining([
+        { method: 'is', args: ['deleted_at', null] },
+        { method: 'is', args: ['archived_at', null] },
+        { method: 'eq', args: ['type', 'email_body'] },
+      ]),
+    )
+  })
+
+  it('returns an empty array on a DB error', async () => {
+    const { from } = makeClient({
+      items: () => ({ data: null, error: new Error('db error') }),
+    })
+    const result = await getActiveItemCategoryIds('user-1', { from } as any)
+    expect(result).toEqual([])
+  })
+})
+
+describe('computeTopCategory', () => {
+  it('picks the category with the most items', () => {
+    const categories = [
+      cat({ id: '1', name: 'Tech', position: 0 }),
+      cat({ id: '2', name: 'Sports', position: 1 }),
+    ]
+    const items = [
+      { category_id: '1' },
+      { category_id: '2' },
+      { category_id: '2' },
+      { category_id: '2' },
+    ]
+    expect(computeTopCategory(items, categories)).toEqual({ name: 'Sports', count: 3 })
+  })
+
+  it('ignores items with no category_id (excluded by the deleted-item query filters upstream)', () => {
+    const categories = [cat({ id: '1', name: 'Tech', position: 0 })]
+    const items = [{ category_id: null }, { category_id: '1' }]
+    expect(computeTopCategory(items, categories)).toEqual({ name: 'Tech', count: 1 })
+  })
+
+  it('breaks ties by category position (stable order)', () => {
+    const categories = [
+      cat({ id: '1', name: 'Tech', position: 0 }),
+      cat({ id: '2', name: 'Sports', position: 1 }),
+    ]
+    const items = [{ category_id: '2' }, { category_id: '1' }]
+    expect(computeTopCategory(items, categories)).toEqual({ name: 'Tech', count: 1 })
+  })
+
+  it('counts hidden categories too', () => {
+    const categories = [cat({ id: '1', name: 'Archive', position: 0, hidden: true })]
+    const items = [{ category_id: '1' }]
+    expect(computeTopCategory(items, categories)).toEqual({ name: 'Archive', count: 1 })
+  })
+
+  it('returns null when there are no items', () => {
+    const categories = [cat({ id: '1', name: 'Tech', position: 0 })]
+    expect(computeTopCategory([], categories)).toBeNull()
   })
 })

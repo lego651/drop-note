@@ -102,6 +102,60 @@ export async function getCategoriesWithCounts(
   return categories.map((c, i) => ({ ...c, item_count: counts[i].count ?? 0 }))
 }
 
+export type ItemCategoryId = { category_id: string | null }
+
+/**
+ * category_id for every active item (not deleted, not archived, email_body
+ * only — the same scope as the items grid), for use with computeTopCategory.
+ * A plain query rather than a DB function/migration, per DRO-162.
+ */
+export async function getActiveItemCategoryIds(
+  userId: string,
+  client?: AdminClient,
+): Promise<ItemCategoryId[]> {
+  const db = client ?? (supabaseAdmin as unknown as AdminClient)
+  const { data, error } = await db
+    .from('items')
+    .select('category_id')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .is('archived_at', null)
+    .eq('type', 'email_body')
+
+  if (error || !data) {
+    log.warn('categories.top_category_fetch_failed', { userId }, error ?? undefined)
+    return []
+  }
+  return data as ItemCategoryId[]
+}
+
+/**
+ * Picks the category with the most items from already-fetched item rows.
+ * Ties go to whichever category sorts first by position, so the result is
+ * deterministic. Hidden categories are still eligible — only item count matters.
+ */
+export function computeTopCategory(
+  items: ItemCategoryId[],
+  categories: UserCategory[],
+): { name: string; count: number } | null {
+  const counts = new Map<string, number>()
+  for (const item of items) {
+    if (!item.category_id) continue
+    counts.set(item.category_id, (counts.get(item.category_id) ?? 0) + 1)
+  }
+  if (counts.size === 0) return null
+
+  const sorted = [...categories].sort((a, b) => a.position - b.position)
+  let top: { name: string; count: number } | null = null
+  for (const category of sorted) {
+    const count = counts.get(category.id)
+    if (count && (!top || count > top.count)) {
+      top = { name: category.name, count }
+    }
+  }
+  return top
+}
+
 /**
  * Count of items `deleteCategory` would actually reassign: every item with this
  * category_id, regardless of type/trash/archive state. Unlike

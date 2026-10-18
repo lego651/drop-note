@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ItemsPageClient } from '@/components/items/ItemsPageClient'
 import { colorForTag } from '@/lib/design-tokens'
-import { getCategories } from '@/lib/categories'
+import { getCategories, getActiveItemCategoryIds, computeTopCategory } from '@/lib/categories'
 import { applySortOrder } from './sort-helpers'
 import { getProcessingCutoffIso } from './processing-cutoff'
 import type { Tier, SourceType } from '@drop-note/shared'
@@ -73,7 +73,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     { count: thisWeekCount },
     { count: priorWeekCount },
     { count: processingCount },
-    { data: topTagData },
+    activeItemCategoryIds,
     categories,
   ] = await Promise.all([
     supabase.from('users').select('tier').eq('id', user.id).single(),
@@ -101,7 +101,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       .is('archived_at', null)
       .in('status', ['pending', 'processing'])
       .gte('created_at', processingCutoff),
-    supabase.rpc('get_tags_with_counts'),
+    getActiveItemCategoryIds(user.id),
     getCategories(user.id),
   ])
 
@@ -112,10 +112,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   const weekDelta = (thisWeekCount ?? 0) - (priorWeekCount ?? 0)
 
   const userTier = (userData?.tier ?? 'free') as Tier
-  const topTag =
-    topTagData && topTagData.length > 0
-      ? { name: topTagData[0].name as string, count: topTagData[0].item_count as number }
-      : null
+  const topCategory = computeTopCategory(activeItemCategoryIds, categories)
 
   // Handle tag filter — get matching item IDs first
   let tagFilterIds: string[] | null = null
@@ -150,7 +147,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
         statsData={{
           thisWeekCount: thisWeekCount ?? 0,
           processingCount: processingCount ?? 0,
-          topTag,
+          topCategory,
           weekDelta,
         }}
         avatarUrl={avatarUrl}
@@ -229,7 +226,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       statsData={{
         thisWeekCount: thisWeekCount ?? 0,
         processingCount: processingCount ?? 0,
-        topTag,
+        topCategory,
         weekDelta,
       }}
       avatarUrl={avatarUrl}
