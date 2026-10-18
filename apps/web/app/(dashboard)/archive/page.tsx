@@ -14,7 +14,7 @@ export default async function ArchivePage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // archived_at column added by migration 20260529000001_add_archived_at.sql
+  // archived_at column added by migration 20260529155527_s8_add_archived_at.sql
   const { data: rawItems } = await supabase
     .from('items')
     .select('id, subject, ai_summary, created_at, source_type, archived_at')
