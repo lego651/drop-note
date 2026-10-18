@@ -164,16 +164,14 @@ create index if not exists idx_items_active
   on public.items(user_id, created_at desc)
   where deleted_at is null;
 
--- Board decision 8: drop the now-redundant non-partial idx_items_user_id_created_at
--- now that idx_items_active exists and every current query path already filters
--- deleted_at is null. 47 rows — a plain drop is fine (board-approved), run in
--- the same file as the index it's made redundant by.
--- Risk: LOW (dropping a superseded index; nothing relies on it being
--- non-partial). Lock: instant at 47 rows.
--- Rollback: create index if not exists idx_items_user_id_created_at
---   on public.items (user_id, created_at desc) where deleted_at is null;
---   (note: this recreates it with the partial shape the file intended, not
---   the original full index — the original full index's definition is lost
---   once dropped; see initial_schema.sql for the pre-partial definition if a
---   true revert to the original is ever needed.)
-drop index if exists public.idx_items_user_id_created_at;
+-- Board decision 8 was conditional on "every current query path filters
+-- deleted_at is null" — confirmed FALSE by code review (DRO-209): the trash
+-- count in apps/web/app/(dashboard)/layout.tsx, trash/page.tsx,
+-- api/items/trash/route.ts, api/items/[id]/restore, and
+-- api/cron/purge-trash all filter deleted_at IS NOT NULL / use the
+-- unfiltered user_id scan, none of which the new partial idx_items_active
+-- can serve. Dropping idx_items_user_id_created_at would also remove the
+-- only index backing the items.user_id -> users ON DELETE CASCADE FK
+-- (Supabase linter: unindexed_foreign_keys). So the non-partial index is
+-- KEPT alongside the new partial one — see DRO-200 for the corrected
+-- decision record.

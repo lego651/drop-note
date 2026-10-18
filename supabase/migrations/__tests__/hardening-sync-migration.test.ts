@@ -89,11 +89,11 @@ describe('20261019000001_hardening_sync.sql', () => {
     expect(executableSql).toMatch(/where conname = 'usage_log_month_format'/)
   })
 
-  it('adds idx_items_active and drops the superseded non-partial idx_items_user_id_created_at', () => {
+  it('adds idx_items_active but keeps idx_items_user_id_created_at (still needed for deleted_at IS NOT NULL queries and the user_id FK)', () => {
     expect(executableSql).toMatch(
       /create index if not exists idx_items_active\s*\n\s*on public\.items\(user_id, created_at desc\)\s*\n\s*where deleted_at is null;/,
     )
-    expect(executableSql).toMatch(/drop index if exists public\.idx_items_user_id_created_at;/)
+    expect(executableSql).not.toMatch(/drop index if exists public\.idx_items_user_id_created_at;/)
   })
 
   it('every bare DDL/DML statement uses a re-run-safe guard', () => {
