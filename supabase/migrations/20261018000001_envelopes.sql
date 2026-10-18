@@ -2,9 +2,16 @@
 -- (optionally seeded by a "purpose" chip) and the AI composes them into a
 -- checklist/list/table/notes document. See DRO-190/191/192 for the full spec.
 --
--- HARD GATE: this migration must NOT be applied to production until Jason
--- (the board) approves it — see the PR description. It ships in this PR as a
--- file only.
+-- Applied to production 2026-10-18 (board-approved), with set_updated_at()
+-- included below because prod lacks 20240001000002_hardening.sql.
+
+create or replace function public.set_updated_at()
+returns trigger language plpgsql as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
 
 create table public.envelopes (
   id uuid primary key default gen_random_uuid(),
