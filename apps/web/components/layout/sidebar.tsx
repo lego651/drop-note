@@ -185,13 +185,13 @@ export function Sidebar(props: SidebarProps) {
   return (
     <Suspense
       fallback={
-        <aside className="stripe-top hidden h-screen w-60 shrink-0 flex-col border-r-stroke border-ink md:flex" />
+        <aside className="stripe-top hidden h-screen w-64 shrink-0 flex-col border-r-stroke border-ink md:flex" />
       }
     >
       <aside
         className={cn(
           'stripe-top hidden h-screen shrink-0 flex-col border-r-stroke border-ink transition-[width] duration-200 md:flex',
-          collapsed ? 'w-[72px]' : 'w-60',
+          collapsed ? 'w-[72px]' : 'w-64',
         )}
       >
         <SidebarNav {...props} collapsed={collapsed} onToggleCollapse={toggleCollapse} />
