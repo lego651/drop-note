@@ -32,8 +32,11 @@ export async function fetchEnvelopeSourceItems(
     .in('id', itemIds)
 
   if (error || !data) {
-    log.warn('envelopes.fetch_source_items_failed', { userId }, error ?? undefined)
-    return []
+    // Throw rather than return [] — the caller (the generate route) must not
+    // hand the AI provider an empty item list and risk a schema-valid but
+    // ungrounded "done" envelope from a transient DB failure.
+    log.error('envelopes.fetch_source_items_failed', error ?? new Error('no data'), { userId })
+    throw new Error('Failed to load source items for this envelope')
   }
 
   return (data as unknown as Array<{

@@ -198,6 +198,30 @@ describe('enforceEnvelopeCitations', () => {
     expect(section.rows[0][0].confidence).toBe('suggested')
   })
 
+  it('downgrades a "from_item" leaf that cites nothing — claiming grounded with no citation is not trustworthy either', () => {
+    const body: EnvelopeBody = {
+      sections: [
+        {
+          type: 'checklist',
+          items: [{ text: 'Milk', sourceItemIds: [], confidence: 'from_item' }],
+        },
+      ],
+    }
+    const { body: result, stripped } = enforceEnvelopeCitations(body, ['item-1'])
+    expect(stripped).toBe(true)
+    const section = result.sections[0]
+    if (section.type !== 'checklist') throw new Error('expected checklist')
+    expect(section.items[0].confidence).toBe('suggested')
+  })
+
+  it('leaves a "suggested" leaf with no citations untouched (that combination is expected, not a violation)', () => {
+    const body: EnvelopeBody = {
+      sections: [{ type: 'notes', items: [{ text: 'x', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    const { stripped } = enforceEnvelopeCitations(body, ['item-1'])
+    expect(stripped).toBe(false)
+  })
+
   it('accepts a Set directly for allowedItemIds', () => {
     const body: EnvelopeBody = {
       sections: [{ type: 'notes', items: [{ text: 'x', sourceItemIds: ['item-1'], confidence: 'from_item' }] }],

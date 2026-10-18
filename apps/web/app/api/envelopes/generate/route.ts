@@ -118,7 +118,12 @@ async function handlePOST(request: NextRequest) {
         : { status: result.status, body: result.body }
 
       const { error: updateError } = await supabase.from('envelopes').update(update).eq('id', envelope.id)
-      if (updateError) log.error('envelopes.update_failed', updateError)
+      if (updateError) {
+        // Don't report success — the generated body never made it to the row the
+        // client is about to navigate to (it's still stuck at status "generating").
+        log.error('envelopes.update_failed', updateError)
+        return NextResponse.json({ error: 'Failed to save the generated plan' }, { status: 500 })
+      }
 
       return NextResponse.json({ id: envelope.id, status: result.status })
     } catch (err) {

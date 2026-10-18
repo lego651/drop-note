@@ -120,7 +120,11 @@ export function enforceEnvelopeCitations(
 
   function fixLeaf(leaf: EnvelopeLeaf): EnvelopeLeaf {
     const kept = leaf.sourceItemIds.filter((id) => allowed.has(id))
-    if (kept.length === leaf.sourceItemIds.length) return leaf
+    // "from_item" with no surviving citation is just as untrustworthy as a
+    // leaf whose citations got stripped — a model claiming "grounded" while
+    // citing nothing must not pass through as verified.
+    const uncitedButClaimedFromItem = leaf.confidence === 'from_item' && kept.length === 0
+    if (kept.length === leaf.sourceItemIds.length && !uncitedButClaimedFromItem) return leaf
     stripped = true
     return { ...leaf, sourceItemIds: kept, confidence: 'suggested' }
   }

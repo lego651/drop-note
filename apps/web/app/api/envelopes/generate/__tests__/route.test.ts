@@ -227,4 +227,41 @@ describe('POST /api/envelopes/generate — happy path', () => {
     )
     expect(updatedEnvelopes[0]).toMatchObject({ status: 'done' })
   })
+
+  it('does not report success when the final envelope update fails to persist', async () => {
+    from.mockImplementation((table: string) => {
+      if (table === 'items') {
+        return chainable(() => ({ data: VALID_IDS.map((id) => ({ id })), error: null }))
+      }
+      if (table === 'envelopes') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const chain: any = {
+          insert: vi.fn(() => chain),
+          update: vi.fn(() => chain),
+          select: vi.fn(() => chain),
+          eq: vi.fn(() => chain),
+          single: vi.fn(() => Promise.resolve({ data: { id: 'envelope-1' }, error: null })),
+          then: (onFulfilled: (v: unknown) => unknown) =>
+            Promise.resolve({ data: null, error: new Error('db write failed') }).then(onFulfilled),
+        }
+        return chain
+      }
+      if (table === 'envelope_items') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const chain: any = {
+          insert: vi.fn(() => chain),
+          then: (onFulfilled: (v: unknown) => unknown) => Promise.resolve({ data: null, error: null }).then(onFulfilled),
+        }
+        return chain
+      }
+      return chainable(() => ({ data: null, error: null }))
+    })
+
+    runEnvelopeGeneration.mockResolvedValue({ status: 'done', body: { sections: [] } })
+
+    const res = await POST(makeRequest({ itemIds: VALID_IDS, text: 'plan' }))
+    expect(res.status).toBe(500)
+    const json = await res.json()
+    expect(json.id).toBeUndefined()
+  })
 })

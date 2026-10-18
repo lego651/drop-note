@@ -95,12 +95,13 @@ describe('fetchEnvelopeSourceItems', () => {
     expect(result[0].categoryName).toBeNull()
   })
 
-  it('returns an empty array (not a throw) when the query errors', async () => {
+  it('throws (rather than silently returning []) when the query errors, so the route marks the envelope failed instead of generating an ungrounded plan', async () => {
     const chain = chainable(() => ({ data: null, error: new Error('db down') }))
     const supabase = { from: vi.fn(() => chain) }
 
-    const result = await fetchEnvelopeSourceItems(supabase as unknown as Parameters<typeof fetchEnvelopeSourceItems>[0], 'user-1', ['item-1'])
-    expect(result).toEqual([])
+    await expect(
+      fetchEnvelopeSourceItems(supabase as unknown as Parameters<typeof fetchEnvelopeSourceItems>[0], 'user-1', ['item-1']),
+    ).rejects.toThrow()
   })
 })
 
