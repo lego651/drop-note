@@ -58,7 +58,7 @@ export function EnvelopeLeafRow({
           aria-label={leaf.checked ? 'Mark as not done' : 'Mark as done'}
           className={cn(
             'relative mt-0.5',
-            "after:absolute after:-inset-[14px] after:content-['']",
+            "after:absolute after:-inset-x-[14px] after:-inset-y-2 after:content-['']",
             leaf.confidence === 'suggested' && 'border-dashed',
           )}
         />
