@@ -79,6 +79,77 @@ export type Database = {
           },
         ]
       }
+      envelope_items: {
+        Row: {
+          envelope_id: string
+          item_id: string
+        }
+        Insert: {
+          envelope_id: string
+          item_id: string
+        }
+        Update: {
+          envelope_id?: string
+          item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envelope_items_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "envelopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "envelope_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      envelopes: {
+        Row: {
+          body: Json | null
+          created_at: string
+          error_message: string | null
+          id: string
+          intent_input: Json
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: Json | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          intent_input: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: Json | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          intent_input?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envelopes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       health_checks: {
         Row: {
           checked_at: string

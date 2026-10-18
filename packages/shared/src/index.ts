@@ -5,6 +5,7 @@ export { OpenAIProvider, AnthropicProvider, GeminiProvider, createAIProvider } f
 export * from './auth'
 export * from './email'
 export * from './env'
+export * from './envelopes'
 export * from './prompts'
 export * from './ratelimit'
 export * from './tags'
