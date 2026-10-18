@@ -4,6 +4,7 @@ import { ItemsPageClient } from '@/components/items/ItemsPageClient'
 import { colorForTag } from '@/lib/design-tokens'
 import { getCategories } from '@/lib/categories'
 import { applySortOrder } from './sort-helpers'
+import { getProcessingCutoffIso } from './processing-cutoff'
 import type { Tier, SourceType } from '@drop-note/shared'
 import type { ItemSummary } from '@/lib/items'
 import type { SortOption } from '@/components/items/SortDropdown'
@@ -65,6 +66,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   // Stats queries — run in parallel with tier + tag filter
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+  const processingCutoff = getProcessingCutoffIso()
 
   const [
     { data: userData },
@@ -97,7 +99,8 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       .eq('user_id', user.id)
       .is('deleted_at', null)
       .is('archived_at', null)
-      .in('status', ['pending', 'processing']),
+      .in('status', ['pending', 'processing'])
+      .gte('created_at', processingCutoff),
     supabase.rpc('get_tags_with_counts'),
     getCategories(user.id),
   ])
