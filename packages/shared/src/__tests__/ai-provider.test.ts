@@ -255,3 +255,76 @@ describe('OpenAIProvider.describeImage', () => {
     expect(result).toBe('A cat')
   })
 })
+
+describe('generateStructured (DRO-193 envelopes)', () => {
+  afterEach(() => { vi.restoreAllMocks() })
+
+  it('OpenAIProvider sends json_object mode with system + user messages and returns the raw content', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        choices: [{ message: { content: '{"sections":[]}' } }],
+      }),
+    }) as unknown as typeof fetch
+
+    const provider = new OpenAIProvider('sk-test')
+    const result = await provider.generateStructured('system instructions', 'user prompt')
+    expect(result).toBe('{"sections":[]}')
+
+    const [, requestInit] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(requestInit.body as string) as {
+      messages: Array<{ role: string; content: string }>
+      response_format: { type: string }
+    }
+    expect(body.response_format).toEqual({ type: 'json_object' })
+    expect(body.messages).toEqual([
+      { role: 'system', content: 'system instructions' },
+      { role: 'user', content: 'user prompt' },
+    ])
+  })
+
+  it('OpenAIProvider throws with rate limit hint on 429', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      text: () => Promise.resolve('rate limited'),
+    }) as unknown as typeof fetch
+
+    const provider = new OpenAIProvider('sk-test')
+    await expect(provider.generateStructured('s', 'u')).rejects.toThrow(/rate limit/)
+  })
+
+  it('AnthropicProvider strips code fences and returns raw text', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        content: [{ text: '```json\n{"sections":[]}\n```' }],
+      }),
+    }) as unknown as typeof fetch
+
+    const provider = new AnthropicProvider('sk-ant-test')
+    const result = await provider.generateStructured('system instructions', 'user prompt')
+    expect(result).toBe('{"sections":[]}')
+  })
+
+  it('GeminiProvider sends systemInstruction + json responseMimeType and returns the raw text', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        candidates: [{ content: { parts: [{ text: '{"sections":[]}' }] } }],
+      }),
+    }) as unknown as typeof fetch
+
+    const provider = new GeminiProvider('gemini-key')
+    const result = await provider.generateStructured('system instructions', 'user prompt')
+    expect(result).toBe('{"sections":[]}')
+
+    const [, requestInit] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(requestInit.body as string) as {
+      systemInstruction: { parts: Array<{ text: string }> }
+      generationConfig: { responseMimeType: string }
+    }
+    expect(body.systemInstruction.parts[0].text).toBe('system instructions')
+    expect(body.generationConfig.responseMimeType).toBe('application/json')
+  })
+})
