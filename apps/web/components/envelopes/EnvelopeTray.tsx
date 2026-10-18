@@ -31,15 +31,20 @@ export function EnvelopeTray() {
     <>
       <div
         role="status"
-        className="fixed bottom-6 left-1/2 z-40 flex max-w-[92vw] -translate-x-1/2 items-center gap-2 rounded-[10px] border-stroke border-ink bg-card px-3 py-2 shadow-ink-lg sm:gap-3 sm:px-4 sm:py-2.5"
+        className="fixed bottom-6 left-1/2 z-40 flex max-w-[92vw] -translate-x-1/2 flex-wrap items-center gap-2 rounded-[10px] border-stroke border-ink bg-card px-3 py-2 shadow-ink-lg sm:gap-3 sm:px-4 sm:py-2.5"
       >
         <span className="whitespace-nowrap text-sm font-medium text-foreground">
           {count} {count === 1 ? 'item' : 'items'} selected
         </span>
         {capMessage && (
-          <span className="hidden text-xs text-muted-foreground md:inline">{capMessage}</span>
+          // Full-width on mobile so it wraps to its own line below the count/actions
+          // row instead of being hidden — a disabled button alone doesn't explain
+          // the 2-8 cap on touch devices (no hover for the `title`).
+          <span className="order-3 w-full text-xs text-muted-foreground sm:order-none sm:w-auto">
+            {capMessage}
+          </span>
         )}
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="order-2 flex shrink-0 items-center gap-1.5 sm:order-none">
           <Button
             variant="default"
             size="sm"

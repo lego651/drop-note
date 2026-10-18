@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MobileSidebar } from '@/components/layout/MobileSidebar'
-import { OverCapBanner } from '@/components/OverCapBanner'
+import { DashboardMain } from '@/components/layout/DashboardMain'
 import { BulkSelectProvider } from '@/components/items/BulkSelectProvider'
 import { EnvelopeTray } from '@/components/envelopes/EnvelopeTray'
 import { getCategoriesWithCounts } from '@/lib/categories'
@@ -114,10 +114,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
             />
             <span className="font-display text-base font-extrabold [font-stretch:125%]">drop-note</span>
           </header>
-          <main id="main" className="flex-1 min-w-0 overflow-y-auto bg-canvas bg-dot-grid">
-            {isOverCap && <OverCapBanner itemCount={itemCount ?? 0} tier={tier} />}
+          <DashboardMain isOverCap={isOverCap} itemCount={itemCount ?? 0} tier={tier}>
             {children}
-          </main>
+          </DashboardMain>
         </div>
       </div>
       <EnvelopeTray />

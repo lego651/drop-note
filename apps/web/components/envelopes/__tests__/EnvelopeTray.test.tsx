@@ -56,6 +56,17 @@ describe('EnvelopeTray (DRO-194)', () => {
     )
   })
 
+  it('shows the cap hint without a mobile-hiding class (DRO-205: 390px needs a visible reason)', () => {
+    bulkState = {
+      isBulkMode: true,
+      selectedIds: new Set(['a']),
+      deselectAll: vi.fn(),
+    }
+    render(<EnvelopeTray />)
+    const hint = screen.getByText('Select at least 2 items to make a plan.')
+    expect(hint).not.toHaveClass('hidden')
+  })
+
   it('disables "Make a plan" and explains the cap when over the maximum', () => {
     bulkState = {
       isBulkMode: true,
