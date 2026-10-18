@@ -56,7 +56,11 @@ export function EnvelopeLeafRow({
           checked={leaf.checked ?? false}
           onCheckedChange={onToggle}
           aria-label={leaf.checked ? 'Mark as not done' : 'Mark as done'}
-          className="mt-0.5"
+          className={cn(
+            'relative mt-0.5',
+            "after:absolute after:-inset-[14px] after:content-['']",
+            leaf.confidence === 'suggested' && 'border-dashed',
+          )}
         />
       ) : (
         <span
@@ -87,7 +91,7 @@ export function EnvelopeLeafRow({
               }
             }}
             maxLength={ENVELOPE_TEXT_MAX_LENGTH}
-            className="min-w-0 flex-1 rounded-[6px] border-stroke border-ink bg-card px-1.5 py-0.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="min-w-0 flex-1 rounded-[6px] border-stroke border-ink bg-card px-1.5 py-0.5 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
           />
         ) : (
           <span
