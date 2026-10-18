@@ -4,12 +4,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { BulkActionToolbar } from '../BulkActionToolbar'
 
-// The toolbar renders PurposeDialog (DRO-193), which calls useRouter — this
-// suite doesn't touch that dialog, but it still needs an app router mounted.
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn() }),
-}))
-
 const categories = [
   { id: 'cat-food', name: 'Food & Drink', position: 0, hidden: false, is_default: true, is_other: false },
   { id: 'cat-tech', name: 'Tech', position: 1, hidden: false, is_default: true, is_other: false },
@@ -44,6 +38,7 @@ describe('BulkActionToolbar — Move to…', () => {
         onTagged={vi.fn()}
         onMoved={onMoved}
         onSelectAll={vi.fn()}
+        onDeselectPage={vi.fn()}
         onDeselectAll={vi.fn()}
       />,
     )
@@ -79,6 +74,7 @@ describe('BulkActionToolbar — Move to…', () => {
         onDeleted={vi.fn()}
         onTagged={vi.fn()}
         onSelectAll={vi.fn()}
+        onDeselectPage={vi.fn()}
         onDeselectAll={vi.fn()}
       />,
     )

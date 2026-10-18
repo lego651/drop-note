@@ -11,7 +11,7 @@ import { ItemsListLayout } from '@/components/items/ItemsListLayout'
 import { ItemsGridLayout } from '@/components/items/ItemsGridLayout'
 import { CompactListLayout } from '@/components/items/CompactListLayout'
 import { ViewSwitcher, VIEW_STORAGE_KEY } from '@/components/items/ViewSwitcher'
-import { BulkSelectProvider, useBulkSelect } from '@/components/items/BulkSelectProvider'
+import { useBulkSelect } from '@/components/items/BulkSelectProvider'
 import { BulkActionToolbar } from '@/components/items/BulkActionToolbar'
 import { WelcomeModal } from '@/components/dashboard/WelcomeModal'
 import { StatsBar } from '@/components/items/StatsBar'
@@ -55,15 +55,9 @@ interface ItemsPageClientProps {
   avatarColor?: string
 }
 
-export function ItemsPageClient(props: ItemsPageClientProps) {
-  return (
-    <BulkSelectProvider>
-      <ItemsPageClientInner {...props} />
-    </BulkSelectProvider>
-  )
-}
-
-function ItemsPageClientInner({
+// Selection lives in BulkSelectProvider above the dashboard layout (DRO-194)
+// so a pick survives switching categories — this component only consumes it.
+export function ItemsPageClient({
   items,
   totalCount,
   page,
@@ -87,7 +81,7 @@ function ItemsPageClientInner({
   const searchParams = useSearchParams()
   const searchParamsStr = searchParams.toString()
 
-  const { isBulkMode, selectedIds, toggle, selectAll, deselectAll } = useBulkSelect()
+  const { isBulkMode, selectedIds, toggle, selectAll, deselectIds, deselectAll } = useBulkSelect()
 
   const [view, setView] = useState<ViewMode>('card')
   const [searchQuery, setSearchQuery] = useState(initialQuery)
@@ -407,6 +401,7 @@ function ItemsPageClientInner({
           onTagged={handleBulkTagged}
           onMoved={handleBulkMoved}
           onSelectAll={selectAll}
+          onDeselectPage={() => deselectIds(allPageIds)}
           onDeselectAll={deselectAll}
         />
       )}

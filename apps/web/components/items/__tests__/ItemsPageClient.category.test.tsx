@@ -42,6 +42,7 @@ let bulkState: {
   selectedIds: Set<string>
   toggle: ReturnType<typeof vi.fn>
   selectAll: ReturnType<typeof vi.fn>
+  deselectIds: ReturnType<typeof vi.fn>
   deselectAll: ReturnType<typeof vi.fn>
 }
 vi.mock('@/components/items/BulkSelectProvider', () => ({
@@ -79,6 +80,7 @@ beforeEach(() => {
     selectedIds: new Set(),
     toggle: vi.fn(),
     selectAll: vi.fn(),
+    deselectIds: vi.fn(),
     deselectAll: vi.fn(),
   }
 
@@ -149,6 +151,7 @@ describe('ItemsPageClient — bulk move (DRO-105 B2)', () => {
       selectedIds: new Set(['item-1']),
       toggle: vi.fn(),
       selectAll: vi.fn(),
+      deselectIds: vi.fn(),
       deselectAll: vi.fn(),
     }
     vi.stubGlobal(
