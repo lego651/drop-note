@@ -73,7 +73,7 @@ export default async function EnvelopeDetailPage({ params }: { params: Promise<{
         >
           <p className="text-sm font-medium text-destructive-text">Couldn&apos;t make this plan.</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {envelope.error_message ?? 'Something went wrong. Try again from the item selection.'}
+            Something went wrong. Try again from the item selection.
           </p>
         </div>
       )}
