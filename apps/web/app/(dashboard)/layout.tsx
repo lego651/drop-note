@@ -36,6 +36,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     { count: archiveCount },
     { count: allItemsCount },
     { count: pinnedCount },
+    { count: envelopeCount },
   ] = await Promise.all([
     supabase.from('users').select('tier').eq('id', user.id).single(),
     supabase
@@ -72,6 +73,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
       .is('archived_at', null)
       .eq('type', 'email_body')
       .eq('pinned', true),
+    // "Envelopes" nav count — every plan the user has made, regardless of status
+    supabase
+      .from('envelopes')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id),
   ])
 
   const tier = (userData?.tier ?? 'free') as Tier
@@ -95,6 +101,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           archiveCount={archiveCount ?? 0}
           totalCount={allItemsCount ?? 0}
           pinnedCount={pinnedCount ?? 0}
+          envelopeCount={envelopeCount ?? 0}
         />
         <div className="flex flex-col flex-1 min-w-0">
           {/* Mobile top bar */}
@@ -111,6 +118,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               archiveCount={archiveCount ?? 0}
               totalCount={allItemsCount ?? 0}
               pinnedCount={pinnedCount ?? 0}
+              envelopeCount={envelopeCount ?? 0}
             />
             <span className="font-display text-base font-extrabold [font-stretch:125%]">drop-note</span>
           </header>

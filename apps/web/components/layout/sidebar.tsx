@@ -30,6 +30,7 @@ export interface SidebarProps {
   archiveCount?: number
   totalCount?: number
   pinnedCount?: number
+  envelopeCount?: number
   collapsed?: boolean
   onToggleCollapse?: () => void
   /** True inside MobileSidebar's Sheet: menus flip side/align and links close the sheet. */
@@ -43,6 +44,7 @@ export function SidebarNav({
   archiveCount = 0,
   totalCount = 0,
   pinnedCount = 0,
+  envelopeCount = 0,
   collapsed = false,
   onToggleCollapse,
   insideSheet = false,
@@ -57,10 +59,13 @@ export function SidebarNav({
     pathname === '/items' && !activeCategoryId && activeSort !== 'pinned'
   const isPinned = pathname === '/items' && activeSort === 'pinned'
 
+  const isEnvelopes = pathname === '/envelopes' || pathname.startsWith('/envelopes/')
+
   const navItems = [
     { href: '/items', label: 'All Items', Icon: Inbox, count: totalCount, active: isItemsRoot },
     { href: '/items?sort=pinned', label: 'Pinned', Icon: Pin, count: pinnedCount, active: isPinned },
     { href: '/archive', label: 'Archive', Icon: Archive, count: archiveCount, active: pathname === '/archive' },
+    { href: '/envelopes', label: 'Envelopes', Icon: Mail, count: envelopeCount, active: isEnvelopes },
   ]
 
   return (

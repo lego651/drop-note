@@ -10,6 +10,7 @@ import {
   countEnvelopeChecklistProgress,
   stripEnvelopeProgressFields,
   carryForwardEnvelopeProgress,
+  getEnvelopeTitle,
   EnvelopeIntentInputSchema,
   type EnvelopeBody,
 } from '../envelopes'
@@ -382,6 +383,19 @@ describe('countEnvelopeChecklistProgress (DRO-195)', () => {
   it('returns 0/0 when there are no checklist blocks', () => {
     const body: EnvelopeBody = { sections: [{ type: 'notes', items: [{ text: 'x', sourceItemIds: [], confidence: 'suggested' }] }] }
     expect(countEnvelopeChecklistProgress(body)).toEqual({ checked: 0, total: 0 })
+  })
+})
+
+describe('getEnvelopeTitle (DRO-223)', () => {
+  it('returns the matching purpose chip label when a hint was tapped', () => {
+    expect(getEnvelopeTitle({ purposeHint: 'weekend_plan' })).toBe('Weekend plan')
+    expect(getEnvelopeTitle({ purposeHint: 'shopping_list' })).toBe('Shopping list')
+    expect(getEnvelopeTitle({ purposeHint: 'day_route' })).toBe('Day route')
+    expect(getEnvelopeTitle({ purposeHint: 'next_steps' })).toBe('Next steps')
+  })
+
+  it('falls back to a generic title when no purpose hint was set', () => {
+    expect(getEnvelopeTitle({ purposeHint: null })).toBe('Plan')
   })
 })
 

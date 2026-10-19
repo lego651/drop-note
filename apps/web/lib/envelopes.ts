@@ -5,9 +5,12 @@ import {
   buildEnvelopeSystemPrompt,
   buildEnvelopeUserPrompt,
   carryForwardEnvelopeProgress,
+  countEnvelopeChecklistProgress,
   enforceEnvelopeCitations,
+  getEnvelopeTitle,
   parseEnvelopeBody,
   stripEnvelopeProgressFields,
+  EnvelopeIntentInputSchema,
   type AIProvider,
   type EnvelopeBody,
   type EnvelopeSourceItem,
@@ -151,4 +154,67 @@ export async function runEnvelopeGeneration(
   }
   const body = previousBody ? carryForwardEnvelopeProgress(citedBody, previousBody) : citedBody
   return { status: stripped ? 'partial' : 'done', body }
+}
+
+// --- /envelopes list page (DRO-223) ---------------------------------------
+
+export type EnvelopeListStatus = 'generating' | 'done' | 'partial' | 'failed'
+
+export const ENVELOPE_STATUS_LABEL: Record<EnvelopeListStatus, string> = {
+  generating: 'Generating',
+  done: 'Done',
+  partial: 'Partial',
+  failed: 'Failed',
+}
+
+export interface EnvelopeListItem {
+  id: string
+  title: string
+  intentText: string
+  status: EnvelopeListStatus
+  progress: { checked: number; total: number } | null
+  createdAt: string
+  sourceItemCount: number
+}
+
+export interface EnvelopeListRow {
+  id: string
+  intent_input: unknown
+  status: string
+  body: unknown
+  created_at: string
+}
+
+/**
+ * Maps a raw `envelopes` row (plus its separately-counted `envelope_items`
+ * rows) to the shape the /envelopes list page renders. Title and checklist
+ * progress both go through the same @drop-note/shared helpers the detail
+ * page and generation pipeline already use, so the list never re-derives
+ * either on its own. Returns null if `intent_input` doesn't match the stored
+ * schema — shouldn't happen for a row this app wrote itself, but a malformed
+ * row must not crash the whole list.
+ */
+export function buildEnvelopeListItem(row: EnvelopeListRow, sourceItemCount: number): EnvelopeListItem | null {
+  const intentResult = EnvelopeIntentInputSchema.safeParse(row.intent_input)
+  if (!intentResult.success) return null
+  const intentInput = intentResult.data
+
+  let progress: { checked: number; total: number } | null = null
+  if (row.body) {
+    const parsedBody = parseEnvelopeBody(row.body)
+    if (parsedBody.success) {
+      const counted = countEnvelopeChecklistProgress(parsedBody.data)
+      if (counted.total > 0) progress = counted
+    }
+  }
+
+  return {
+    id: row.id,
+    title: getEnvelopeTitle(intentInput),
+    intentText: intentInput.text,
+    status: row.status as EnvelopeListStatus,
+    progress,
+    createdAt: row.created_at,
+    sourceItemCount,
+  }
 }

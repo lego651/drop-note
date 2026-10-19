@@ -197,6 +197,20 @@ export function countEnvelopeChecklistProgress(body: EnvelopeBody): { checked: n
 }
 
 /**
+ * Compact display title for an envelope list/nav row (DRO-223). The quoted
+ * free text is shown separately as the intent line (see the envelope detail
+ * page and the /envelopes list), so this only surfaces the purpose chip's
+ * label — falling back to a generic name when no chip was tapped, rather
+ * than repeating a truncated copy of the intent text.
+ */
+export function getEnvelopeTitle(intentInput: Pick<EnvelopeIntentInput, 'purposeHint'>): string {
+  const chip = intentInput.purposeHint
+    ? ENVELOPE_PURPOSE_CHIPS.find((c) => c.hint === intentInput.purposeHint)
+    : undefined
+  return chip?.label ?? 'Plan'
+}
+
+/**
  * Appended to the regenerate prompt (DRO-195) so the AI sees what the user
  * already checked off or edited by hand, and is asked to preserve it where
  * it still fits. This is a prompt hint, not a structural merge: a
