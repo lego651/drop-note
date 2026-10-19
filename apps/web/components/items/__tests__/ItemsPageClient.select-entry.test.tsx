@@ -107,7 +107,7 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
   it('clicking "Select" reveals checkboxes with 0 selected, and selecting an item shows the EnvelopeTray', () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Select' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Select items' }))
 
     const checkboxes = screen.getAllByRole('checkbox')
     expect(checkboxes.length).toBeGreaterThan(0)
@@ -126,11 +126,11 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
   it('"Cancel" exits selection mode and clears any picks', () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Select' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Select items' }))
     fireEvent.click(screen.getAllByRole('checkbox')[0])
     expect(screen.getByRole('status')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel selection' }))
 
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
@@ -139,7 +139,7 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
   it('Escape exits selection mode', () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Select' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Select items' }))
     expect(screen.getAllByRole('checkbox').length).toBeGreaterThan(0)
 
     fireEvent.keyDown(window, { key: 'Escape' })
@@ -150,7 +150,7 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
   it('does not wrap cards in a navigation link while selecting, so a checkbox click cannot navigate away', () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Select' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Select items' }))
     const checkboxes = screen.getAllByRole('checkbox')
     checkboxes.forEach((cb) => expect(cb.closest('a')).toBeNull())
 
@@ -162,10 +162,30 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
     expect(screen.getByText('1 item selected')).toBeInTheDocument()
   })
 
+  it('clicking a card toggles its selection, and the checkbox click does not double-toggle it', () => {
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select items' }))
+    const checkboxes = screen.getAllByRole('checkbox')
+    const card = checkboxes[0].closest('[role="button"]') as HTMLElement
+    expect(card).not.toBeNull()
+
+    fireEvent.click(card)
+    expect(checkboxes[0]).toBeChecked()
+    expect(screen.getByText('1 item selected')).toBeInTheDocument()
+
+    fireEvent.click(card)
+    expect(checkboxes[0]).not.toBeChecked()
+
+    // A direct checkbox click (bubbling into the card) must toggle exactly once.
+    fireEvent.click(checkboxes[0])
+    expect(checkboxes[0]).toBeChecked()
+  })
+
   it('Escape inside a nested overlay (bulk delete confirm) closes the overlay but keeps the selection', () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Select' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Select items' }))
     fireEvent.click(screen.getAllByRole('checkbox')[0])
     expect(screen.getByText('1 item selected')).toBeInTheDocument()
 

@@ -445,23 +445,23 @@ export function ItemsPageClient({
           <div className="flex shrink-0 items-center gap-2">
             <Button
               variant="outline"
-              size="sm"
               className={cn(
-                'h-11 gap-2 px-5 text-sm font-semibold',
+                'h-10 w-10 justify-center gap-2 px-0 text-sm font-semibold sm:w-auto sm:px-5',
                 isBulkMode && 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground',
               )}
               aria-pressed={isBulkMode}
+              aria-label={isBulkMode ? 'Cancel selection' : 'Select items'}
               onClick={() => (isBulkMode ? exitSelectMode() : enterSelectMode())}
             >
               {isBulkMode ? (
                 <>
                   <X size={15} />
-                  Cancel
+                  <span className="hidden sm:inline">Cancel</span>
                 </>
               ) : (
                 <>
                   <ListChecks size={15} className="text-muted-foreground" />
-                  Select
+                  <span className="hidden sm:inline">Select</span>
                 </>
               )}
             </Button>
