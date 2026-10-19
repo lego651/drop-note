@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { ENVELOPE_PURPOSE_CHIPS, ENVELOPE_TEXT_MAX_LENGTH, type PurposeHint } from '@drop-note/shared'
+import { markEnvelopeEntryPlanMade } from '@/components/envelopes/envelope-entry-storage'
 
 interface PurposeDialogProps {
   open: boolean
@@ -63,6 +64,8 @@ export function PurposeDialog({ open, onOpenChange, itemIds }: PurposeDialogProp
         throw new Error(data.error ?? 'Failed to create plan')
       }
       const data: { id: string } = await res.json()
+      // First successful plan permanently retires the entry banner to its strip (DRO-227).
+      markEnvelopeEntryPlanMade()
       resetAndClose()
       router.push(`/envelopes/${data.id}`)
     } catch (err) {

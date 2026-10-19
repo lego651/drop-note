@@ -2,6 +2,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import { useEffect } from 'react'
 import { BulkSelectProvider, useBulkSelect } from '../BulkSelectProvider'
 
 let pathname = '/items'
@@ -27,6 +28,18 @@ function Harness() {
       <button onClick={exitSelectMode}>exit select mode</button>
     </div>
   )
+}
+
+// Mimics ItemsPageClient's ?pick=1 effect: calls enterSelectModeFromDeepLink
+// once on mount, in the same commit as (and before, since it's a child) the
+// provider's own pathname-change effect (DRO-227 / DRO-229 review).
+function DeepLinkHarness() {
+  const { enterSelectModeFromDeepLink } = useBulkSelect()
+  useEffect(() => {
+    enterSelectModeFromDeepLink()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  return null
 }
 
 function renderHarness() {
@@ -116,6 +129,59 @@ describe('BulkSelectProvider — explicit selection entry point (DRO-213)', () =
     fireEvent.click(screen.getByText('enter select mode'))
     expect(screen.getByTestId('bulk-mode').textContent).toBe('true')
 
+    pathname = '/categories'
+    rerender(
+      <BulkSelectProvider>
+        <Harness />
+      </BulkSelectProvider>,
+    )
+
+    expect(screen.getByTestId('bulk-mode').textContent).toBe('false')
+  })
+})
+
+describe('BulkSelectProvider — ?pick=1 deep link survives the same-commit navigation reset (DRO-227 / DRO-229 review)', () => {
+  it('a deep-link mount into a new pathname is not clobbered by the provider resetting for that same navigation', () => {
+    pathname = '/envelopes'
+    const { rerender } = render(
+      <BulkSelectProvider>
+        <div>envelopes page</div>
+      </BulkSelectProvider>,
+    )
+
+    // Client-side navigation to /items?pick=1: a fresh child mounts under the
+    // same, still-mounted provider, in the same commit as the provider's own
+    // pathname-change reset effect.
+    pathname = '/items'
+    rerender(
+      <BulkSelectProvider>
+        <DeepLinkHarness />
+        <Harness />
+      </BulkSelectProvider>,
+    )
+
+    expect(screen.getByTestId('bulk-mode').textContent).toBe('true')
+  })
+
+  it('does not leave a stale deep-link flag that blocks a later, unrelated navigation from resetting select mode', () => {
+    pathname = '/envelopes'
+    const { rerender } = render(
+      <BulkSelectProvider>
+        <div>envelopes page</div>
+      </BulkSelectProvider>,
+    )
+
+    pathname = '/items'
+    rerender(
+      <BulkSelectProvider>
+        <DeepLinkHarness />
+        <Harness />
+      </BulkSelectProvider>,
+    )
+    expect(screen.getByTestId('bulk-mode').textContent).toBe('true')
+
+    // A later, unrelated navigation away must still reset select mode —
+    // the one-shot deep-link flag from the earlier mount must not linger.
     pathname = '/categories'
     rerender(
       <BulkSelectProvider>

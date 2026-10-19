@@ -3,9 +3,9 @@
 // DRO-213: selection had no entry point — isBulkMode only ever became true
 // after something was already selected, but nothing could call toggle()
 // while checkboxes were hidden, so selection (and the EnvelopeTray) could
-// never be reached. These tests cover the "Select" toggle fix end-to-end:
-// real BulkSelectProvider + ItemsPageClient + EnvelopeTray wired together,
-// the same way app/(dashboard)/layout.tsx wires them.
+// never be reached. These tests cover the "Edit items" toggle fix end-to-end:
+// real BulkSelectProvider + ItemsPageClient, which renders EnvelopeTray
+// itself (DRO-227) the same way app/(dashboard)/layout.tsx wires the provider.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
@@ -55,7 +55,6 @@ beforeEach(() => {
 
 import { ItemsPageClient } from '../ItemsPageClient'
 import { BulkSelectProvider } from '../BulkSelectProvider'
-import { EnvelopeTray } from '@/components/envelopes/EnvelopeTray'
 
 const items = [
   {
@@ -92,7 +91,6 @@ function renderPage() {
   return render(
     <BulkSelectProvider>
       <ItemsPageClient items={items} totalCount={items.length} page={1} userId="user-1" />
-      <EnvelopeTray />
     </BulkSelectProvider>,
   )
 }
@@ -104,29 +102,29 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
-  it('clicking "Select" reveals checkboxes with 0 selected, and selecting an item shows the EnvelopeTray', () => {
+  it('clicking "Edit items" reveals checkboxes with 0 selected, and selecting an item shows the EnvelopeTray', () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Select items' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Edit items' }))
 
     const checkboxes = screen.getAllByRole('checkbox')
     expect(checkboxes.length).toBeGreaterThan(0)
     checkboxes.forEach((cb) => expect(cb).not.toBeChecked())
-    // Entering select mode shows the tray as a "0 selected" mode indicator,
+    // Entering select mode shows the tray as a "0 of 2-8" mode indicator,
     // with "Make a plan" disabled until the minimum is met.
-    expect(screen.getByText('0 items selected')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Make a plan/ })).toBeDisabled()
+    expect(screen.getByText('0 of 2–8 · tap cards to add')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Make a plan/ })).toHaveAttribute('aria-disabled', 'true')
 
     fireEvent.click(checkboxes[0])
 
     expect(screen.getByRole('status')).toBeInTheDocument()
-    expect(screen.getByText('1 item selected')).toBeInTheDocument()
+    expect(screen.getByText('1 of 2–8 · tap cards to add')).toBeInTheDocument()
   })
 
   it('"Cancel" exits selection mode and clears any picks', () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Select items' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Edit items' }))
     fireEvent.click(screen.getAllByRole('checkbox')[0])
     expect(screen.getByRole('status')).toBeInTheDocument()
 
@@ -139,7 +137,7 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
   it('Escape exits selection mode', () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Select items' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Edit items' }))
     expect(screen.getAllByRole('checkbox').length).toBeGreaterThan(0)
 
     fireEvent.keyDown(window, { key: 'Escape' })
@@ -150,7 +148,7 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
   it('does not wrap cards in a navigation link while selecting, so a checkbox click cannot navigate away', () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Select items' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Edit items' }))
     const checkboxes = screen.getAllByRole('checkbox')
     checkboxes.forEach((cb) => expect(cb.closest('a')).toBeNull())
 
@@ -159,20 +157,20 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
 
     // Selection survives the click — still in select mode with the pick kept.
     expect(firstItemCheckbox).toBeChecked()
-    expect(screen.getByText('1 item selected')).toBeInTheDocument()
+    expect(screen.getByText('1 of 2–8 · tap cards to add')).toBeInTheDocument()
   })
 
   it('clicking a card toggles its selection, and the checkbox click does not double-toggle it', () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Select items' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Edit items' }))
     const checkboxes = screen.getAllByRole('checkbox')
     const card = checkboxes[0].closest('[role="button"]') as HTMLElement
     expect(card).not.toBeNull()
 
     fireEvent.click(card)
     expect(checkboxes[0]).toBeChecked()
-    expect(screen.getByText('1 item selected')).toBeInTheDocument()
+    expect(screen.getByText('1 of 2–8 · tap cards to add')).toBeInTheDocument()
 
     fireEvent.click(card)
     expect(checkboxes[0]).not.toBeChecked()
@@ -185,9 +183,9 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
   it('Escape inside a nested overlay (bulk delete confirm) closes the overlay but keeps the selection', () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Select items' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Edit items' }))
     fireEvent.click(screen.getAllByRole('checkbox')[0])
-    expect(screen.getByText('1 item selected')).toBeInTheDocument()
+    expect(screen.getByText('1 of 2–8 · tap cards to add')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
     expect(screen.getByRole('alertdialog')).toBeInTheDocument()
@@ -198,6 +196,27 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(screen.getAllByRole('checkbox').length).toBeGreaterThan(0)
-    expect(screen.getByText('1 item selected')).toBeInTheDocument()
+    expect(screen.getByText('1 of 2–8 · tap cards to add')).toBeInTheDocument()
+  })
+
+  it('Escape while the "Make a plan" dialog is open closes the dialog but keeps pick mode (DRO-227)', () => {
+    renderPage()
+
+    // Select by accessible name, not position: selecting the first item
+    // mounts BulkActionToolbar's "select all" checkbox ahead of the item
+    // checkboxes, which would shift a positional lookup.
+    fireEvent.click(screen.getByRole('button', { name: 'Edit items' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select item: First item' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select item: Second item' }))
+    expect(screen.getByText('2 of 2–8 · tap cards to add')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /Make a plan/ }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('checkbox').length).toBeGreaterThan(0)
+    expect(screen.getByText('2 of 2–8 · tap cards to add')).toBeInTheDocument()
   })
 })

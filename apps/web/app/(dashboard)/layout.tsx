@@ -4,7 +4,6 @@ import { Sidebar } from '@/components/layout/sidebar'
 import { MobileSidebar } from '@/components/layout/MobileSidebar'
 import { DashboardMain } from '@/components/layout/DashboardMain'
 import { BulkSelectProvider } from '@/components/items/BulkSelectProvider'
-import { EnvelopeTray } from '@/components/envelopes/EnvelopeTray'
 import { getCategoriesWithCounts } from '@/lib/categories'
 import { TIER_ITEM_LIMITS } from '@drop-note/shared'
 import type { Tier } from '@drop-note/shared'
@@ -127,7 +126,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </DashboardMain>
         </div>
       </div>
-      <EnvelopeTray />
     </BulkSelectProvider>
   )
 }

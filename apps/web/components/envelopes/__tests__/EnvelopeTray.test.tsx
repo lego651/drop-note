@@ -11,7 +11,7 @@ vi.mock('next/navigation', () => ({
 let bulkState: {
   isBulkMode: boolean
   selectedIds: Set<string>
-  deselectAll: ReturnType<typeof vi.fn>
+  exitSelectMode: ReturnType<typeof vi.fn>
 }
 vi.mock('@/components/items/BulkSelectProvider', () => ({
   useBulkSelect: () => bulkState,
@@ -21,24 +21,24 @@ beforeEach(() => {
   bulkState = {
     isBulkMode: false,
     selectedIds: new Set(),
-    deselectAll: vi.fn(),
+    exitSelectMode: vi.fn(),
   }
 })
 
-describe('EnvelopeTray (DRO-194)', () => {
-  it('renders nothing when nothing is selected', () => {
+describe('EnvelopeTray (DRO-194, restyled DRO-227)', () => {
+  it('renders nothing when not in pick mode', () => {
     render(<EnvelopeTray />)
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
-  it('shows the count and an enabled "Make a plan" action within the 2-8 cap', () => {
+  it('shows the slot count and an enabled "Make a plan" action within the 2-8 cap', () => {
     bulkState = {
       isBulkMode: true,
       selectedIds: new Set(['a', 'b', 'c']),
-      deselectAll: vi.fn(),
+      exitSelectMode: vi.fn(),
     }
     render(<EnvelopeTray />)
-    expect(screen.getByText('3 items selected')).toBeInTheDocument()
+    expect(screen.getByText('3 of 2–8 · tap cards to add')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Make a plan/ })).toBeEnabled()
   })
 
@@ -46,50 +46,41 @@ describe('EnvelopeTray (DRO-194)', () => {
     bulkState = {
       isBulkMode: true,
       selectedIds: new Set(['a']),
-      deselectAll: vi.fn(),
+      exitSelectMode: vi.fn(),
     }
     render(<EnvelopeTray />)
-    expect(screen.getByRole('button', { name: /Make a plan/ })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /Make a plan/ })).toHaveAttribute(
-      'title',
-      'Select at least 2 items to make a plan.',
-    )
-  })
-
-  it('shows the cap hint without a mobile-hiding class (DRO-205: 390px needs a visible reason)', () => {
-    bulkState = {
-      isBulkMode: true,
-      selectedIds: new Set(['a']),
-      deselectAll: vi.fn(),
-    }
-    render(<EnvelopeTray />)
-    const hint = screen.getByText('Select at least 2 items to make a plan.')
-    expect(hint).not.toHaveClass('hidden')
+    const makePlanButton = screen.getByRole('button', { name: /Make a plan/ })
+    // aria-disabled (not the `disabled` attribute) keeps the button focusable for screen readers.
+    expect(makePlanButton).toHaveAttribute('aria-disabled', 'true')
+    expect(makePlanButton).toHaveAttribute('title', 'Select at least 2 items.')
+    fireEvent.click(makePlanButton)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('disables "Make a plan" and explains the cap when over the maximum', () => {
     bulkState = {
       isBulkMode: true,
       selectedIds: new Set(Array.from({ length: 9 }, (_, i) => `item-${i}`)),
-      deselectAll: vi.fn(),
+      exitSelectMode: vi.fn(),
     }
     render(<EnvelopeTray />)
-    expect(screen.getByRole('button', { name: /Make a plan/ })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /Make a plan/ })).toHaveAttribute(
-      'title',
-      'Select up to 8 items to make a plan.',
-    )
+    const makePlanButton = screen.getByRole('button', { name: /Make a plan/ })
+    expect(makePlanButton).toHaveAttribute('aria-disabled', 'true')
+    expect(makePlanButton).toHaveAttribute('title', 'Select up to 8 items.')
+    expect(screen.getByText('9 of 2–8 · remove 1')).toBeInTheDocument()
+    fireEvent.click(makePlanButton)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('clears the selection when the clear button is clicked', () => {
-    const deselectAll = vi.fn()
+  it('exits pick mode entirely when the cancel button is clicked', () => {
+    const exitSelectMode = vi.fn()
     bulkState = {
       isBulkMode: true,
       selectedIds: new Set(['a', 'b']),
-      deselectAll,
+      exitSelectMode,
     }
     render(<EnvelopeTray />)
-    fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }))
-    expect(deselectAll).toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel picking' }))
+    expect(exitSelectMode).toHaveBeenCalled()
   })
 })
