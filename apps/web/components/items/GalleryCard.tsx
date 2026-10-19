@@ -135,6 +135,7 @@ export function GalleryCard({
           <Checkbox
             checked={isSelected}
             onCheckedChange={(c) => onSelectChange?.(item.id, c === true)}
+            onClick={(e) => e.stopPropagation()}
             aria-label={`Select item: ${item.subject ?? 'Untitled'}`}
           />
         </span>
@@ -246,6 +247,7 @@ export function GalleryCard({
       className={cn(
         'lift group relative flex h-full flex-col overflow-hidden rounded-xl border-stroke border-ink bg-card shadow-ink-lg',
         isSelected && 'ring-2 ring-ring ring-offset-2',
+        isBulkMode && 'cursor-pointer',
       )}
       style={
         item.pinned
@@ -253,6 +255,20 @@ export function GalleryCard({
           : isFailed
             ? { borderColor: 'hsl(var(--destructive))' }
             : undefined
+      }
+      role={isBulkMode ? 'button' : undefined}
+      tabIndex={isBulkMode ? 0 : undefined}
+      aria-pressed={isBulkMode ? isSelected : undefined}
+      onClick={isBulkMode ? () => onSelectChange?.(item.id, !isSelected) : undefined}
+      onKeyDown={
+        isBulkMode
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onSelectChange?.(item.id, !isSelected)
+              }
+            }
+          : undefined
       }
     >
       {media}
@@ -262,12 +278,8 @@ export function GalleryCard({
 
   return (
     <>
-      {isDone ? (
-        <Link
-          href={`/items/${item.id}`}
-          className="block h-full"
-          tabIndex={isBulkMode ? -1 : 0}
-        >
+      {isDone && !isBulkMode ? (
+        <Link href={`/items/${item.id}`} className="block h-full">
           {card}
         </Link>
       ) : (

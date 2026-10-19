@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useTransition } from 'react'
 import { useRealtimeItems } from '@/hooks/useRealtimeItems'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Search, Copy, Check, Mail, X } from 'lucide-react'
+import { Search, Copy, Check, Mail, X, ListChecks } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ItemsListLayout } from '@/components/items/ItemsListLayout'
@@ -19,6 +19,7 @@ import { ItemsPageHeader } from '@/components/items/ItemsPageHeader'
 import { SortDropdown } from '@/components/items/SortDropdown'
 import { FiltersButton, SOURCE_LABELS } from '@/components/items/FiltersButton'
 import { FolderOpen } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import type { ViewMode } from '@/components/items/ViewSwitcher'
 import type { SortOption } from '@/components/items/SortDropdown'
 import type { SourceFilter } from '@/components/items/FiltersButton'
@@ -81,7 +82,7 @@ export function ItemsPageClient({
   const searchParams = useSearchParams()
   const searchParamsStr = searchParams.toString()
 
-  const { isBulkMode, selectedIds, toggle, selectAll, deselectIds, deselectAll } = useBulkSelect()
+  const { isBulkMode, selectedIds, toggle, selectAll, deselectIds, deselectAll, enterSelectMode, exitSelectMode } = useBulkSelect()
 
   const [view, setView] = useState<ViewMode>('card')
   const [searchQuery, setSearchQuery] = useState(initialQuery)
@@ -149,6 +150,16 @@ export function ItemsPageClient({
       // localStorage unavailable
     }
   }, [])
+
+  // Esc exits selection mode (DRO-213)
+  useEffect(() => {
+    if (!isBulkMode) return
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && !e.defaultPrevented) exitSelectMode()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isBulkMode, exitSelectMode])
 
   const handleViewChange = useCallback((newView: ViewMode) => {
     setView(newView)
@@ -432,6 +443,28 @@ export function ItemsPageClient({
             )}
           </p>
           <div className="flex shrink-0 items-center gap-2">
+            <Button
+              variant="outline"
+              className={cn(
+                'h-10 w-10 justify-center gap-2 px-0 text-sm font-semibold sm:w-auto sm:px-5',
+                isBulkMode && 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground',
+              )}
+              aria-pressed={isBulkMode}
+              aria-label={isBulkMode ? 'Cancel selection' : 'Select items'}
+              onClick={() => (isBulkMode ? exitSelectMode() : enterSelectMode())}
+            >
+              {isBulkMode ? (
+                <>
+                  <X size={15} />
+                  <span className="hidden sm:inline">Cancel</span>
+                </>
+              ) : (
+                <>
+                  <ListChecks size={15} className="text-muted-foreground" />
+                  <span className="hidden sm:inline">Select</span>
+                </>
+              )}
+            </Button>
             <SortDropdown activeSort={activeSort} />
             <ViewSwitcher activeView={view} onViewChange={handleViewChange} />
           </div>

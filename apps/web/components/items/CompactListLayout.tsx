@@ -65,13 +65,29 @@ function CompactRow({
       className={cn(
         'group flex items-center gap-3 rounded-[10px] border-stroke border-ink bg-card px-3 py-3.5 shadow-ink-md transition-colors hover:bg-accent/40',
         isSelected && 'ring-2 ring-ring ring-offset-2',
+        isBulkMode && 'cursor-pointer',
       )}
       style={item.pinned ? { borderColor: PIN } : undefined}
+      role={isBulkMode ? 'button' : undefined}
+      tabIndex={isBulkMode ? 0 : undefined}
+      aria-pressed={isBulkMode ? isSelected : undefined}
+      onClick={isBulkMode ? () => onSelectChange?.(item.id, !isSelected) : undefined}
+      onKeyDown={
+        isBulkMode
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onSelectChange?.(item.id, !isSelected)
+              }
+            }
+          : undefined
+      }
     >
       {isBulkMode && (
         <Checkbox
           checked={isSelected}
           onCheckedChange={(c) => onSelectChange?.(item.id, c === true)}
+          onClick={(e) => e.stopPropagation()}
           className="shrink-0"
           aria-label={`Select item: ${item.subject ?? 'Untitled'}`}
         />

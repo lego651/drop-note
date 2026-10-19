@@ -187,14 +187,30 @@ export function ListCard({
       className={cn(
         'lift group relative flex items-start gap-5 rounded-xl border-stroke border-ink bg-card p-4 shadow-ink-lg',
         isSelected && 'ring-2 ring-ring ring-offset-2',
+        isBulkMode && 'cursor-pointer',
       )}
       style={item.pinned ? { borderColor: PIN } : undefined}
+      role={isBulkMode ? 'button' : undefined}
+      tabIndex={isBulkMode ? 0 : undefined}
+      aria-pressed={isBulkMode ? isSelected : undefined}
+      onClick={isBulkMode ? () => onSelectChange?.(item.id, !isSelected) : undefined}
+      onKeyDown={
+        isBulkMode
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onSelectChange?.(item.id, !isSelected)
+              }
+            }
+          : undefined
+      }
     >
       {/* Bulk checkbox */}
       {isBulkMode && (
         <Checkbox
           checked={isSelected}
           onCheckedChange={(c) => onSelectChange?.(item.id, c === true)}
+          onClick={(e) => e.stopPropagation()}
           className="mt-1 shrink-0"
           aria-label={`Select item: ${item.subject ?? 'Untitled'}`}
         />
@@ -237,8 +253,8 @@ export function ListCard({
 
   return (
     <>
-      {isDone ? (
-        <Link href={`/items/${item.id}`} className="block" tabIndex={isBulkMode ? -1 : 0}>
+      {isDone && !isBulkMode ? (
+        <Link href={`/items/${item.id}`} className="block">
           {card}
         </Link>
       ) : (
