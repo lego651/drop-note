@@ -237,8 +237,8 @@ export function ListCard({
 
   return (
     <>
-      {isDone ? (
-        <Link href={`/items/${item.id}`} className="block" tabIndex={isBulkMode ? -1 : 0}>
+      {isDone && !isBulkMode ? (
+        <Link href={`/items/${item.id}`} className="block">
           {card}
         </Link>
       ) : (

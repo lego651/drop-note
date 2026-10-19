@@ -146,4 +146,38 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
 
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   })
+
+  it('does not wrap cards in a navigation link while selecting, so a checkbox click cannot navigate away', () => {
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select' }))
+    const checkboxes = screen.getAllByRole('checkbox')
+    checkboxes.forEach((cb) => expect(cb.closest('a')).toBeNull())
+
+    const firstItemCheckbox = checkboxes[0]
+    fireEvent.click(firstItemCheckbox)
+
+    // Selection survives the click — still in select mode with the pick kept.
+    expect(firstItemCheckbox).toBeChecked()
+    expect(screen.getByText('1 item selected')).toBeInTheDocument()
+  })
+
+  it('Escape inside a nested overlay (bulk delete confirm) closes the overlay but keeps the selection', () => {
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select' }))
+    fireEvent.click(screen.getAllByRole('checkbox')[0])
+    expect(screen.getByText('1 item selected')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+
+    // Dispatched on document so Radix's DismissableLayer (registered on
+    // document, capture phase) sees it before our window-level listener.
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('checkbox').length).toBeGreaterThan(0)
+    expect(screen.getByText('1 item selected')).toBeInTheDocument()
+  })
 })

@@ -155,7 +155,7 @@ export function ItemsPageClient({
   useEffect(() => {
     if (!isBulkMode) return
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') exitSelectMode()
+      if (e.key === 'Escape' && !e.defaultPrevented) exitSelectMode()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)

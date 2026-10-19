@@ -262,12 +262,8 @@ export function GalleryCard({
 
   return (
     <>
-      {isDone ? (
-        <Link
-          href={`/items/${item.id}`}
-          className="block h-full"
-          tabIndex={isBulkMode ? -1 : 0}
-        >
+      {isDone && !isBulkMode ? (
+        <Link href={`/items/${item.id}`} className="block h-full">
           {card}
         </Link>
       ) : (
