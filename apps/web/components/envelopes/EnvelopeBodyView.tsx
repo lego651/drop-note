@@ -158,6 +158,16 @@ export function EnvelopeBodyView({ envelopeId, body: initialBody, citationLabels
     const section = body.sections[sectionIndex]
     if (!section) return
 
+    // deleteEnvelopeItem (packages/shared) returns null for the one line/row
+    // left anywhere in the plan — removing it would leave zero sections,
+    // which parseEnvelopeBody rejects. Check that up front, synchronously,
+    // rather than optimistically removing it and then re-inserting it once
+    // the (never-sent) PATCH "fails" — that race would double it up.
+    if (!deleteEnvelopeItem(body, sectionIndex, itemIndex)) {
+      toast({ title: "Can't remove the last line", description: 'A plan needs at least one line.' })
+      return
+    }
+
     if (section.type === 'table') {
       const removedRow = section.rows[itemIndex]
       setBody((current) => deleteEnvelopeItem(current, sectionIndex, itemIndex) ?? current)

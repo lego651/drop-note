@@ -267,16 +267,31 @@ export function addEnvelopeTableRow(body: EnvelopeBody, sectionIndex: number, ce
 
 /**
  * Removes the leaf at `itemIndex` from a section (DRO-232 — "Delete a line",
- * user-added or AI-generated alike). For a table block, `itemIndex` addresses
- * a whole row (there's no single-cell delete). Returns null if either index
- * is out of range.
+ * user-added or AI-generated alike). For a table block, `itemIndex`
+ * addresses a whole row (there's no single-cell delete). Returns null if
+ * either index is out of range, or if the delete would leave the plan
+ * unreadable: every block schema requires at least one item/row
+ * (`parseEnvelopeBody` would then reject the stored body), so deleting the
+ * last line of a section drops that section entirely instead of leaving an
+ * empty `items`/`rows` array, and deleting the very last line anywhere in
+ * the plan (the only section has exactly one line left) is rejected outright
+ * rather than leaving zero sections.
  */
 export function deleteEnvelopeItem(body: EnvelopeBody, sectionIndex: number, itemIndex: number): EnvelopeBody | null {
   const section = body.sections[sectionIndex]
   if (!section) return null
 
+  const lineCount = section.type === 'table' ? section.rows.length : section.items.length
+  const targetExists = section.type === 'table' ? Boolean(section.rows[itemIndex]) : Boolean(section.items[itemIndex])
+  if (!targetExists) return null
+
+  const sectionBecomesEmpty = lineCount === 1
+  if (sectionBecomesEmpty) {
+    if (body.sections.length === 1) return null
+    return { sections: body.sections.filter((_, i) => i !== sectionIndex) }
+  }
+
   if (section.type === 'table') {
-    if (!section.rows[itemIndex]) return null
     const sections = body.sections.map((block, i) =>
       i !== sectionIndex || block.type !== 'table'
         ? block
@@ -285,7 +300,6 @@ export function deleteEnvelopeItem(body: EnvelopeBody, sectionIndex: number, ite
     return { sections }
   }
 
-  if (!section.items[itemIndex]) return null
   const sections = body.sections.map((block, i) =>
     i !== sectionIndex || block.type === 'table'
       ? block
@@ -466,6 +480,10 @@ export function carryForwardEnvelopeProgress(freshBody: EnvelopeBody, previousBo
 /** The heading a carried-forward user leaf lands under when no fresh section shares its old section's heading (DRO-232). */
 const USER_ADDITIONS_HEADING = 'Your additions'
 
+function sameColumns(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((col, i) => col === b[i])
+}
+
 /**
  * Carries the user's own hand-added lines and sections forward across a
  * regenerate (DRO-232), so rewriting a plan never throws away content the
@@ -473,20 +491,36 @@ const USER_ADDITIONS_HEADING = 'Your additions'
  * carryForwardEnvelopeProgress above, which only re-applies checked/edited
  * flags onto AI leaves the fresh generation still produced.
  *
- * For every `origin === 'user'` leaf in `previousBody`, tries to append it
- * to the freshBody section with the same heading (checklist/list only — a
- * headingless section, a notes block, or a table row has no stable key to
- * match on and is treated as headingless, i.e. only matches another
- * headingless checklist/list section). Anything left over — including an
- * entire section the user created from scratch, since every one of its
- * leaves shares that section's now-unmatched heading — is collected into one
- * trailing "Your additions" checklist section.
+ * For every `origin === 'user'` leaf in `previousBody` — including ones
+ * inside a notes block — tries to append it to the freshBody section with
+ * the same heading (checklist/list only — a headingless section or a notes
+ * block has no stable key to match on and is treated as headingless, i.e.
+ * only matches another headingless checklist/list section). A user-added
+ * table row (every cell has `origin: 'user'`) tries to land in a fresh table
+ * section with the same heading and the exact same columns; otherwise it's
+ * flattened into one leaf (cells joined with " — ") like any other leftover.
+ * Anything left over — including an entire section the user created from
+ * scratch, since every one of its leaves shares that section's
+ * now-unmatched heading — is collected into one trailing "Your additions"
+ * checklist section.
  */
 export function carryForwardUserContent(freshBody: EnvelopeBody, previousBody: EnvelopeBody): EnvelopeBody {
   const byHeading = new Map<string | null, EnvelopeLeaf[]>()
+  const tableRowsByHeading = new Map<string | null, { columns: string[]; rows: EnvelopeLeaf[][] }>()
+
   for (const block of previousBody.sections) {
-    if (block.type !== 'checklist' && block.type !== 'list') continue
-    const heading = block.heading ?? null
+    if (block.type === 'table') {
+      const heading = block.heading ?? null
+      const userRows = block.rows.filter((row) => row.every((leaf) => leaf.origin === 'user'))
+      if (userRows.length === 0) continue
+      const entry = tableRowsByHeading.get(heading) ?? { columns: block.columns, rows: [] }
+      entry.rows.push(...userRows)
+      tableRowsByHeading.set(heading, entry)
+      continue
+    }
+
+    if (block.type !== 'checklist' && block.type !== 'list' && block.type !== 'notes') continue
+    const heading = block.type === 'notes' ? null : block.heading ?? null
     for (const leaf of block.items) {
       if (leaf.origin !== 'user') continue
       const bucket = byHeading.get(heading) ?? []
@@ -494,9 +528,16 @@ export function carryForwardUserContent(freshBody: EnvelopeBody, previousBody: E
       byHeading.set(heading, bucket)
     }
   }
-  if (byHeading.size === 0) return freshBody
+  if (byHeading.size === 0 && tableRowsByHeading.size === 0) return freshBody
 
   const sections: EnvelopeBlock[] = freshBody.sections.map((block) => {
+    if (block.type === 'table') {
+      const heading = block.heading ?? null
+      const entry = tableRowsByHeading.get(heading)
+      if (!entry || !sameColumns(entry.columns, block.columns)) return block
+      tableRowsByHeading.delete(heading)
+      return { ...block, rows: [...block.rows, ...entry.rows] }
+    }
     if (block.type !== 'checklist' && block.type !== 'list') return block
     const heading = block.heading ?? null
     const carried = byHeading.get(heading)
@@ -505,7 +546,10 @@ export function carryForwardUserContent(freshBody: EnvelopeBody, previousBody: E
     return { ...block, items: [...block.items, ...carried] }
   })
 
-  const leftover = Array.from(byHeading.values()).flat()
+  const leftoverTableLines = Array.from(tableRowsByHeading.values()).flatMap((entry) =>
+    entry.rows.map((row) => createUserLeaf(row.map((cell) => cell.text).join(' — '))),
+  )
+  const leftover = [...Array.from(byHeading.values()).flat(), ...leftoverTableLines]
   if (leftover.length > 0) {
     sections.push({ type: 'checklist', heading: USER_ADDITIONS_HEADING, items: leftover })
   }

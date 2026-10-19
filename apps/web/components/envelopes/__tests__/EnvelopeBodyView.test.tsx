@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import type { EnvelopeBody } from '@drop-note/shared'
 import { EnvelopeBodyView } from '../EnvelopeBodyView'
+import { toast } from '@/hooks/use-toast'
 
 vi.mock('@/hooks/use-toast', () => ({ toast: vi.fn() }))
 
@@ -175,18 +176,32 @@ describe('EnvelopeBodyView — add/delete (DRO-232)', () => {
   })
 
   it('rolls back a deleted line when the deleteItem PATCH fails', async () => {
-    const body = checklistBody([{ text: 'Leaf A' }])
+    const body = checklistBody([{ text: 'Leaf A' }, { text: 'Leaf B' }])
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'failed to save' }), { status: 500 }))
     vi.stubGlobal('fetch', fetchMock)
 
     render(<EnvelopeBodyView envelopeId="env-1" body={body} citationLabels={{}} />)
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Remove this line' }))
+      fireEvent.click(screen.getAllByRole('button', { name: 'Remove this line' })[0])
     })
 
     // As above: the optimistic delete and its rollback can both settle
     // within this one act() flush, so only the final state is asserted.
     await waitFor(() => expect(screen.getByText('Leaf A')).toBeInTheDocument())
+    expect(screen.getByText('Leaf B')).toBeInTheDocument()
+  })
+
+  it('refuses to delete the very last line of the whole plan, without ever calling the PATCH', async () => {
+    const body = checklistBody([{ text: 'Leaf A' }])
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={body} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Remove this line' }))
+
+    expect(screen.getByText('Leaf A')).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Can't remove the last line" }))
   })
 
   it('adds a new section via the "Add section" form', async () => {

@@ -119,6 +119,15 @@ async function handlePATCH(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Invalid sectionIndex or itemIndex' }, { status: 400 })
     }
 
+    // Defense in depth: every op above is built to always produce a body
+    // that still satisfies EnvelopeBodySchema (e.g. deleteEnvelopeItem drops
+    // a section rather than leaving an empty items/rows array), but this
+    // re-validates before persisting so a bug in one of them can never write
+    // a body that later 500s as "This plan's content couldn't be read".
+    if (!parseEnvelopeBody(updatedBody).success) {
+      return NextResponse.json({ error: 'That change would leave this plan in an invalid state' }, { status: 400 })
+    }
+
     const { error: updateError } = await supabase
       .from('envelopes')
       .update({ body: updatedBody })

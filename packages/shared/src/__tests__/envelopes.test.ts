@@ -742,6 +742,57 @@ describe('deleteEnvelopeItem (DRO-232)', () => {
     if (section.type !== 'checklist') throw new Error('expected checklist')
     expect(section.items).toEqual([{ text: 'Tent', sourceItemIds: [], confidence: 'suggested' }])
   })
+
+  it('drops the section entirely when deleting its last list item, instead of leaving an empty items array', () => {
+    const twoSection: EnvelopeBody = {
+      sections: [
+        { type: 'list', heading: 'Only item', items: [{ text: 'Solo', sourceItemIds: [], confidence: 'suggested' }] },
+        { type: 'checklist', items: [{ text: 'Other', sourceItemIds: [], confidence: 'suggested' }] },
+      ],
+    }
+    const result = deleteEnvelopeItem(twoSection, 0, 0)!
+    expect(result.sections).toHaveLength(1)
+    expect(result.sections[0]).toEqual(twoSection.sections[1])
+    expect(parseEnvelopeBody(JSON.parse(JSON.stringify(result))).success).toBe(true)
+  })
+
+  it('drops the section entirely when deleting its last notes line', () => {
+    const twoSection: EnvelopeBody = {
+      sections: [
+        { type: 'notes', items: [{ text: 'Only note', sourceItemIds: [], confidence: 'suggested' }] },
+        { type: 'checklist', items: [{ text: 'Other', sourceItemIds: [], confidence: 'suggested' }] },
+      ],
+    }
+    const result = deleteEnvelopeItem(twoSection, 0, 0)!
+    expect(result.sections).toHaveLength(1)
+    expect(parseEnvelopeBody(JSON.parse(JSON.stringify(result))).success).toBe(true)
+  })
+
+  it('drops the section entirely when deleting its last table row', () => {
+    const twoSection: EnvelopeBody = {
+      sections: [
+        { type: 'table', columns: ['a'], rows: [[{ text: 'Only row', sourceItemIds: [], confidence: 'suggested' }]] },
+        { type: 'checklist', items: [{ text: 'Other', sourceItemIds: [], confidence: 'suggested' }] },
+      ],
+    }
+    const result = deleteEnvelopeItem(twoSection, 0, 0)!
+    expect(result.sections).toHaveLength(1)
+    expect(parseEnvelopeBody(JSON.parse(JSON.stringify(result))).success).toBe(true)
+  })
+
+  it('rejects deleting the very last line of the whole plan', () => {
+    const onlyLine: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'Solo', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    expect(deleteEnvelopeItem(onlyLine, 0, 0)).toBeNull()
+  })
+
+  it('rejects deleting the very last row of the whole plan when the only section is a table', () => {
+    const onlyRow: EnvelopeBody = {
+      sections: [{ type: 'table', columns: ['a'], rows: [[{ text: 'Solo', sourceItemIds: [], confidence: 'suggested' }]] }],
+    }
+    expect(deleteEnvelopeItem(onlyRow, 0, 0)).toBeNull()
+  })
 })
 
 describe('addEnvelopeSection (DRO-232)', () => {
@@ -866,14 +917,82 @@ describe('carryForwardUserContent (DRO-232)', () => {
     expect(carryForwardUserContent(freshBody, previousBody)).toBe(freshBody)
   })
 
-  it('skips table rows entirely', () => {
+  it('carries a user-added table row forward into a fresh table with the same heading and columns', () => {
     const previousBody: EnvelopeBody = {
-      sections: [{ type: 'table', columns: ['a'], rows: [[createUserLeaf('Row')]] }],
+      sections: [{ type: 'table', heading: 'Compare', columns: ['Item', 'Price'], rows: [[createUserLeaf('Tent'), createUserLeaf('$80')]] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [
+        {
+          type: 'table',
+          heading: 'Compare',
+          columns: ['Item', 'Price'],
+          rows: [[{ text: 'Stove', sourceItemIds: ['item-1'], confidence: 'from_item' }, { text: '$40', sourceItemIds: ['item-1'], confidence: 'from_item' }]],
+        },
+      ],
+    }
+
+    const result = carryForwardUserContent(freshBody, previousBody)
+    const section = result.sections[0]
+    if (section.type !== 'table') throw new Error('expected table')
+    expect(section.rows).toHaveLength(2)
+    expect(section.rows[1]).toEqual([createUserLeaf('Tent'), createUserLeaf('$80')])
+  })
+
+  it('flattens a user-added table row into "Your additions" when no fresh table shares its heading/columns', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'table', heading: 'Compare', columns: ['Item', 'Price'], rows: [[createUserLeaf('Tent'), createUserLeaf('$80')]] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'Fresh line', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+
+    const result = carryForwardUserContent(freshBody, previousBody)
+    expect(result.sections).toHaveLength(2)
+    const added = result.sections[1]
+    if (added.type !== 'checklist') throw new Error('expected checklist')
+    expect(added.heading).toBe('Your additions')
+    expect(added.items).toEqual([createUserLeaf('Tent — $80')])
+  })
+
+  it('does not carry an AI-generated table row forward, only a fully user-added one', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'table', columns: ['a'], rows: [[{ text: 'AI row', sourceItemIds: [], confidence: 'suggested' }]] }],
     }
     const freshBody: EnvelopeBody = {
       sections: [{ type: 'table', columns: ['a'], rows: [[{ text: 'Fresh row', sourceItemIds: [], confidence: 'suggested' }]] }],
     }
     expect(carryForwardUserContent(freshBody, previousBody)).toBe(freshBody)
+  })
+
+  it('carries a user leaf from a notes block forward into a headingless fresh checklist/list section', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'notes', items: [createUserLeaf('A note I added')] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'Fresh line', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+
+    const result = carryForwardUserContent(freshBody, previousBody)
+    const section = result.sections[0]
+    if (section.type !== 'checklist') throw new Error('expected checklist')
+    expect(section.items).toEqual([{ text: 'Fresh line', sourceItemIds: [], confidence: 'suggested' }, createUserLeaf('A note I added')])
+  })
+
+  it('buckets a user leaf from a notes block into "Your additions" when no headingless fresh section exists', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'notes', items: [createUserLeaf('A note I added')] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', heading: 'Prep', items: [{ text: 'Fresh line', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+
+    const result = carryForwardUserContent(freshBody, previousBody)
+    expect(result.sections).toHaveLength(2)
+    const added = result.sections[1]
+    if (added.type !== 'checklist') throw new Error('expected checklist')
+    expect(added.heading).toBe('Your additions')
+    expect(added.items).toEqual([createUserLeaf('A note I added')])
   })
 
   it('returns freshBody unchanged when previousBody has no user leaves', () => {

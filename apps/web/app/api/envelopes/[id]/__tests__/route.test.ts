@@ -358,6 +358,32 @@ describe('PATCH /api/envelopes/[id] — deleteItem (DRO-232)', () => {
     const res = await callPatch({ action: 'deleteItem', sectionIndex: 0, itemIndex: 99 })
     expect(res.status).toBe(400)
   })
+
+  it('drops the section entirely when deleting its last line, instead of persisting an empty items array', async () => {
+    const twoSection = {
+      sections: [
+        { type: 'list', heading: 'Solo', items: [{ text: 'Only line', sourceItemIds: [], confidence: 'suggested' }] },
+        { type: 'checklist', items: [{ text: 'Other', sourceItemIds: [], confidence: 'suggested' }] },
+      ],
+    }
+    const updates: unknown[] = []
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: twoSection }, updates))
+
+    const res = await callPatch({ action: 'deleteItem', sectionIndex: 0, itemIndex: 0 })
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.body.sections).toHaveLength(1)
+    expect((updates[0] as { body: { sections: unknown[] } }).body.sections).toHaveLength(1)
+  })
+
+  it('400s when deleting the very last line of the whole plan', async () => {
+    const onlyLine = {
+      sections: [{ type: 'checklist', items: [{ text: 'Solo', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: onlyLine }, []))
+    const res = await callPatch({ action: 'deleteItem', sectionIndex: 0, itemIndex: 0 })
+    expect(res.status).toBe(400)
+  })
 })
 
 describe('PATCH /api/envelopes/[id] — addSection (DRO-232)', () => {
