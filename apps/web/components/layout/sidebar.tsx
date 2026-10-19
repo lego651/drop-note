@@ -63,9 +63,9 @@ export function SidebarNav({
 
   const navItems = [
     { href: '/items', label: 'All Items', Icon: Inbox, count: totalCount, active: isItemsRoot },
+    { href: '/envelopes', label: 'Envelopes', Icon: Mail, count: envelopeCount, active: isEnvelopes },
     { href: '/items?sort=pinned', label: 'Pinned', Icon: Pin, count: pinnedCount, active: isPinned },
     { href: '/archive', label: 'Archive', Icon: Archive, count: archiveCount, active: pathname === '/archive' },
-    { href: '/envelopes', label: 'Envelopes', Icon: Mail, count: envelopeCount, active: isEnvelopes },
   ]
 
   return (
