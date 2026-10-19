@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Check, Minus, Pencil } from 'lucide-react'
+import { Check, Minus, Pencil, UserPlus, X } from 'lucide-react'
 import type { EnvelopeLeaf } from '@drop-note/shared'
 import { ENVELOPE_TEXT_MAX_LENGTH } from '@drop-note/shared'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -19,6 +19,8 @@ interface EnvelopeLeafRowProps {
   onToggle?: () => void
   /** Present for any editable leaf (checklist/list/notes, DRO-195). */
   onEditText?: (text: string) => void
+  /** Present for any deletable leaf (DRO-232) — user-added or AI-generated. */
+  onDelete?: () => void
 }
 
 export function EnvelopeLeafRow({
@@ -27,6 +29,7 @@ export function EnvelopeLeafRow({
   bulletVariant = 'dash',
   onToggle,
   onEditText,
+  onDelete,
 }: EnvelopeLeafRowProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState(leaf.text)
@@ -49,6 +52,11 @@ export function EnvelopeLeafRow({
     setIsEditing(false)
   }
 
+  // A user-added leaf never claims AI confidence (it's always "suggested"
+  // internally, see createUserLeaf) but must not show the "suggested" dashed
+  // marker — that marker means "AI, unverified", not "not from an item".
+  const showSuggestedMarker = leaf.origin !== 'user' && leaf.confidence === 'suggested'
+
   return (
     <li className="flex items-start gap-2.5 py-1.5">
       {onToggle ? (
@@ -59,7 +67,7 @@ export function EnvelopeLeafRow({
           className={cn(
             'relative mt-0.5',
             "after:absolute after:-inset-x-[14px] after:-inset-y-2 after:content-['']",
-            leaf.confidence === 'suggested' && 'border-dashed',
+            showSuggestedMarker && 'border-dashed',
           )}
         />
       ) : (
@@ -67,7 +75,7 @@ export function EnvelopeLeafRow({
           aria-hidden="true"
           className={cn(
             'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-stroke border-ink',
-            leaf.confidence === 'suggested' && 'border-dashed',
+            showSuggestedMarker && 'border-dashed',
           )}
         >
           {bulletVariant === 'check' ? <Check size={10} /> : <Minus size={10} />}
@@ -120,6 +128,11 @@ export function EnvelopeLeafRow({
             <Pencil size={9} aria-hidden="true" />
             Edited
           </span>
+        ) : leaf.origin === 'user' ? (
+          <span className="inline-flex items-center gap-1 rounded-full border-stroke border-ink/55 bg-card px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
+            <UserPlus size={9} aria-hidden="true" />
+            Added by you
+          </span>
         ) : (
           leaf.sourceItemIds.map((itemId) => (
             <Link
@@ -137,6 +150,20 @@ export function EnvelopeLeafRow({
           </span>
         )}
       </div>
+      {onDelete && (
+        <button
+          type="button"
+          onClick={onDelete}
+          aria-label="Remove this line"
+          className={cn(
+            'relative mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-muted-foreground',
+            "after:absolute after:-inset-x-[14px] after:-inset-y-2 after:content-['']",
+            'hover:text-destructive-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          )}
+        >
+          <X size={12} aria-hidden="true" />
+        </button>
+      )}
     </li>
   )
 }

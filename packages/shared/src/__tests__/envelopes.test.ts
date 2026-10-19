@@ -7,11 +7,19 @@ import {
   buildEnvelopeRegenerationContext,
   appendValidationRetryNote,
   updateEnvelopeLeaf,
+  addEnvelopeItem,
+  addEnvelopeTableRow,
+  deleteEnvelopeItem,
+  addEnvelopeSection,
+  renameEnvelopeSection,
+  createUserLeaf,
   countEnvelopeChecklistProgress,
   stripEnvelopeProgressFields,
   carryForwardEnvelopeProgress,
+  carryForwardUserContent,
   getEnvelopeTitle,
   EnvelopeIntentInputSchema,
+  EnvelopePatchRequestSchema,
   type EnvelopeBody,
 } from '../envelopes'
 
@@ -120,6 +128,38 @@ describe('parseEnvelopeBody', () => {
     }
     const result = parseEnvelopeBody(raw)
     expect(result.success).toBe(false)
+  })
+
+  it('rejects an AI leaf (no origin) claiming "from_item" confidence with no citation (DRO-232)', () => {
+    const raw = {
+      sections: [
+        {
+          type: 'checklist',
+          items: [{ text: 'Milk', sourceItemIds: [], confidence: 'from_item' }],
+        },
+      ],
+    }
+    const result = parseEnvelopeBody(raw)
+    expect(result.success).toBe(false)
+  })
+
+  it('accepts a user leaf (origin: "user") with "from_item" confidence and no citation (DRO-232)', () => {
+    const raw = {
+      sections: [
+        {
+          type: 'checklist',
+          items: [{ text: 'Milk', sourceItemIds: [], confidence: 'from_item', origin: 'user' }],
+        },
+      ],
+    }
+    const result = parseEnvelopeBody(raw)
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts a plain user leaf built by createUserLeaf', () => {
+    const raw = { sections: [{ type: 'checklist', items: [createUserLeaf('Buy milk')] }] }
+    const result = parseEnvelopeBody(raw)
+    expect(result.success).toBe(true)
   })
 })
 
@@ -473,6 +513,16 @@ describe('stripEnvelopeProgressFields (DRO-195)', () => {
     }
     expect(stripEnvelopeProgressFields(body)).toEqual(body)
   })
+
+  it('strips a forged origin: "user" from an AI provider response (DRO-232)', () => {
+    const body: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'Forged line', sourceItemIds: [], confidence: 'suggested', origin: 'user' }] }],
+    }
+    const stripped = stripEnvelopeProgressFields(body)
+    const section = stripped.sections[0]
+    if (section.type !== 'checklist') throw new Error('expected checklist')
+    expect(section.items[0].origin).toBeUndefined()
+  })
 })
 
 describe('carryForwardEnvelopeProgress (DRO-195)', () => {
@@ -565,5 +615,458 @@ describe('carryForwardEnvelopeProgress (DRO-195)', () => {
       sections: [{ type: 'checklist', items: [{ text: 'a', sourceItemIds: [], confidence: 'suggested' }] }],
     }
     expect(carryForwardEnvelopeProgress(freshBody, previousBody)).toBe(freshBody)
+  })
+})
+
+describe('createUserLeaf (DRO-232)', () => {
+  it('builds a leaf with no citation, suggested confidence, and origin: user', () => {
+    expect(createUserLeaf('Buy milk')).toEqual({
+      text: 'Buy milk',
+      sourceItemIds: [],
+      confidence: 'suggested',
+      origin: 'user',
+    })
+  })
+})
+
+describe('addEnvelopeItem (DRO-232)', () => {
+  const body: EnvelopeBody = {
+    sections: [
+      { type: 'checklist', items: [{ text: 'Tent', sourceItemIds: [], confidence: 'suggested' }] },
+      { type: 'table', columns: ['a'], rows: [[{ text: 'row', sourceItemIds: [], confidence: 'suggested' }]] },
+    ],
+  }
+
+  it('appends a user leaf to the end of a checklist section', () => {
+    const result = addEnvelopeItem(body, 0, 'Stove')!
+    const section = result.sections[0]
+    if (section.type !== 'checklist') throw new Error('expected checklist')
+    expect(section.items).toHaveLength(2)
+    expect(section.items[1]).toEqual(createUserLeaf('Stove'))
+    expect(section.items[0]).toEqual({ text: 'Tent', sourceItemIds: [], confidence: 'suggested' })
+  })
+
+  it('returns null for an out-of-range sectionIndex', () => {
+    expect(addEnvelopeItem(body, 5, 'x')).toBeNull()
+  })
+
+  it('returns null for a table section', () => {
+    expect(addEnvelopeItem(body, 1, 'x')).toBeNull()
+  })
+
+  it('round-trips through parseEnvelopeBody', () => {
+    const result = addEnvelopeItem(body, 0, 'Stove')!
+    expect(parseEnvelopeBody(JSON.parse(JSON.stringify(result))).success).toBe(true)
+  })
+})
+
+describe('addEnvelopeTableRow (DRO-232)', () => {
+  const body: EnvelopeBody = {
+    sections: [
+      { type: 'checklist', items: [{ text: 'a', sourceItemIds: [], confidence: 'suggested' }] },
+      {
+        type: 'table',
+        columns: ['Item', 'Qty'],
+        rows: [[{ text: 'Milk', sourceItemIds: [], confidence: 'suggested' }, { text: '1', sourceItemIds: [], confidence: 'suggested' }]],
+      },
+    ],
+  }
+
+  it('appends a row of user leaves, one per column', () => {
+    const result = addEnvelopeTableRow(body, 1, ['Eggs', '12'])!
+    const section = result.sections[1]
+    if (section.type !== 'table') throw new Error('expected table')
+    expect(section.rows).toHaveLength(2)
+    expect(section.rows[1]).toEqual([createUserLeaf('Eggs'), createUserLeaf('12')])
+  })
+
+  it('returns null when cells.length does not match columns.length', () => {
+    expect(addEnvelopeTableRow(body, 1, ['Eggs'])).toBeNull()
+  })
+
+  it('returns null for a non-table section', () => {
+    expect(addEnvelopeTableRow(body, 0, ['x'])).toBeNull()
+  })
+
+  it('returns null for an out-of-range sectionIndex', () => {
+    expect(addEnvelopeTableRow(body, 5, ['x', 'y'])).toBeNull()
+  })
+})
+
+describe('deleteEnvelopeItem (DRO-232)', () => {
+  const body: EnvelopeBody = {
+    sections: [
+      {
+        type: 'checklist',
+        items: [
+          { text: 'Tent', sourceItemIds: [], confidence: 'suggested' },
+          { text: 'Stove', sourceItemIds: [], confidence: 'suggested' },
+        ],
+      },
+      {
+        type: 'table',
+        columns: ['a'],
+        rows: [
+          [{ text: 'row 1', sourceItemIds: [], confidence: 'suggested' }],
+          [{ text: 'row 2', sourceItemIds: [], confidence: 'suggested' }],
+        ],
+      },
+    ],
+  }
+
+  it('removes a checklist leaf by index, leaving the others intact', () => {
+    const result = deleteEnvelopeItem(body, 0, 0)!
+    const section = result.sections[0]
+    if (section.type !== 'checklist') throw new Error('expected checklist')
+    expect(section.items).toEqual([{ text: 'Stove', sourceItemIds: [], confidence: 'suggested' }])
+  })
+
+  it('removes a whole table row by index', () => {
+    const result = deleteEnvelopeItem(body, 1, 0)!
+    const section = result.sections[1]
+    if (section.type !== 'table') throw new Error('expected table')
+    expect(section.rows).toEqual([[{ text: 'row 2', sourceItemIds: [], confidence: 'suggested' }]])
+  })
+
+  it('returns null for an out-of-range itemIndex', () => {
+    expect(deleteEnvelopeItem(body, 0, 99)).toBeNull()
+  })
+
+  it('returns null for an out-of-range sectionIndex', () => {
+    expect(deleteEnvelopeItem(body, 5, 0)).toBeNull()
+  })
+
+  it('works on an AI-generated leaf, not just a user-added one', () => {
+    const result = deleteEnvelopeItem(body, 0, 1)!
+    const section = result.sections[0]
+    if (section.type !== 'checklist') throw new Error('expected checklist')
+    expect(section.items).toEqual([{ text: 'Tent', sourceItemIds: [], confidence: 'suggested' }])
+  })
+
+  it('drops the section entirely when deleting its last list item, instead of leaving an empty items array', () => {
+    const twoSection: EnvelopeBody = {
+      sections: [
+        { type: 'list', heading: 'Only item', items: [{ text: 'Solo', sourceItemIds: [], confidence: 'suggested' }] },
+        { type: 'checklist', items: [{ text: 'Other', sourceItemIds: [], confidence: 'suggested' }] },
+      ],
+    }
+    const result = deleteEnvelopeItem(twoSection, 0, 0)!
+    expect(result.sections).toHaveLength(1)
+    expect(result.sections[0]).toEqual(twoSection.sections[1])
+    expect(parseEnvelopeBody(JSON.parse(JSON.stringify(result))).success).toBe(true)
+  })
+
+  it('drops the section entirely when deleting its last notes line', () => {
+    const twoSection: EnvelopeBody = {
+      sections: [
+        { type: 'notes', items: [{ text: 'Only note', sourceItemIds: [], confidence: 'suggested' }] },
+        { type: 'checklist', items: [{ text: 'Other', sourceItemIds: [], confidence: 'suggested' }] },
+      ],
+    }
+    const result = deleteEnvelopeItem(twoSection, 0, 0)!
+    expect(result.sections).toHaveLength(1)
+    expect(parseEnvelopeBody(JSON.parse(JSON.stringify(result))).success).toBe(true)
+  })
+
+  it('drops the section entirely when deleting its last table row', () => {
+    const twoSection: EnvelopeBody = {
+      sections: [
+        { type: 'table', columns: ['a'], rows: [[{ text: 'Only row', sourceItemIds: [], confidence: 'suggested' }]] },
+        { type: 'checklist', items: [{ text: 'Other', sourceItemIds: [], confidence: 'suggested' }] },
+      ],
+    }
+    const result = deleteEnvelopeItem(twoSection, 0, 0)!
+    expect(result.sections).toHaveLength(1)
+    expect(parseEnvelopeBody(JSON.parse(JSON.stringify(result))).success).toBe(true)
+  })
+
+  it('rejects deleting the very last line of the whole plan', () => {
+    const onlyLine: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'Solo', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    expect(deleteEnvelopeItem(onlyLine, 0, 0)).toBeNull()
+  })
+
+  it('rejects deleting the very last row of the whole plan when the only section is a table', () => {
+    const onlyRow: EnvelopeBody = {
+      sections: [{ type: 'table', columns: ['a'], rows: [[{ text: 'Solo', sourceItemIds: [], confidence: 'suggested' }]] }],
+    }
+    expect(deleteEnvelopeItem(onlyRow, 0, 0)).toBeNull()
+  })
+})
+
+describe('addEnvelopeSection (DRO-232)', () => {
+  const body: EnvelopeBody = {
+    sections: [{ type: 'checklist', items: [{ text: 'a', sourceItemIds: [], confidence: 'suggested' }] }],
+  }
+
+  it('appends a checklist section with a heading and one user leaf', () => {
+    const result = addEnvelopeSection(body, 'checklist', 'Packing', 'Bring sunscreen')
+    expect(result.sections).toHaveLength(2)
+    expect(result.sections[1]).toEqual({ type: 'checklist', heading: 'Packing', items: [createUserLeaf('Bring sunscreen')] })
+  })
+
+  it('appends a list section without a heading when none is given', () => {
+    const result = addEnvelopeSection(body, 'list', undefined, 'Buy milk')
+    expect(result.sections[1]).toEqual({ type: 'list', heading: undefined, items: [createUserLeaf('Buy milk')] })
+  })
+
+  it('never puts a heading key on a new notes section, even if one is passed', () => {
+    const result = addEnvelopeSection(body, 'notes', 'Ignored', 'Some thoughts')
+    expect(result.sections[1]).toEqual({ type: 'notes', items: [createUserLeaf('Some thoughts')] })
+    expect('heading' in result.sections[1]).toBe(false)
+  })
+
+  it('round-trips through parseEnvelopeBody', () => {
+    const result = addEnvelopeSection(body, 'checklist', 'Packing', 'Bring sunscreen')
+    expect(parseEnvelopeBody(JSON.parse(JSON.stringify(result))).success).toBe(true)
+  })
+})
+
+describe('renameEnvelopeSection (DRO-232)', () => {
+  const body: EnvelopeBody = {
+    sections: [
+      { type: 'checklist', heading: 'Old heading', items: [{ text: 'a', sourceItemIds: [], confidence: 'suggested' }] },
+      { type: 'notes', items: [{ text: 'b', sourceItemIds: [], confidence: 'suggested' }] },
+    ],
+  }
+
+  it('renames a checklist section heading', () => {
+    const result = renameEnvelopeSection(body, 0, 'New heading')!
+    const section = result.sections[0]
+    if (section.type !== 'checklist') throw new Error('expected checklist')
+    expect(section.heading).toBe('New heading')
+  })
+
+  it('returns null for a notes section (no heading to rename)', () => {
+    expect(renameEnvelopeSection(body, 1, 'New heading')).toBeNull()
+  })
+
+  it('returns null for an out-of-range sectionIndex', () => {
+    expect(renameEnvelopeSection(body, 5, 'New heading')).toBeNull()
+  })
+})
+
+describe('carryForwardUserContent (DRO-232)', () => {
+  it('carries a user leaf forward into a fresh section with the same heading', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [
+        {
+          type: 'checklist',
+          heading: 'Pack',
+          items: [
+            { text: 'Tent', sourceItemIds: ['item-1'], confidence: 'from_item' },
+            createUserLeaf('Bring sunscreen'),
+          ],
+        },
+      ],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', heading: 'Pack', items: [{ text: 'Sleeping bag', sourceItemIds: ['item-1'], confidence: 'from_item' }] }],
+    }
+
+    const result = carryForwardUserContent(freshBody, previousBody)
+    const section = result.sections[0]
+    if (section.type !== 'checklist') throw new Error('expected checklist')
+    expect(section.items).toHaveLength(2)
+    expect(section.items[1]).toEqual(createUserLeaf('Bring sunscreen'))
+  })
+
+  it('buckets an unmatched user leaf into a trailing "Your additions" section', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', heading: 'Pack', items: [createUserLeaf('Bring sunscreen')] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', heading: 'Prep', items: [{ text: 'Book flights', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+
+    const result = carryForwardUserContent(freshBody, previousBody)
+    expect(result.sections).toHaveLength(2)
+    const added = result.sections[1]
+    if (added.type !== 'checklist') throw new Error('expected checklist')
+    expect(added.heading).toBe('Your additions')
+    expect(added.items).toEqual([createUserLeaf('Bring sunscreen')])
+  })
+
+  it('carries forward an entire user-created section (every leaf shares its own unmatched heading) as one "Your additions" bucket', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [
+        { type: 'checklist', heading: 'AI section', items: [{ text: 'AI line', sourceItemIds: [], confidence: 'suggested' }] },
+        { type: 'checklist', heading: 'My own section', items: [createUserLeaf('Line one'), createUserLeaf('Line two')] },
+      ],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', heading: 'AI section', items: [{ text: 'Fresh AI line', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+
+    const result = carryForwardUserContent(freshBody, previousBody)
+    expect(result.sections).toHaveLength(2)
+    const added = result.sections[1]
+    if (added.type !== 'checklist') throw new Error('expected checklist')
+    expect(added.heading).toBe('Your additions')
+    expect(added.items).toEqual([createUserLeaf('Line one'), createUserLeaf('Line two')])
+  })
+
+  it('ignores AI leaves (no origin) when collecting what to carry forward', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', heading: 'Pack', items: [{ text: 'AI line', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', heading: 'Prep', items: [{ text: 'Fresh line', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    expect(carryForwardUserContent(freshBody, previousBody)).toBe(freshBody)
+  })
+
+  it('carries a user-added table row forward into a fresh table with the same heading and columns', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'table', heading: 'Compare', columns: ['Item', 'Price'], rows: [[createUserLeaf('Tent'), createUserLeaf('$80')]] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [
+        {
+          type: 'table',
+          heading: 'Compare',
+          columns: ['Item', 'Price'],
+          rows: [[{ text: 'Stove', sourceItemIds: ['item-1'], confidence: 'from_item' }, { text: '$40', sourceItemIds: ['item-1'], confidence: 'from_item' }]],
+        },
+      ],
+    }
+
+    const result = carryForwardUserContent(freshBody, previousBody)
+    const section = result.sections[0]
+    if (section.type !== 'table') throw new Error('expected table')
+    expect(section.rows).toHaveLength(2)
+    expect(section.rows[1]).toEqual([createUserLeaf('Tent'), createUserLeaf('$80')])
+  })
+
+  it('flattens a user-added table row into "Your additions" when no fresh table shares its heading/columns', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'table', heading: 'Compare', columns: ['Item', 'Price'], rows: [[createUserLeaf('Tent'), createUserLeaf('$80')]] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'Fresh line', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+
+    const result = carryForwardUserContent(freshBody, previousBody)
+    expect(result.sections).toHaveLength(2)
+    const added = result.sections[1]
+    if (added.type !== 'checklist') throw new Error('expected checklist')
+    expect(added.heading).toBe('Your additions')
+    expect(added.items).toEqual([createUserLeaf('Tent — $80')])
+  })
+
+  it('does not carry an AI-generated table row forward, only a fully user-added one', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'table', columns: ['a'], rows: [[{ text: 'AI row', sourceItemIds: [], confidence: 'suggested' }]] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'table', columns: ['a'], rows: [[{ text: 'Fresh row', sourceItemIds: [], confidence: 'suggested' }]] }],
+    }
+    expect(carryForwardUserContent(freshBody, previousBody)).toBe(freshBody)
+  })
+
+  it('carries a user leaf from a notes block forward into a headingless fresh checklist/list section', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'notes', items: [createUserLeaf('A note I added')] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'Fresh line', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+
+    const result = carryForwardUserContent(freshBody, previousBody)
+    const section = result.sections[0]
+    if (section.type !== 'checklist') throw new Error('expected checklist')
+    expect(section.items).toEqual([{ text: 'Fresh line', sourceItemIds: [], confidence: 'suggested' }, createUserLeaf('A note I added')])
+  })
+
+  it('buckets a user leaf from a notes block into "Your additions" when no headingless fresh section exists', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'notes', items: [createUserLeaf('A note I added')] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', heading: 'Prep', items: [{ text: 'Fresh line', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+
+    const result = carryForwardUserContent(freshBody, previousBody)
+    expect(result.sections).toHaveLength(2)
+    const added = result.sections[1]
+    if (added.type !== 'checklist') throw new Error('expected checklist')
+    expect(added.heading).toBe('Your additions')
+    expect(added.items).toEqual([createUserLeaf('A note I added')])
+  })
+
+  it('returns freshBody unchanged when previousBody has no user leaves', () => {
+    const previousBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'a', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    const freshBody: EnvelopeBody = {
+      sections: [{ type: 'checklist', items: [{ text: 'a', sourceItemIds: [], confidence: 'suggested' }] }],
+    }
+    expect(carryForwardUserContent(freshBody, previousBody)).toBe(freshBody)
+  })
+
+  it('does not merge two headingless user-row buckets with different columns into one entry (review round 2)', () => {
+    // Two previous headingless tables with different column counts, each with a user row.
+    const previousBody: EnvelopeBody = {
+      sections: [
+        { type: 'table', columns: ['a', 'b'], rows: [[createUserLeaf('1'), createUserLeaf('2')]] },
+        { type: 'table', columns: ['x', 'y', 'z'], rows: [[createUserLeaf('7'), createUserLeaf('8'), createUserLeaf('9')]] },
+      ],
+    }
+    // A fresh table whose columns match only the first previous table.
+    const freshBody: EnvelopeBody = {
+      sections: [
+        {
+          type: 'table',
+          columns: ['a', 'b'],
+          rows: [[{ text: 'fresh-1', sourceItemIds: [], confidence: 'suggested' }, { text: 'fresh-2', sourceItemIds: [], confidence: 'suggested' }]],
+        },
+      ],
+    }
+
+    const result = carryForwardUserContent(freshBody, previousBody)
+    expect(parseEnvelopeBody(result).success).toBe(true)
+
+    const table = result.sections[0]
+    if (table.type !== 'table') throw new Error('expected table')
+    expect(table.columns).toEqual(['a', 'b'])
+    expect(table.rows).toHaveLength(2)
+    expect(table.rows[1]).toEqual([createUserLeaf('1'), createUserLeaf('2')])
+
+    // The [x, y, z] row has no matching fresh table, so it must be flattened into
+    // "Your additions" rather than silently merged into the [a, b] bucket above.
+    const added = result.sections[1]
+    if (added.type !== 'checklist') throw new Error('expected checklist')
+    expect(added.heading).toBe('Your additions')
+    expect(added.items).toEqual([createUserLeaf('7 — 8 — 9')])
+  })
+})
+
+describe('EnvelopePatchRequestSchema (DRO-232)', () => {
+  it('accepts every action variant', () => {
+    expect(EnvelopePatchRequestSchema.safeParse({ action: 'toggle', sectionIndex: 0, itemIndex: 0, checked: true }).success).toBe(true)
+    expect(EnvelopePatchRequestSchema.safeParse({ action: 'edit', sectionIndex: 0, itemIndex: 0, text: 'x' }).success).toBe(true)
+    expect(EnvelopePatchRequestSchema.safeParse({ action: 'addItem', sectionIndex: 0, text: 'x' }).success).toBe(true)
+    expect(EnvelopePatchRequestSchema.safeParse({ action: 'addRow', sectionIndex: 0, cells: ['a', 'b'] }).success).toBe(true)
+    expect(EnvelopePatchRequestSchema.safeParse({ action: 'deleteItem', sectionIndex: 0, itemIndex: 0 }).success).toBe(true)
+    expect(EnvelopePatchRequestSchema.safeParse({ action: 'addSection', blockType: 'checklist', text: 'x' }).success).toBe(true)
+    expect(EnvelopePatchRequestSchema.safeParse({ action: 'addSection', blockType: 'checklist', heading: 'H', text: 'x' }).success).toBe(true)
+    expect(EnvelopePatchRequestSchema.safeParse({ action: 'renameSection', sectionIndex: 0, heading: 'H' }).success).toBe(true)
+  })
+
+  it('rejects an unknown action', () => {
+    expect(EnvelopePatchRequestSchema.safeParse({ action: 'delete', sectionIndex: 0, itemIndex: 0 }).success).toBe(false)
+  })
+
+  it('rejects addItem text over the max length cap', () => {
+    expect(EnvelopePatchRequestSchema.safeParse({ action: 'addItem', sectionIndex: 0, text: 'a'.repeat(501) }).success).toBe(false)
+  })
+
+  it('rejects addItem with empty text', () => {
+    expect(EnvelopePatchRequestSchema.safeParse({ action: 'addItem', sectionIndex: 0, text: '   ' }).success).toBe(false)
+  })
+
+  it('rejects a negative sectionIndex', () => {
+    expect(EnvelopePatchRequestSchema.safeParse({ action: 'addItem', sectionIndex: -1, text: 'x' }).success).toBe(false)
   })
 })
