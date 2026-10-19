@@ -113,6 +113,19 @@ export const STATUS_DOT: Record<string, string> = {
 }
 
 // ---------------------------------------------------------------------------
+// Envelope status dot colors (DRO-223) — same hues as STATUS_DOT, kept as its
+// own map since envelope status values (generating/partial) don't overlap
+// 1:1 with the item processing pipeline's.
+// ---------------------------------------------------------------------------
+
+export const ENVELOPE_STATUS_DOT: Record<string, string> = {
+  generating: 'var(--color-status-processing)',
+  done: 'var(--color-status-done)',
+  partial: 'var(--color-status-processing)',
+  failed: 'var(--color-status-failed)',
+}
+
+// ---------------------------------------------------------------------------
 // Stat card accent icon colors
 // ---------------------------------------------------------------------------
 

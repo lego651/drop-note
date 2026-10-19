@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { AIProvider, EnvelopeSourceItem } from '@drop-note/shared'
-import { fetchEnvelopeSourceItems, runEnvelopeGeneration, ENVELOPE_GEN_RATE_LIMIT_PER_HOUR } from '../envelopes'
+import type { AIProvider, EnvelopeBody, EnvelopeSourceItem } from '@drop-note/shared'
+import {
+  fetchEnvelopeSourceItems,
+  runEnvelopeGeneration,
+  ENVELOPE_GEN_RATE_LIMIT_PER_HOUR,
+  buildEnvelopeListItem,
+  type EnvelopeListRow,
+} from '../envelopes'
 
 // A minimal stand-in for the chainable Supabase query builder (same recipe as
 // lib/__tests__/categories.test.ts): every filter method returns itself, and
@@ -308,5 +314,70 @@ describe('runEnvelopeGeneration', () => {
       expect(section.items[0].checked).toBeUndefined()
       expect(section.items[0].edited).toBeUndefined()
     })
+  })
+})
+
+describe('buildEnvelopeListItem (DRO-223)', () => {
+  const CHECKLIST_BODY: EnvelopeBody = {
+    sections: [
+      {
+        type: 'checklist',
+        items: [
+          { text: 'a', sourceItemIds: [], confidence: 'suggested', checked: true },
+          { text: 'b', sourceItemIds: [], confidence: 'suggested', checked: false },
+        ],
+      },
+    ],
+  }
+
+  function row(overrides: Partial<EnvelopeListRow> = {}): EnvelopeListRow {
+    return {
+      id: 'env-1',
+      intent_input: { text: 'Plan my weekend', purposeHint: 'weekend_plan' },
+      status: 'done',
+      body: CHECKLIST_BODY,
+      created_at: '2026-10-18T00:00:00Z',
+      ...overrides,
+    }
+  }
+
+  it('derives title (from the purpose chip), intent text, status, progress, and source item count', () => {
+    const result = buildEnvelopeListItem(row(), 3)
+    expect(result).toEqual({
+      id: 'env-1',
+      title: 'Weekend plan',
+      intentText: 'Plan my weekend',
+      status: 'done',
+      progress: { checked: 1, total: 2 },
+      createdAt: '2026-10-18T00:00:00Z',
+      sourceItemCount: 3,
+    })
+  })
+
+  it('falls back to the generic title when no purpose hint was set', () => {
+    const result = buildEnvelopeListItem(row({ intent_input: { text: 'Do something', purposeHint: null } }), 2)
+    expect(result?.title).toBe('Plan')
+  })
+
+  it('omits progress when the body has no checklist blocks', () => {
+    const notesBody: EnvelopeBody = { sections: [{ type: 'notes', items: [{ text: 'x', sourceItemIds: [], confidence: 'suggested' }] }] }
+    const result = buildEnvelopeListItem(row({ body: notesBody }), 1)
+    expect(result?.progress).toBeNull()
+  })
+
+  it('omits progress when there is no body yet (generating/failed)', () => {
+    const result = buildEnvelopeListItem(row({ status: 'generating', body: null }), 2)
+    expect(result?.progress).toBeNull()
+    expect(result?.status).toBe('generating')
+  })
+
+  it('omits progress when the stored body fails to parse', () => {
+    const result = buildEnvelopeListItem(row({ body: { not: 'a valid envelope body' } }), 2)
+    expect(result?.progress).toBeNull()
+  })
+
+  it('returns null when intent_input does not match the stored schema', () => {
+    const result = buildEnvelopeListItem(row({ intent_input: { nope: true } }), 0)
+    expect(result).toBeNull()
   })
 })
