@@ -53,4 +53,16 @@ describe('SidebarNav — Envelopes nav item (DRO-223)', () => {
     const link = screen.getByRole('link', { name: /Envelopes/ })
     expect(link.className).not.toMatch(/border-ink/)
   })
+
+  it('places Envelopes directly after All Items, before Pinned and Archive', () => {
+    mockPathname = '/items'
+    render(<SidebarNav userEmail="a@b.com" envelopeCount={1} />)
+
+    const navLabels = ['All Items', 'Envelopes', 'Pinned', 'Archive']
+    const allLinks = screen.getAllByRole('link')
+    const order = navLabels.map((label) =>
+      allLinks.findIndex((link) => link.textContent?.includes(label)),
+    )
+    expect(order).toEqual([...order].sort((a, b) => a - b))
+  })
 })

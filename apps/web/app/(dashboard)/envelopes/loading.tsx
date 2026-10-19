@@ -10,7 +10,7 @@ export default function EnvelopesLoading() {
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="h-20 animate-pulse rounded-xl border-stroke border-ink bg-muted shadow-ink-lg"
+            className="h-24 animate-pulse rounded-xl border-stroke border-ink bg-muted shadow-ink-lg"
           />
         ))}
       </div>
