@@ -70,17 +70,19 @@ export function EnvelopeTray() {
 
         <div className="flex items-center justify-between gap-2">
           {/* The only live region here — the tray's outer role stays "region" (not "status") so it doesn't re-announce every button. */}
-          <span role="status" className={cn('font-mono text-xs', overCapMessage ? 'text-destructive' : 'text-muted-foreground')}>
+          <span role="status" className={cn('font-mono text-xs', overCapMessage ? 'text-destructive-text' : 'text-muted-foreground')}>
             {overCapMessage ? `${count} of ${ENVELOPE_MIN_ITEMS}–${ENVELOPE_MAX_ITEMS} · remove ${count - ENVELOPE_MAX_ITEMS}` : `${count} of ${ENVELOPE_MIN_ITEMS}–${ENVELOPE_MAX_ITEMS} · tap cards to add`}
           </span>
           <Button
             variant="default"
             size="sm"
-            disabled={!canMakePlan}
             aria-disabled={!canMakePlan}
             title={canMakePlan ? undefined : overCapMessage ?? `Select at least ${ENVELOPE_MIN_ITEMS} items.`}
-            onClick={() => setPurposeDialogOpen(true)}
-            className="shrink-0 gap-1.5"
+            onClick={() => {
+              if (!canMakePlan) return
+              setPurposeDialogOpen(true)
+            }}
+            className={cn('h-11 shrink-0 gap-1.5', !canMakePlan && 'opacity-50 shadow-none')}
           >
             <Mail size={14} />
             Make a plan →

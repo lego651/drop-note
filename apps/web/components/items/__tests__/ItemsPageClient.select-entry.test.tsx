@@ -113,7 +113,7 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
     // Entering select mode shows the tray as a "0 of 2-8" mode indicator,
     // with "Make a plan" disabled until the minimum is met.
     expect(screen.getByText('0 of 2–8 · tap cards to add')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Make a plan/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Make a plan/ })).toHaveAttribute('aria-disabled', 'true')
 
     fireEvent.click(checkboxes[0])
 

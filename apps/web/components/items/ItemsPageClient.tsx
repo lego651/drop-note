@@ -368,7 +368,7 @@ export function ItemsPageClient({
       <div
         className={cn(
           'mx-auto max-w-6xl px-3 sm:px-6 lg:px-8 py-6 space-y-5',
-          reserveFabSpace && 'pb-28 sm:pb-24',
+          isBulkMode ? 'pb-[184px] sm:pb-[200px]' : reserveFabSpace && 'pb-28 sm:pb-24',
         )}
       >
       <WelcomeModal />
@@ -486,7 +486,7 @@ export function ItemsPageClient({
               variant="ghost"
               className={cn(
                 'h-10 w-10 justify-center gap-2 px-0 text-sm font-semibold sm:w-auto sm:px-5',
-                isBulkMode && 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground',
+                isBulkMode && 'border-stroke border-ink bg-accent text-accent-foreground shadow-ink-sm hover:bg-accent hover:text-accent-foreground',
               )}
               aria-pressed={isBulkMode}
               aria-label={isBulkMode ? 'Cancel selection' : 'Edit items'}

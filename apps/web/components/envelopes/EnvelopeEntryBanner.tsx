@@ -77,7 +77,7 @@ export function EnvelopeEntryBanner({ onFullCardInViewChange }: EnvelopeEntryBan
           </span>
           {' · '}
           {/* Only live text in the bar — a second live region on the tray would double-announce every pick. */}
-          <span aria-live="polite" className={cn('font-mono tabular-nums', overCap && 'text-destructive')}>
+          <span aria-live="polite" className={cn('font-mono tabular-nums', overCap && 'text-foreground font-semibold')}>
             {overCap ? `${count} picked · max ${ENVELOPE_MAX_ITEMS}` : `${count} picked`}
           </span>
         </span>

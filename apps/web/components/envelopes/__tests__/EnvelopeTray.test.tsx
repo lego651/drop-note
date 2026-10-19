@@ -49,11 +49,12 @@ describe('EnvelopeTray (DRO-194, restyled DRO-227)', () => {
       exitSelectMode: vi.fn(),
     }
     render(<EnvelopeTray />)
-    expect(screen.getByRole('button', { name: /Make a plan/ })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /Make a plan/ })).toHaveAttribute(
-      'title',
-      'Select at least 2 items.',
-    )
+    const makePlanButton = screen.getByRole('button', { name: /Make a plan/ })
+    // aria-disabled (not the `disabled` attribute) keeps the button focusable for screen readers.
+    expect(makePlanButton).toHaveAttribute('aria-disabled', 'true')
+    expect(makePlanButton).toHaveAttribute('title', 'Select at least 2 items.')
+    fireEvent.click(makePlanButton)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('disables "Make a plan" and explains the cap when over the maximum', () => {
@@ -63,9 +64,12 @@ describe('EnvelopeTray (DRO-194, restyled DRO-227)', () => {
       exitSelectMode: vi.fn(),
     }
     render(<EnvelopeTray />)
-    expect(screen.getByRole('button', { name: /Make a plan/ })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /Make a plan/ })).toHaveAttribute('title', 'Select up to 8 items.')
+    const makePlanButton = screen.getByRole('button', { name: /Make a plan/ })
+    expect(makePlanButton).toHaveAttribute('aria-disabled', 'true')
+    expect(makePlanButton).toHaveAttribute('title', 'Select up to 8 items.')
     expect(screen.getByText('9 of 2–8 · remove 1')).toBeInTheDocument()
+    fireEvent.click(makePlanButton)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('exits pick mode entirely when the cancel button is clicked', () => {
