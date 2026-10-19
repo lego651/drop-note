@@ -85,7 +85,7 @@ export function ItemsPageClient({
   const searchParams = useSearchParams()
   const searchParamsStr = searchParams.toString()
 
-  const { isBulkMode, selectedIds, toggle, selectAll, deselectIds, deselectAll, enterSelectMode, exitSelectMode } = useBulkSelect()
+  const { isBulkMode, selectedIds, toggle, selectAll, deselectIds, deselectAll, enterSelectMode, enterSelectModeFromDeepLink, exitSelectMode } = useBulkSelect()
 
   // Whether the full entry banner (not its strip/step-bar states) currently
   // holds the viewport — the floating "Make a plan" FAB stays hidden while
@@ -162,9 +162,18 @@ export function ItemsPageClient({
   }, [])
 
   // ?pick=1 (from the /envelopes empty state, DRO-227) drops the user straight
-  // into pick mode instead of just landing on the inbox.
+  // into pick mode instead of just landing on the inbox. Goes through the
+  // dedicated deep-link entry point (not enterSelectMode) so the provider can
+  // tell this apart from an unrelated earlier click when its own navigation
+  // effect runs in this same commit, right after this one. Strips the param
+  // via replace (no new history entry) so a refresh or Back doesn't re-enter
+  // pick mode.
   useEffect(() => {
-    if (searchParams.get('pick') === '1') enterSelectMode()
+    if (searchParams.get('pick') !== '1') return
+    enterSelectModeFromDeepLink()
+    const params = new URLSearchParams(searchParamsStr)
+    params.delete('pick')
+    router.replace(`/items${params.toString() ? `?${params.toString()}` : ''}`)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

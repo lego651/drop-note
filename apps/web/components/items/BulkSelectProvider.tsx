@@ -11,6 +11,7 @@ interface BulkSelectContextType {
   deselectIds: (ids: string[]) => void
   deselectAll: () => void
   enterSelectMode: () => void
+  enterSelectModeFromDeepLink: () => void
   exitSelectMode: () => void
 }
 
@@ -29,13 +30,26 @@ export function BulkSelectProvider({ children }: { children: React.ReactNode }) 
   // and silently undoes it, e.g. the items page entering pick mode for a
   // ?pick=1 deep link (DRO-227).
   const previousPathname = useRef(pathname)
+  // On a client-side navigation (not a hard load), this effect and the new
+  // page's mount effect fire in the same commit, child first. If the child
+  // called enterSelectModeFromDeepLink() to honor its own deep link (e.g.
+  // ?pick=1), it stamps the pathname it fired for here, so this effect can
+  // tell "a deep link just claimed this exact navigation" apart from "select
+  // mode happens to still be on from an earlier, unrelated click" — stamped
+  // for the wrong (stale) pathname is treated as not consumed.
+  const deepLinkPathname = useRef<string | null>(null)
 
   // Reset on page navigation
   useEffect(() => {
-    if (previousPathname.current === pathname) return
+    if (previousPathname.current === pathname) {
+      deepLinkPathname.current = null
+      return
+    }
     previousPathname.current = pathname
     setSelectedIds(new Set())
-    setSelectMode(false)
+    const consumedByDeepLink = deepLinkPathname.current === pathname
+    deepLinkPathname.current = null
+    if (!consumedByDeepLink) setSelectMode(false)
   }, [pathname])
 
   const toggle = useCallback((id: string) => {
@@ -50,6 +64,11 @@ export function BulkSelectProvider({ children }: { children: React.ReactNode }) 
   const enterSelectMode = useCallback(() => {
     setSelectMode(true)
   }, [])
+
+  const enterSelectModeFromDeepLink = useCallback(() => {
+    deepLinkPathname.current = pathname
+    setSelectMode(true)
+  }, [pathname])
 
   const exitSelectMode = useCallback(() => {
     setSelectMode(false)
@@ -84,6 +103,7 @@ export function BulkSelectProvider({ children }: { children: React.ReactNode }) 
       deselectIds,
       deselectAll,
       enterSelectMode,
+      enterSelectModeFromDeepLink,
       exitSelectMode,
     }}>
       {children}

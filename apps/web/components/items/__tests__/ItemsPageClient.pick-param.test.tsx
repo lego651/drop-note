@@ -7,10 +7,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
+let pathname = '/items'
+const routerReplace = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({ replace: routerReplace, push: vi.fn(), refresh: vi.fn() }),
   useSearchParams: () => new URLSearchParams('pick=1'),
-  usePathname: () => '/items',
+  usePathname: () => pathname,
 }))
 
 vi.mock('next/link', () => ({
@@ -29,6 +31,8 @@ vi.mock('@/hooks/useRealtimeItems', () => ({
 }))
 
 beforeEach(() => {
+  pathname = '/items'
+  routerReplace.mockClear()
   vi.stubGlobal('navigator', {
     ...global.navigator,
     clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
@@ -60,6 +64,34 @@ const items = [
 describe('ItemsPageClient — ?pick=1 deep link (DRO-227)', () => {
   it('enters pick mode automatically on mount', () => {
     render(
+      <BulkSelectProvider>
+        <ItemsPageClient items={items} totalCount={items.length} page={1} userId="user-1" />
+      </BulkSelectProvider>,
+    )
+
+    expect(screen.getAllByRole('checkbox').length).toBeGreaterThan(0)
+    expect(screen.getByText('Step 1 of 2')).toBeInTheDocument()
+    expect(screen.getByText('0 picked')).toBeInTheDocument()
+    // Strips ?pick=1 via replace so a refresh or Back doesn't re-enter pick mode.
+    expect(routerReplace).toHaveBeenCalledWith('/items')
+  })
+
+  // DRO-229 review: BulkSelectProvider lives in the persistent dashboard
+  // layout, so the only way users reach ?pick=1 is a client-side navigation
+  // (the /envelopes empty state's <Link href="/items?pick=1">), not a hard
+  // load — the hard-load path above doesn't exercise the provider's own
+  // pathname-change effect at all, since its ref already equals the pathname
+  // on first mount.
+  it('enters pick mode on a client-side navigation into /items, not just a hard load', () => {
+    pathname = '/envelopes'
+    const { rerender } = render(
+      <BulkSelectProvider>
+        <div>envelopes page (no items here)</div>
+      </BulkSelectProvider>,
+    )
+
+    pathname = '/items'
+    rerender(
       <BulkSelectProvider>
         <ItemsPageClient items={items} totalCount={items.length} page={1} userId="user-1" />
       </BulkSelectProvider>,
