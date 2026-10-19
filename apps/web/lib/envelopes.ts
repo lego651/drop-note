@@ -157,7 +157,10 @@ export async function runEnvelopeGeneration(
     log.warn('envelopes.citations_stripped', { itemIds: Array.from(allowedItemIds) })
   }
   const withProgress = previousBody ? carryForwardEnvelopeProgress(citedBody, previousBody) : citedBody
-  const body = previousBody ? carryForwardUserContent(withProgress, previousBody) : withProgress
+  const carried = previousBody ? carryForwardUserContent(withProgress, previousBody) : withProgress
+  // Defense in depth: carryForwardUserContent is structural, not AI output, but a future bug in it
+  // (e.g. a bad merge key) must never persist a body parseEnvelopeBody can't read back (DRO-232 review round 2).
+  const body = parseEnvelopeBody(carried).success ? carried : withProgress
   return { status: stripped ? 'partial' : 'done', body }
 }
 

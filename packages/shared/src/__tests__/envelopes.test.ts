@@ -1004,6 +1004,42 @@ describe('carryForwardUserContent (DRO-232)', () => {
     }
     expect(carryForwardUserContent(freshBody, previousBody)).toBe(freshBody)
   })
+
+  it('does not merge two headingless user-row buckets with different columns into one entry (review round 2)', () => {
+    // Two previous headingless tables with different column counts, each with a user row.
+    const previousBody: EnvelopeBody = {
+      sections: [
+        { type: 'table', columns: ['a', 'b'], rows: [[createUserLeaf('1'), createUserLeaf('2')]] },
+        { type: 'table', columns: ['x', 'y', 'z'], rows: [[createUserLeaf('7'), createUserLeaf('8'), createUserLeaf('9')]] },
+      ],
+    }
+    // A fresh table whose columns match only the first previous table.
+    const freshBody: EnvelopeBody = {
+      sections: [
+        {
+          type: 'table',
+          columns: ['a', 'b'],
+          rows: [[{ text: 'fresh-1', sourceItemIds: [], confidence: 'suggested' }, { text: 'fresh-2', sourceItemIds: [], confidence: 'suggested' }]],
+        },
+      ],
+    }
+
+    const result = carryForwardUserContent(freshBody, previousBody)
+    expect(parseEnvelopeBody(result).success).toBe(true)
+
+    const table = result.sections[0]
+    if (table.type !== 'table') throw new Error('expected table')
+    expect(table.columns).toEqual(['a', 'b'])
+    expect(table.rows).toHaveLength(2)
+    expect(table.rows[1]).toEqual([createUserLeaf('1'), createUserLeaf('2')])
+
+    // The [x, y, z] row has no matching fresh table, so it must be flattened into
+    // "Your additions" rather than silently merged into the [a, b] bucket above.
+    const added = result.sections[1]
+    if (added.type !== 'checklist') throw new Error('expected checklist')
+    expect(added.heading).toBe('Your additions')
+    expect(added.items).toEqual([createUserLeaf('7 — 8 — 9')])
+  })
 })
 
 describe('EnvelopePatchRequestSchema (DRO-232)', () => {

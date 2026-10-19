@@ -480,8 +480,16 @@ export function carryForwardEnvelopeProgress(freshBody: EnvelopeBody, previousBo
 /** The heading a carried-forward user leaf lands under when no fresh section shares its old section's heading (DRO-232). */
 const USER_ADDITIONS_HEADING = 'Your additions'
 
-function sameColumns(a: readonly string[], b: readonly string[]): boolean {
-  return a.length === b.length && a.every((col, i) => col === b[i])
+/**
+ * Key for grouping carried-forward table rows. Two previous tables sharing a
+ * heading but not columns (or both headingless with different columns) must
+ * stay separate buckets — merging them under one heading-only key would let
+ * a later bucket's rows get re-appended to a fresh table whose columns match
+ * only the *first* bucket, producing a row with the wrong cell count and an
+ * unparseable body (DRO-232 review round 2).
+ */
+function tableRowsKey(heading: string | null, columns: readonly string[]): string {
+  return JSON.stringify([heading, columns])
 }
 
 /**
@@ -506,16 +514,17 @@ function sameColumns(a: readonly string[], b: readonly string[]): boolean {
  */
 export function carryForwardUserContent(freshBody: EnvelopeBody, previousBody: EnvelopeBody): EnvelopeBody {
   const byHeading = new Map<string | null, EnvelopeLeaf[]>()
-  const tableRowsByHeading = new Map<string | null, { columns: string[]; rows: EnvelopeLeaf[][] }>()
+  const tableRowsByHeading = new Map<string, { columns: string[]; rows: EnvelopeLeaf[][] }>()
 
   for (const block of previousBody.sections) {
     if (block.type === 'table') {
       const heading = block.heading ?? null
       const userRows = block.rows.filter((row) => row.every((leaf) => leaf.origin === 'user'))
       if (userRows.length === 0) continue
-      const entry = tableRowsByHeading.get(heading) ?? { columns: block.columns, rows: [] }
+      const key = tableRowsKey(heading, block.columns)
+      const entry = tableRowsByHeading.get(key) ?? { columns: block.columns, rows: [] }
       entry.rows.push(...userRows)
-      tableRowsByHeading.set(heading, entry)
+      tableRowsByHeading.set(key, entry)
       continue
     }
 
@@ -533,9 +542,10 @@ export function carryForwardUserContent(freshBody: EnvelopeBody, previousBody: E
   const sections: EnvelopeBlock[] = freshBody.sections.map((block) => {
     if (block.type === 'table') {
       const heading = block.heading ?? null
-      const entry = tableRowsByHeading.get(heading)
-      if (!entry || !sameColumns(entry.columns, block.columns)) return block
-      tableRowsByHeading.delete(heading)
+      const key = tableRowsKey(heading, block.columns)
+      const entry = tableRowsByHeading.get(key)
+      if (!entry) return block
+      tableRowsByHeading.delete(key)
       return { ...block, rows: [...block.rows, ...entry.rows] }
     }
     if (block.type !== 'checklist' && block.type !== 'list') return block
