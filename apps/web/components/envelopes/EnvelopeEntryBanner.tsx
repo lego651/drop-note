@@ -81,7 +81,13 @@ export function EnvelopeEntryBanner({ onFullCardInViewChange }: EnvelopeEntryBan
             {overCap ? `${count} picked · max ${ENVELOPE_MAX_ITEMS}` : `${count} picked`}
           </span>
         </span>
-        <Button variant="ghost" size="icon" className="ml-auto h-11 w-11 shrink-0 gap-1.5" onClick={exitSelectMode} aria-label="Cancel picking">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="ml-auto h-11 w-11 shrink-0 gap-1.5 sm:w-auto sm:px-3"
+          onClick={exitSelectMode}
+          aria-label="Cancel picking"
+        >
           <X size={16} />
           <span className="hidden sm:inline">Cancel</span>
         </Button>
