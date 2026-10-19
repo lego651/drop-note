@@ -219,6 +219,34 @@ ids/routes/dates are mono.
 blocks with the card's outline and shadow (so layout doesn't jump). Empty states can use **one** postmark
 illustration and one sentence.
 
+**Floating entry CTA / pick tray (D-9, DRO-227).** A cobalt pill, fixed bottom-right, that swaps for a
+docked tray once picking starts — used for the envelopes "Make a plan" entry point above the items grid.
+- **Pill (idle):** 56px tall, full pill radius, cobalt fill, ink outline, `shadow-ink-lg`, leading `Mail`
+  icon (20px) + "Make a plan" (15px/700). `z-40` — below dialogs/popovers/the cookie banner/toasts.
+  Desktop inset 28px from the right and bottom edges (plus `env(safe-area-inset-right)`). At ≤390px: 14px
+  from the right, `18px + env(safe-area-inset-bottom)` from the bottom. Hover/active use the `.lift`
+  card-lift pattern + `active:translate` press-in (same recipe as the primary Button). Focus ring is
+  `--ring`, 2px, offset 2px **in `--content-bg`** (the canvas color, since the pill floats over it, not a
+  card).
+- **Tray (active):** replaces the pill the instant pick mode starts — a 340px card (full-width minus 2×14px
+  insets on mobile), 12px radius, ink outline, `shadow-ink-lg`. Contents, top to bottom: a header row
+  (leading `Mail` icon + "Your envelope", trailing 44×44 ghost icon-button to cancel), an 8-slot meter (one
+  bar per slot, `gap-1`, `aria-hidden` — filled = cobalt + ink border; the first `ENVELOPE_MIN_ITEMS`
+  unfilled slots keep a dashed ink border so the required minimum reads at a glance; the rest are a quiet
+  `bg-muted`/`border-border` hairline), then a footer row with the live count line (`role="status"`, e.g.
+  "3 of 2–8 · tap cards to add", turns `text-destructive` past the cap) and the primary action, enabled
+  only once the minimum is met.
+- **No competing cobalt CTAs:** only one of {pill, tray} is ever on screen, and never alongside another
+  full-strength cobalt banner — the page that hosts this decides when the pill may show (e.g. only once its
+  own promotional banner has scrolled out of view or been dismissed), via `IntersectionObserver` at
+  `threshold: 0`.
+- **Motion:** v1 swaps the pill and tray instantly (a conditional mount, not an animated transition), which
+  already satisfies `prefers-reduced-motion` for free. An animated morph (resize + fade, ~220ms,
+  `transform-origin: bottom right`) is a valid future refinement but must fall back to an instant swap
+  under `prefers-reduced-motion: reduce` if added.
+- Reference implementation: `EnvelopeMakePlanFab.tsx` (pill) and `EnvelopeTray.tsx` (tray),
+  `apps/web/components/envelopes/`.
+
 ---
 
 ## 8. Color usage

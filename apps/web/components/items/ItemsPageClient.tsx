@@ -14,6 +14,9 @@ import { ViewSwitcher, VIEW_STORAGE_KEY } from '@/components/items/ViewSwitcher'
 import { useBulkSelect } from '@/components/items/BulkSelectProvider'
 import { BulkActionToolbar } from '@/components/items/BulkActionToolbar'
 import { WelcomeModal } from '@/components/dashboard/WelcomeModal'
+import { EnvelopeEntryBanner } from '@/components/envelopes/EnvelopeEntryBanner'
+import { EnvelopeMakePlanFab } from '@/components/envelopes/EnvelopeMakePlanFab'
+import { EnvelopeTray } from '@/components/envelopes/EnvelopeTray'
 import { StatsBar } from '@/components/items/StatsBar'
 import { ItemsPageHeader } from '@/components/items/ItemsPageHeader'
 import { SortDropdown } from '@/components/items/SortDropdown'
@@ -84,6 +87,13 @@ export function ItemsPageClient({
 
   const { isBulkMode, selectedIds, toggle, selectAll, deselectIds, deselectAll, enterSelectMode, exitSelectMode } = useBulkSelect()
 
+  // Whether the full entry banner (not its strip/step-bar states) currently
+  // holds the viewport — the floating "Make a plan" FAB stays hidden while
+  // this is true, so there's never a second competing cobalt CTA (DRO-227).
+  // Defaults to true so the FAB doesn't flash in before the observer attaches.
+  const [bannerOccupiesCta, setBannerOccupiesCta] = useState(true)
+  const handleFullCardInViewChange = useCallback((inView: boolean) => setBannerOccupiesCta(inView), [])
+
   const [view, setView] = useState<ViewMode>('card')
   const [searchQuery, setSearchQuery] = useState(initialQuery)
   const [searchResults, setSearchResults] = useState<ItemSummary[] | null>(null)
@@ -149,6 +159,13 @@ export function ItemsPageClient({
     } catch {
       // localStorage unavailable
     }
+  }, [])
+
+  // ?pick=1 (from the /envelopes empty state, DRO-227) drops the user straight
+  // into pick mode instead of just landing on the inbox.
+  useEffect(() => {
+    if (searchParams.get('pick') === '1') enterSelectMode()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Esc exits selection mode (DRO-213)
@@ -324,6 +341,11 @@ export function ItemsPageClient({
   }
 
   const isEmpty = displayItems.length === 0 && !isSearching
+  // The floating "Make a plan" FAB and the pick-mode tray are both fixed
+  // bottom-right (DRO-227) — reserve room so neither covers the last row or
+  // the pagination controls.
+  const showFab = !isBulkMode && !bannerOccupiesCta
+  const reserveFabSpace = isBulkMode || showFab
 
   return (
     <div>
@@ -334,7 +356,12 @@ export function ItemsPageClient({
         userEmail={userEmail}
         userName={userName}
       />
-      <div className="mx-auto max-w-6xl px-3 sm:px-6 lg:px-8 py-6 space-y-5">
+      <div
+        className={cn(
+          'mx-auto max-w-6xl px-3 sm:px-6 lg:px-8 py-6 space-y-5',
+          reserveFabSpace && 'pb-28 sm:pb-24',
+        )}
+      >
       <WelcomeModal />
       {/* Page title row */}
       <div className="flex items-start justify-between gap-4">
@@ -358,6 +385,9 @@ export function ItemsPageClient({
         topCategory={statsData?.topCategory ?? null}
         weekDelta={statsData?.weekDelta}
       />
+
+      {/* Envelopes entry (DRO-227) */}
+      <EnvelopeEntryBanner onFullCardInViewChange={handleFullCardInViewChange} />
 
       {/* Search bar + Filters */}
       <div className="flex items-center gap-3">
@@ -444,13 +474,14 @@ export function ItemsPageClient({
           </p>
           <div className="flex shrink-0 items-center gap-2">
             <Button
-              variant="outline"
+              variant="ghost"
               className={cn(
                 'h-10 w-10 justify-center gap-2 px-0 text-sm font-semibold sm:w-auto sm:px-5',
                 isBulkMode && 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground',
               )}
               aria-pressed={isBulkMode}
-              aria-label={isBulkMode ? 'Cancel selection' : 'Select items'}
+              aria-label={isBulkMode ? 'Cancel selection' : 'Edit items'}
+              title={isBulkMode ? 'Cancel selection' : 'Edit items'}
               onClick={() => (isBulkMode ? exitSelectMode() : enterSelectMode())}
             >
               {isBulkMode ? (
@@ -461,7 +492,7 @@ export function ItemsPageClient({
               ) : (
                 <>
                   <ListChecks size={15} className="text-muted-foreground" />
-                  <span className="hidden sm:inline">Select</span>
+                  <span className="hidden sm:inline">Edit items</span>
                 </>
               )}
             </Button>
@@ -602,6 +633,9 @@ export function ItemsPageClient({
         </nav>
       )}
       </div>{/* end p-6 */}
+
+      {/* Floating envelopes entry (DRO-227) — tray while picking, otherwise the FAB once the banner is out of view */}
+      {isBulkMode ? <EnvelopeTray /> : showFab && <EnvelopeMakePlanFab onClick={enterSelectMode} />}
     </div>
   )
 }

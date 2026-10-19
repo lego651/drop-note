@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 
 interface BulkSelectContextType {
@@ -24,9 +24,16 @@ export function BulkSelectProvider({ children }: { children: React.ReactNode }) 
   // checkboxes were hidden, so selection could never start.
   const [selectMode, setSelectMode] = useState(false)
   const pathname = usePathname()
+  // Only resets on an actual navigation, not on first mount — otherwise this
+  // effect runs in the same commit as (and after) a child's own mount effect
+  // and silently undoes it, e.g. the items page entering pick mode for a
+  // ?pick=1 deep link (DRO-227).
+  const previousPathname = useRef(pathname)
 
   // Reset on page navigation
   useEffect(() => {
+    if (previousPathname.current === pathname) return
+    previousPathname.current = pathname
     setSelectedIds(new Set())
     setSelectMode(false)
   }, [pathname])

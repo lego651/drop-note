@@ -1,64 +1,89 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles, X } from 'lucide-react'
+import { Mail, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useBulkSelect } from '@/components/items/BulkSelectProvider'
 import { PurposeDialog } from '@/components/envelopes/PurposeDialog'
 import { ENVELOPE_MAX_ITEMS, ENVELOPE_MIN_ITEMS } from '@drop-note/shared'
+import { cn } from '@/lib/utils'
 
 /**
- * Docked cross-category pick (DRO-194). Selection lives in BulkSelectProvider
- * above the dashboard layout, so this renders on every dashboard page once
- * something is selected — independent of which category page is open.
+ * Docked cross-category pick (DRO-194), restyled as the floating button's
+ * morph target (DRO-227, option 3 — see docs/design/AIRMAIL.md §7). Selection
+ * lives in BulkSelectProvider above the dashboard layout, so this renders on
+ * every dashboard page once something is selected — independent of which
+ * category page is open.
  */
 export function EnvelopeTray() {
-  const { isBulkMode, selectedIds, deselectAll } = useBulkSelect()
+  const { isBulkMode, selectedIds, exitSelectMode } = useBulkSelect()
   const [purposeDialogOpen, setPurposeDialogOpen] = useState(false)
 
   if (!isBulkMode) return null
 
   const count = selectedIds.size
   const canMakePlan = count >= ENVELOPE_MIN_ITEMS && count <= ENVELOPE_MAX_ITEMS
-  const capMessage =
-    count < ENVELOPE_MIN_ITEMS
-      ? `Select at least ${ENVELOPE_MIN_ITEMS} items to make a plan.`
-      : count > ENVELOPE_MAX_ITEMS
-        ? `Select up to ${ENVELOPE_MAX_ITEMS} items to make a plan.`
-        : null
+  const overCapMessage = count > ENVELOPE_MAX_ITEMS ? `Select up to ${ENVELOPE_MAX_ITEMS} items.` : null
 
   return (
     <>
       <div
-        role="status"
-        className="fixed bottom-6 left-1/2 z-40 flex max-w-[92vw] -translate-x-1/2 flex-wrap items-center gap-2 rounded-[10px] border-stroke border-ink bg-card px-3 py-2 shadow-ink-lg sm:gap-3 sm:px-4 sm:py-2.5"
+        role="region"
+        aria-label="Your envelope"
+        className="fixed inset-x-3 bottom-[14px] z-40 rounded-xl border-stroke border-ink bg-card p-3.5 shadow-ink-lg sm:inset-x-auto sm:bottom-7 sm:right-7 sm:w-[340px] sm:p-4"
       >
-        <span className="whitespace-nowrap text-sm font-medium text-foreground">
-          {count} {count === 1 ? 'item' : 'items'} selected
-        </span>
-        {capMessage && (
-          // Full-width on mobile so it wraps to its own line below the count/actions
-          // row instead of being hidden — a disabled button alone doesn't explain
-          // the 2-8 cap on touch devices (no hover for the `title`).
-          <span className="order-3 w-full text-xs text-muted-foreground sm:order-none sm:w-auto">
-            {capMessage}
+        <div className="flex items-center justify-between font-semibold text-foreground">
+          <span className="flex items-center gap-2">
+            <Mail size={16} className="text-foreground" />
+            Your envelope
           </span>
-        )}
-        <div className="order-2 flex shrink-0 items-center gap-1.5 sm:order-none">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-11 w-11"
+            onClick={exitSelectMode}
+            aria-label="Cancel picking"
+          >
+            <X size={16} />
+          </Button>
+        </div>
+
+        <div className="my-3 flex gap-1" aria-hidden="true">
+          {Array.from({ length: ENVELOPE_MAX_ITEMS }).map((_, i) => {
+            const filled = i < Math.min(count, ENVELOPE_MAX_ITEMS)
+            const isMinSlot = i < ENVELOPE_MIN_ITEMS
+            return (
+              <span
+                key={i}
+                className={cn(
+                  'h-2.5 flex-1 rounded-[3px] border-stroke',
+                  filled
+                    ? 'border-ink bg-primary'
+                    : isMinSlot
+                      ? 'border-dashed border-ink bg-transparent'
+                      : 'border border-border bg-muted',
+                )}
+              />
+            )
+          })}
+        </div>
+
+        <div className="flex items-center justify-between gap-2">
+          {/* The only live region here — the tray's outer role stays "region" (not "status") so it doesn't re-announce every button. */}
+          <span role="status" className={cn('font-mono text-xs', overCapMessage ? 'text-destructive' : 'text-muted-foreground')}>
+            {overCapMessage ? `${count} of ${ENVELOPE_MIN_ITEMS}–${ENVELOPE_MAX_ITEMS} · remove ${count - ENVELOPE_MAX_ITEMS}` : `${count} of ${ENVELOPE_MIN_ITEMS}–${ENVELOPE_MAX_ITEMS} · tap cards to add`}
+          </span>
           <Button
             variant="default"
             size="sm"
             disabled={!canMakePlan}
             aria-disabled={!canMakePlan}
-            title={canMakePlan ? undefined : capMessage ?? undefined}
+            title={canMakePlan ? undefined : overCapMessage ?? `Select at least ${ENVELOPE_MIN_ITEMS} items.`}
             onClick={() => setPurposeDialogOpen(true)}
-            className="gap-1.5"
+            className="shrink-0 gap-1.5"
           >
-            <Sparkles size={14} />
+            <Mail size={14} />
             Make a plan →
-          </Button>
-          <Button variant="ghost" size="sm" onClick={deselectAll} aria-label="Clear selection">
-            <X size={14} />
           </Button>
         </div>
       </div>

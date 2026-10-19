@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
  * change here, not a hunt through JSX.
  */
 export const ENVELOPES_EMPTY_STATE_COPY = 'Pick 2–8 saved items on your inbox page, then make a plan.'
+export const ENVELOPES_EMPTY_STATE_CTA = 'Make a plan'
 
 export function EnvelopesEmptyState() {
   return (
@@ -16,8 +17,12 @@ export function EnvelopesEmptyState() {
         <Mail size={20} />
       </span>
       <p className="max-w-sm text-sm text-muted-foreground">{ENVELOPES_EMPTY_STATE_COPY}</p>
-      <Button asChild size="sm">
-        <Link href="/items">Go to items</Link>
+      <Button asChild size="sm" className="gap-1.5">
+        {/* ?pick=1 drops the user straight into pick mode on /items (DRO-227) */}
+        <Link href="/items?pick=1">
+          <Mail size={14} />
+          {ENVELOPES_EMPTY_STATE_CTA}
+        </Link>
       </Button>
     </div>
   )
