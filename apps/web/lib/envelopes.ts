@@ -5,6 +5,7 @@ import {
   buildEnvelopeSystemPrompt,
   buildEnvelopeUserPrompt,
   carryForwardEnvelopeProgress,
+  carryForwardUserContent,
   countEnvelopeChecklistProgress,
   enforceEnvelopeCitations,
   getEnvelopeTitle,
@@ -95,6 +96,9 @@ const RETRY_TIME_BUDGET_MS = 20_000
  * and then deterministically re-applied by matching leaf text against
  * `previousBody` (carryForwardEnvelopeProgress), so a regenerate doesn't
  * reset the user's progress even though the hint above is prompt-only.
+ * The user's own hand-added lines/sections (DRO-232) are carried forward the
+ * same way, structurally rather than by prompt (carryForwardUserContent) —
+ * the AI never saw them, so it can't regenerate them on its own.
  */
 export async function runEnvelopeGeneration(
   provider: AIProvider,
@@ -152,7 +156,8 @@ export async function runEnvelopeGeneration(
   if (stripped) {
     log.warn('envelopes.citations_stripped', { itemIds: Array.from(allowedItemIds) })
   }
-  const body = previousBody ? carryForwardEnvelopeProgress(citedBody, previousBody) : citedBody
+  const withProgress = previousBody ? carryForwardEnvelopeProgress(citedBody, previousBody) : citedBody
+  const body = previousBody ? carryForwardUserContent(withProgress, previousBody) : withProgress
   return { status: stripped ? 'partial' : 'done', body }
 }
 

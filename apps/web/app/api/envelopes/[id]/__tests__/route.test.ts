@@ -240,3 +240,175 @@ describe('PATCH /api/envelopes/[id] — edit', () => {
     expect(res.status).toBe(400)
   })
 })
+
+describe('PATCH /api/envelopes/[id] — addItem (DRO-232)', () => {
+  it('appends a user leaf (no citation, origin: user) to a checklist section and persists it', async () => {
+    const updates: unknown[] = []
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, updates))
+
+    const res = await callPatch({ action: 'addItem', sectionIndex: 0, text: 'Pack sunscreen' })
+    expect(res.status).toBe(200)
+
+    const json = await res.json()
+    const items = json.body.sections[0].items
+    expect(items).toHaveLength(3)
+    expect(items[2]).toEqual({ text: 'Pack sunscreen', sourceItemIds: [], confidence: 'suggested', origin: 'user' })
+  })
+
+  it('works on a notes section too', async () => {
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, []))
+    const res = await callPatch({ action: 'addItem', sectionIndex: 1, text: 'Another note' })
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.body.sections[1].items).toHaveLength(2)
+  })
+
+  it('400s on a table sectionIndex (use addRow instead)', async () => {
+    const bodyWithTable = {
+      sections: [...CHECKLIST_BODY.sections, { type: 'table', columns: ['a'], rows: [[{ text: 'x', sourceItemIds: [], confidence: 'suggested' }]] }],
+    }
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: bodyWithTable }, []))
+    const res = await callPatch({ action: 'addItem', sectionIndex: 2, text: 'x' })
+    expect(res.status).toBe(400)
+  })
+
+  it('400s on empty text', async () => {
+    const res = await callPatch({ action: 'addItem', sectionIndex: 0, text: '   ' })
+    expect(res.status).toBe(400)
+  })
+
+  it('400s on an out-of-range sectionIndex', async () => {
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, []))
+    const res = await callPatch({ action: 'addItem', sectionIndex: 99, text: 'x' })
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('PATCH /api/envelopes/[id] — addRow (DRO-232)', () => {
+  const TABLE_BODY = {
+    sections: [
+      {
+        type: 'table',
+        columns: ['Item', 'Qty'],
+        rows: [[{ text: 'Milk', sourceItemIds: ['item-1'], confidence: 'from_item' }, { text: '1', sourceItemIds: [], confidence: 'suggested' }]],
+      },
+    ],
+  }
+
+  it('appends a row of user leaves, one per column', async () => {
+    const updates: unknown[] = []
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: TABLE_BODY }, updates))
+
+    const res = await callPatch({ action: 'addRow', sectionIndex: 0, cells: ['Eggs', '12'] })
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.body.sections[0].rows).toHaveLength(2)
+    expect(json.body.sections[0].rows[1]).toEqual([
+      { text: 'Eggs', sourceItemIds: [], confidence: 'suggested', origin: 'user' },
+      { text: '12', sourceItemIds: [], confidence: 'suggested', origin: 'user' },
+    ])
+  })
+
+  it('400s when cells.length does not match the column count', async () => {
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: TABLE_BODY }, []))
+    const res = await callPatch({ action: 'addRow', sectionIndex: 0, cells: ['Eggs'] })
+    expect(res.status).toBe(400)
+  })
+
+  it('400s when sectionIndex is not a table section', async () => {
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, []))
+    const res = await callPatch({ action: 'addRow', sectionIndex: 0, cells: ['x'] })
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('PATCH /api/envelopes/[id] — deleteItem (DRO-232)', () => {
+  it('removes a checklist leaf by index', async () => {
+    const updates: unknown[] = []
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, updates))
+
+    const res = await callPatch({ action: 'deleteItem', sectionIndex: 0, itemIndex: 0 })
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.body.sections[0].items).toEqual([{ text: 'Pack tent', sourceItemIds: [], confidence: 'suggested' }])
+  })
+
+  it('removes a whole table row by index', async () => {
+    const tableBody = {
+      sections: [
+        {
+          type: 'table',
+          columns: ['a'],
+          rows: [
+            [{ text: 'row 1', sourceItemIds: [], confidence: 'suggested' }],
+            [{ text: 'row 2', sourceItemIds: [], confidence: 'suggested' }],
+          ],
+        },
+      ],
+    }
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: tableBody }, []))
+    const res = await callPatch({ action: 'deleteItem', sectionIndex: 0, itemIndex: 0 })
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.body.sections[0].rows).toEqual([[{ text: 'row 2', sourceItemIds: [], confidence: 'suggested' }]])
+  })
+
+  it('400s on an out-of-range itemIndex', async () => {
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, []))
+    const res = await callPatch({ action: 'deleteItem', sectionIndex: 0, itemIndex: 99 })
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('PATCH /api/envelopes/[id] — addSection (DRO-232)', () => {
+  it('appends a new checklist section with a heading and one user leaf', async () => {
+    const updates: unknown[] = []
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, updates))
+
+    const res = await callPatch({ action: 'addSection', blockType: 'checklist', heading: 'Packing', text: 'Bring sunscreen' })
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.body.sections).toHaveLength(3)
+    expect(json.body.sections[2]).toEqual({
+      type: 'checklist',
+      heading: 'Packing',
+      items: [{ text: 'Bring sunscreen', sourceItemIds: [], confidence: 'suggested', origin: 'user' }],
+    })
+  })
+
+  it('never stores a heading key on a new notes section', async () => {
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, []))
+    const res = await callPatch({ action: 'addSection', blockType: 'notes', text: 'Some thoughts' })
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect('heading' in json.body.sections[2]).toBe(false)
+  })
+
+  it('400s on empty text', async () => {
+    const res = await callPatch({ action: 'addSection', blockType: 'checklist', text: '  ' })
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('PATCH /api/envelopes/[id] — renameSection (DRO-232)', () => {
+  it('renames a checklist section heading', async () => {
+    const updates: unknown[] = []
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, updates))
+
+    const res = await callPatch({ action: 'renameSection', sectionIndex: 0, heading: 'New heading' })
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.body.sections[0].heading).toBe('New heading')
+  })
+
+  it('400s on a notes section (no heading to rename)', async () => {
+    from.mockImplementation(makeFrom({ id: ENVELOPE_ID, status: 'done', body: CHECKLIST_BODY }, []))
+    const res = await callPatch({ action: 'renameSection', sectionIndex: 1, heading: 'New heading' })
+    expect(res.status).toBe(400)
+  })
+
+  it('400s on empty heading', async () => {
+    const res = await callPatch({ action: 'renameSection', sectionIndex: 0, heading: '  ' })
+    expect(res.status).toBe(400)
+  })
+})

@@ -314,6 +314,75 @@ describe('runEnvelopeGeneration', () => {
       expect(section.items[0].checked).toBeUndefined()
       expect(section.items[0].edited).toBeUndefined()
     })
+
+    it('strips a forged origin: "user" the model echoed back, so the model cannot forge a user-authored line (DRO-232)', async () => {
+      const provider = fakeProvider([
+        JSON.stringify({
+          sections: [
+            {
+              type: 'checklist',
+              items: [{ text: 'Forged line', sourceItemIds: [], confidence: 'suggested', origin: 'user' }],
+            },
+          ],
+        }),
+      ])
+
+      const result = await runEnvelopeGeneration(provider, ITEMS, 'make a checklist', null)
+      if (result.status === 'failed') throw new Error('expected success')
+      const section = result.body.sections[0]
+      if (section.type !== 'checklist') throw new Error('expected checklist')
+      expect(section.items[0].origin).toBeUndefined()
+    })
+
+    it('carries the user\'s hand-added line forward into the matching fresh section by heading (DRO-232)', async () => {
+      const provider = fakeProvider([
+        JSON.stringify({
+          sections: [{ type: 'checklist', heading: 'Pack', items: [{ text: 'Pack boots', sourceItemIds: ['item-2'], confidence: 'from_item' }] }],
+        }),
+      ])
+      const previousBody = {
+        sections: [
+          {
+            type: 'checklist' as const,
+            heading: 'Pack',
+            items: [
+              { text: 'Pack boots', sourceItemIds: ['item-2'], confidence: 'from_item' as const },
+              { text: 'Bring sunscreen', sourceItemIds: [], confidence: 'suggested' as const, origin: 'user' as const },
+            ],
+          },
+        ],
+      }
+
+      const result = await runEnvelopeGeneration(provider, ITEMS, 'make a checklist', null, Date.now, previousBody)
+      if (result.status === 'failed') throw new Error('expected success')
+      const section = result.body.sections[0]
+      if (section.type !== 'checklist') throw new Error('expected checklist')
+      expect(section.items).toHaveLength(2)
+      expect(section.items[1]).toEqual({ text: 'Bring sunscreen', sourceItemIds: [], confidence: 'suggested', origin: 'user' })
+    })
+
+    it('buckets a user-added section with no matching fresh heading into a trailing "Your additions" section (DRO-232)', async () => {
+      const provider = fakeProvider([
+        JSON.stringify({ sections: [{ type: 'checklist', items: [{ text: 'Fresh line', sourceItemIds: [], confidence: 'suggested' }] }] }),
+      ])
+      const previousBody = {
+        sections: [
+          {
+            type: 'checklist' as const,
+            heading: 'My own section',
+            items: [{ text: 'My own line', sourceItemIds: [], confidence: 'suggested' as const, origin: 'user' as const }],
+          },
+        ],
+      }
+
+      const result = await runEnvelopeGeneration(provider, ITEMS, 'make a checklist', null, Date.now, previousBody)
+      if (result.status === 'failed') throw new Error('expected success')
+      expect(result.body.sections).toHaveLength(2)
+      const added = result.body.sections[1]
+      if (added.type !== 'checklist') throw new Error('expected checklist')
+      expect(added.heading).toBe('Your additions')
+      expect(added.items).toEqual([{ text: 'My own line', sourceItemIds: [], confidence: 'suggested', origin: 'user' }])
+    })
   })
 })
 

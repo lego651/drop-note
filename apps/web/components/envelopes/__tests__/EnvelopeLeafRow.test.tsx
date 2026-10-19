@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import type { EnvelopeLeaf } from '@drop-note/shared'
 import { EnvelopeLeafRow } from '../EnvelopeLeafRow'
@@ -85,5 +85,40 @@ describe('EnvelopeLeafRow (DRO-207 design fixes)', () => {
     const input = screen.getByDisplayValue('Pack a towel')
     expect(input).toHaveClass('text-base')
     expect(input).toHaveClass('md:text-sm')
+  })
+})
+
+describe('EnvelopeLeafRow (DRO-232 extensibility)', () => {
+  it('renders a delete control when onDelete is given, and calls it on click', () => {
+    const onDelete = vi.fn()
+    render(<EnvelopeLeafRow leaf={leaf()} citationLabels={{}} onDelete={onDelete} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove this line' }))
+    expect(onDelete).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not render a delete control when onDelete is omitted', () => {
+    render(<EnvelopeLeafRow leaf={leaf()} citationLabels={{}} />)
+    expect(screen.queryByRole('button', { name: 'Remove this line' })).not.toBeInTheDocument()
+  })
+
+  it('shows "Added by you" instead of a citation pill or the "suggested" dashed marker for a user leaf', () => {
+    render(
+      <EnvelopeLeafRow
+        leaf={leaf({ origin: 'user', confidence: 'suggested', sourceItemIds: [] })}
+        citationLabels={{}}
+        bulletVariant="check"
+        onToggle={() => {}}
+      />,
+    )
+
+    expect(screen.getByText('Added by you')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox')).not.toHaveClass('border-dashed')
+  })
+
+  it('prefers the "Edited" badge over "Added by you" when a user leaf has also been edited', () => {
+    render(<EnvelopeLeafRow leaf={leaf({ origin: 'user', edited: true })} citationLabels={{}} />)
+    expect(screen.getByText('Edited')).toBeInTheDocument()
+    expect(screen.queryByText('Added by you')).not.toBeInTheDocument()
   })
 })

@@ -1,20 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { ENVELOPE_TEXT_MAX_LENGTH, parseEnvelopeBody, updateEnvelopeLeaf } from '@drop-note/shared'
+import {
+  EnvelopeBody,
+  EnvelopePatchRequestSchema,
+  addEnvelopeItem,
+  addEnvelopeSection,
+  addEnvelopeTableRow,
+  deleteEnvelopeItem,
+  parseEnvelopeBody,
+  renameEnvelopeSection,
+  updateEnvelopeLeaf,
+} from '@drop-note/shared'
 import { log, setLogUser, withRouteLogging } from '@/lib/observability/logger'
 
 // PATCH /api/envelopes/[id]
-// Body: { action: 'toggle', sectionIndex: number, itemIndex: number, checked: boolean }
-//     | { action: 'edit', sectionIndex: number, itemIndex: number, text: string }
+// Body: see EnvelopePatchRequestSchema (@drop-note/shared) — one of
+// toggle / edit (DRO-195), or addItem / addRow / deleteItem / addSection /
+// renameSection (DRO-232, "make plans extensible"). Every action is an
+// explicit op addressed by section/item index, never a whole-body write —
+// the server applies it to the stored body and persists the result.
 //
-// Sets (never flips) or edits a single checklist/list/notes leaf and persists
-// it back into the envelope's `body` JSON (DRO-195). The client sends the
-// target `checked` value rather than asking the server to invert the
-// previous one, so retries/out-of-order delivery are idempotent instead of
-// double-toggling. Writes go through the caller's own authenticated client,
-// never supabaseAdmin — RLS's "envelopes: update own" policy is the real
-// ownership gate; the explicit .eq('user_id', ...) below just turns another
-// user's envelope into a 404 instead of a silent no-op.
+// toggle sets (never flips) a checklist leaf's checked state — the client
+// sends the target `checked` value rather than asking the server to invert
+// the previous one, so retries/out-of-order delivery are idempotent instead
+// of double-toggling. Writes go through the caller's own authenticated
+// client, never supabaseAdmin — RLS's "envelopes: update own" policy is the
+// real ownership gate; the explicit .eq('user_id', ...) below just turns
+// another user's envelope into a 404 instead of a silent no-op.
 async function handlePATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   try {
@@ -23,28 +35,18 @@ async function handlePATCH(request: NextRequest, { params }: { params: Promise<{
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     setLogUser(user.id)
 
-    let raw: { action?: unknown; sectionIndex?: unknown; itemIndex?: unknown; text?: unknown; checked?: unknown }
+    let raw: unknown
     try {
       raw = await request.json()
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
 
-    const { action, sectionIndex, itemIndex, text, checked } = raw
-    if (action !== 'toggle' && action !== 'edit') {
-      return NextResponse.json({ error: 'action must be "toggle" or "edit"' }, { status: 400 })
+    const parsedRequest = EnvelopePatchRequestSchema.safeParse(raw)
+    if (!parsedRequest.success) {
+      return NextResponse.json({ error: parsedRequest.error.issues[0]?.message ?? 'Invalid request body' }, { status: 400 })
     }
-    if (typeof sectionIndex !== 'number' || typeof itemIndex !== 'number' || sectionIndex < 0 || itemIndex < 0) {
-      return NextResponse.json({ error: 'sectionIndex and itemIndex must be non-negative numbers' }, { status: 400 })
-    }
-    if (action === 'toggle' && typeof checked !== 'boolean') {
-      return NextResponse.json({ error: 'checked must be a boolean' }, { status: 400 })
-    }
-    const nextChecked = typeof checked === 'boolean' ? checked : false
-    const trimmedText = typeof text === 'string' ? text.trim() : ''
-    if (action === 'edit' && (trimmedText.length === 0 || trimmedText.length > ENVELOPE_TEXT_MAX_LENGTH)) {
-      return NextResponse.json({ error: `text must be 1-${ENVELOPE_TEXT_MAX_LENGTH} characters` }, { status: 400 })
-    }
+    const req = parsedRequest.data
 
     const { data: envelope } = await supabase
       .from('envelopes')
@@ -63,19 +65,58 @@ async function handlePATCH(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "This plan's content couldn't be read" }, { status: 500 })
     }
 
-    const section = parsed.data.sections[sectionIndex]
-    if (!section || section.type === 'table') {
-      return NextResponse.json({ error: 'Invalid sectionIndex' }, { status: 400 })
-    }
-    if (action === 'toggle' && section.type !== 'checklist') {
-      return NextResponse.json({ error: 'Only checklist items can be checked' }, { status: 400 })
+    let updatedBody: EnvelopeBody | null
+
+    switch (req.action) {
+      case 'toggle':
+      case 'edit': {
+        const section = parsed.data.sections[req.sectionIndex]
+        if (!section || section.type === 'table') {
+          return NextResponse.json({ error: 'Invalid sectionIndex' }, { status: 400 })
+        }
+        if (req.action === 'toggle' && section.type !== 'checklist') {
+          return NextResponse.json({ error: 'Only checklist items can be checked' }, { status: 400 })
+        }
+        updatedBody = updateEnvelopeLeaf(parsed.data, req.sectionIndex, req.itemIndex, (leaf) =>
+          req.action === 'toggle' ? { ...leaf, checked: req.checked } : { ...leaf, text: req.text, edited: true },
+        )
+        break
+      }
+      case 'addItem': {
+        updatedBody = addEnvelopeItem(parsed.data, req.sectionIndex, req.text)
+        break
+      }
+      case 'addRow': {
+        const section = parsed.data.sections[req.sectionIndex]
+        if (!section || section.type !== 'table') {
+          return NextResponse.json({ error: 'addRow is only valid on a table section' }, { status: 400 })
+        }
+        updatedBody = addEnvelopeTableRow(parsed.data, req.sectionIndex, req.cells)
+        if (!updatedBody) {
+          return NextResponse.json({ error: `cells must have exactly ${section.columns.length} entries` }, { status: 400 })
+        }
+        break
+      }
+      case 'deleteItem': {
+        updatedBody = deleteEnvelopeItem(parsed.data, req.sectionIndex, req.itemIndex)
+        break
+      }
+      case 'addSection': {
+        updatedBody = addEnvelopeSection(parsed.data, req.blockType, req.heading, req.text)
+        break
+      }
+      case 'renameSection': {
+        const section = parsed.data.sections[req.sectionIndex]
+        if (section?.type === 'notes') {
+          return NextResponse.json({ error: 'A notes section has no heading to rename' }, { status: 400 })
+        }
+        updatedBody = renameEnvelopeSection(parsed.data, req.sectionIndex, req.heading)
+        break
+      }
     }
 
-    const updatedBody = updateEnvelopeLeaf(parsed.data, sectionIndex, itemIndex, (leaf) =>
-      action === 'toggle' ? { ...leaf, checked: nextChecked } : { ...leaf, text: trimmedText, edited: true },
-    )
     if (!updatedBody) {
-      return NextResponse.json({ error: 'Invalid itemIndex' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid sectionIndex or itemIndex' }, { status: 400 })
     }
 
     const { error: updateError } = await supabase
