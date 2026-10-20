@@ -122,7 +122,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
       <div className="flex items-center justify-between mb-6">
         <Link
           href="/items"
-          className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground"
+          className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground sm:min-h-0"
         >
           ← Back to items
         </Link>
@@ -130,7 +130,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
           {prev && (
             <Link
               href={`/items/${prev.id}`}
-              className="inline-flex min-h-11 items-center px-1 text-sm text-muted-foreground hover:text-foreground"
+              className="inline-flex min-h-11 items-center px-1 text-sm text-muted-foreground hover:text-foreground sm:min-h-0"
             >
               ← Previous
             </Link>
@@ -138,7 +138,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
           {next && (
             <Link
               href={`/items/${next.id}`}
-              className="inline-flex min-h-11 items-center px-1 text-sm text-muted-foreground hover:text-foreground"
+              className="inline-flex min-h-11 items-center px-1 text-sm text-muted-foreground hover:text-foreground sm:min-h-0"
             >
               Next →
             </Link>
@@ -182,7 +182,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
             href={item.source_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground underline"
+            className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground underline sm:min-h-0"
           >
             <ExternalLink size={14} />
             Open original

@@ -24,14 +24,14 @@ export function CookieBanner() {
         We use essential cookies to keep you signed in.{' '}
         <a
           href="/privacy"
-          className="inline-flex min-h-11 items-center underline"
+          className="inline-flex min-h-11 items-center underline sm:inline sm:min-h-0"
         >
           Privacy Policy
         </a>
       </p>
       <button
         onClick={accept}
-        className="inline-flex h-11 shrink-0 items-center rounded-md bg-primary px-4 text-sm text-primary-foreground hover:bg-primary/90"
+        className="inline-flex h-11 shrink-0 items-center rounded-md bg-primary px-4 text-sm text-primary-foreground hover:bg-primary/90 sm:h-auto sm:py-1.5"
       >
         Accept
       </button>

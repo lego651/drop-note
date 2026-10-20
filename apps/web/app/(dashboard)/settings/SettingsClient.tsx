@@ -763,7 +763,7 @@ export function SettingsClient({
                 key={id}
                 onClick={() => setActiveTab(id)}
                 className={cn(
-                  'flex min-h-11 items-center gap-2.5 rounded-lg border-stroke border-transparent px-3 py-2 text-sm text-left w-full transition-colors',
+                  'flex min-h-11 items-center gap-2.5 rounded-lg border-stroke border-transparent px-3 py-2 text-sm text-left w-full transition-colors md:min-h-0',
                   isActive
                     ? 'border-ink bg-card shadow-ink-sm font-semibold'
                     : 'hover:bg-accent hover:text-accent-foreground',

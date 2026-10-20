@@ -220,7 +220,7 @@ export function ItemDetailEditor({
               <button
                 type="button"
                 onClick={() => removeTag(tag)}
-                className="relative ml-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full leading-none text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:bg-accent hover:text-foreground"
+                className="relative ml-1 leading-none text-muted-foreground after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] hover:text-foreground"
                 aria-label={`Remove tag ${tag.name}`}
               >
                 ×

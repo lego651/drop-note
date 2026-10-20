@@ -29,7 +29,9 @@ describe('ItemDetailEditor tag tap targets (DRO-247)', () => {
       />,
     )
     const remove = screen.getByRole('button', { name: 'Remove tag recipe' })
-    expect(remove.className).toContain('after:-inset-2')
+    expect(remove.className).toContain('after:h-11')
+    expect(remove.className).toContain('after:w-11')
+    expect(remove.className).toContain('ml-1')
   })
 
   it('gives the Add tag button a 44px tap target on mobile that shrinks back at sm+', () => {
