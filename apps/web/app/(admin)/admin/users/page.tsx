@@ -39,13 +39,13 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h1 className="type-display text-[32px] sm:text-[42px]">Users</h1>
         <span className="font-mono text-[11px] text-muted-foreground">{totalCount} total</span>
       </div>
 
-      <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-muted">
             <tr>
               <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Email</th>
@@ -82,7 +82,7 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
         <div className="flex items-center justify-between">
           <a
             href={page > 1 ? `/admin/users?page=${page - 1}` : '#'}
-            className="text-sm text-muted-foreground hover:underline disabled:opacity-50"
+            className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline disabled:opacity-50"
             aria-disabled={page <= 1}
           >
             &larr; Previous
@@ -92,7 +92,7 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
           </span>
           <a
             href={page < totalPages ? `/admin/users?page=${page + 1}` : '#'}
-            className="text-sm text-muted-foreground hover:underline"
+            className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline"
             aria-disabled={page >= totalPages}
           >
             Next &rarr;

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import { AdminNav } from './AdminNav'
+import { AdminMobileNav } from './AdminMobileNav'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -19,7 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex h-screen bg-background">
-      <aside className="stripe-top w-48 shrink-0 bg-background border-r-stroke border-ink flex flex-col">
+      <aside className="stripe-top hidden w-48 shrink-0 bg-background border-r-stroke border-ink flex-col md:flex">
         <div className="h-14 flex items-center px-4 border-b-stroke border-ink">
           <span className="text-sm font-semibold">Admin</span>
         </div>
@@ -32,9 +33,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </Link>
         </div>
       </aside>
-      <main className="flex-1 min-w-0 overflow-y-auto bg-canvas bg-dot-grid">
-        <div className="mx-auto max-w-6xl px-8 py-6 space-y-5">{children}</div>
-      </main>
+      <div className="flex flex-col flex-1 min-w-0">
+        {/* Mobile top bar */}
+        <header
+          className="stripe-top md:hidden flex items-center gap-2 border-b-stroke border-ink px-3 py-2 shrink-0"
+          style={{ '--stripe-h': '5px' } as React.CSSProperties}
+        >
+          <AdminMobileNav />
+          <span className="text-sm font-semibold">Admin</span>
+        </header>
+        <main className="flex-1 min-w-0 overflow-y-auto bg-canvas bg-dot-grid">
+          <div className="mx-auto max-w-6xl px-3 py-6 space-y-5 sm:px-6 lg:px-8">{children}</div>
+        </main>
+      </div>
     </div>
   )
 }
