@@ -41,36 +41,38 @@ describe('EnvelopeLeafRow (DRO-207 design fixes)', () => {
     expect(screen.getByRole('checkbox')).not.toHaveClass('border-dashed')
   })
 
-  it('expands the checkbox hit target horizontally without overlapping the next row vertically', () => {
+  it('expands the checkbox hit target to a full 44px square without overlapping the next row', () => {
     render(
       <EnvelopeLeafRow leaf={leaf()} citationLabels={{}} bulletVariant="check" onToggle={() => {}} />,
     )
 
     const checkbox = screen.getByRole('checkbox')
     expect(checkbox).toHaveClass('relative')
-    expect(checkbox.className).toContain('after:-inset-x-[14px]')
-    expect(checkbox.className).toContain('after:-inset-y-2')
-    // Must not regress to a uniform inset: a uniform ≥10px inset overlaps the
-    // next/previous row's hit area at the current py-1.5 row pitch (DRO-203 D2).
-    expect(checkbox.className).not.toMatch(/after:-inset-\[\d/)
+    expect(checkbox.className).toContain('after:-inset-[calc(14px+var(--stroke))]')
   })
 
   it('keeps the checkbox hit target within the row pitch, so adjacent rows cannot overlap', () => {
-    // Row pitch math from DRO-203's round-D2 review: li is py-1.5 (6px top+bottom)
-    // around a text-sm line (20px line-height) => 32px pitch. The checkbox sits
-    // mt-0.5 (2px) below the content top, so its 16px box spans [8, 24] within
-    // the row. after:-inset-y-2 (8px) extends that to exactly [0, 32] — filling
-    // the row with zero overlap into the neighbour above or below.
-    const paddingY = 6
+    // DRO-241/DRO-263: li is py-3 (12px top+bottom) around a text-sm line
+    // (20px line-height) => 44px pitch. The checkbox sits mt-0.5 (2px) below
+    // the content top, so its 16px *border-box* spans [14, 30] within the
+    // row. But after:inset is measured from the checkbox's own padding box,
+    // which border-stroke (1.5px, --stroke) shrinks on every side, so the
+    // inset must add back --stroke to still land on exactly [0, 44] with
+    // zero overlap into the neighbour above or below.
+    const paddingY = 12
     const lineHeight = 20
     const rowPitch = paddingY * 2 + lineHeight
     const checkboxOffsetTop = 2
-    const checkboxSize = 16
-    const insetY = 8
+    const checkboxBorderBoxSize = 16
+    const stroke = 1.5
+    const checkboxPaddingBoxSize = checkboxBorderBoxSize - stroke * 2
+    const insetY = 14 + stroke
 
-    const hitAreaTop = paddingY + checkboxOffsetTop - insetY
-    const hitAreaBottom = paddingY + checkboxOffsetTop + checkboxSize + insetY
+    const paddingBoxTop = paddingY + checkboxOffsetTop + stroke
+    const hitAreaTop = paddingBoxTop - insetY
+    const hitAreaBottom = paddingBoxTop + checkboxPaddingBoxSize + insetY
 
+    expect(rowPitch).toBe(44)
     expect(hitAreaTop).toBe(0)
     expect(hitAreaBottom).toBe(rowPitch)
   })
@@ -95,6 +97,14 @@ describe('EnvelopeLeafRow (DRO-232 extensibility)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove this line' }))
     expect(onDelete).toHaveBeenCalledTimes(1)
+  })
+
+  it('expands the delete control to a full 44px square (DRO-241)', () => {
+    render(<EnvelopeLeafRow leaf={leaf()} citationLabels={{}} onDelete={() => {}} />)
+
+    const deleteButton = screen.getByRole('button', { name: 'Remove this line' })
+    expect(deleteButton.className).toContain('after:-inset-x-[14px]')
+    expect(deleteButton.className).toContain('after:-inset-y-3.5')
   })
 
   it('does not render a delete control when onDelete is omitted', () => {

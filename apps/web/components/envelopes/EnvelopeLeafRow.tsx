@@ -58,7 +58,7 @@ export function EnvelopeLeafRow({
   const showSuggestedMarker = leaf.origin !== 'user' && leaf.confidence === 'suggested'
 
   return (
-    <li className="flex items-start gap-2.5 py-1.5">
+    <li className="flex items-start gap-2.5 py-3">
       {onToggle ? (
         <Checkbox
           checked={leaf.checked ?? false}
@@ -66,7 +66,15 @@ export function EnvelopeLeafRow({
           aria-label={leaf.checked ? 'Mark as not done' : 'Mark as done'}
           className={cn(
             'relative mt-0.5',
-            "after:absolute after:-inset-x-[14px] after:-inset-y-2 after:content-['']",
+            // DRO-241: the row is py-3 (12px) around a text-sm line (20px),
+            // a 44px pitch — so a 14px inset on every side exactly fills it
+            // (12 padding + 2 offset ± 14 = 0..44) with zero overlap into the
+            // neighbouring row, while staying a 16px visual box. The inset is
+            // computed from the checkbox's own padding box though, which
+            // border-stroke shrinks by border-stroke*2 — so the inset must add
+            // back half the border (var(--stroke)) on each side to still land
+            // on a full 44px square (DRO-263 design review).
+            "after:absolute after:-inset-[calc(14px+var(--stroke))] after:content-['']",
             showSuggestedMarker && 'border-dashed',
           )}
         />
@@ -191,7 +199,7 @@ export function EnvelopeLeafRow({
           aria-label="Remove this line"
           className={cn(
             'relative mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-muted-foreground',
-            "after:absolute after:-inset-x-[14px] after:-inset-y-2 after:content-['']",
+            "after:absolute after:-inset-x-[14px] after:-inset-y-3.5 after:content-['']",
             'hover:text-destructive-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           )}
         >

@@ -250,12 +250,21 @@ export function EnvelopeBodyView({ envelopeId, body: initialBody, citationLabels
                         {row.map((leaf, c) => (
                           <EnvelopeTableCell key={c} leaf={leaf} citationLabels={citationLabels} />
                         ))}
-                        <td className="px-2 py-2 align-top">
+                        <td className="py-3.5 pl-2 pr-[14px] align-top">
                           <button
                             type="button"
                             onClick={() => handleDeleteItem(i, r)}
                             aria-label="Remove this row"
-                            className="relative flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:text-destructive-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className={cn(
+                              'relative flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground',
+                              // DRO-241: cell is py-3.5 (14px) around the 16px icon, so a
+                              // uniform 14px inset gives a 44×44 hit area that stays inside
+                              // this cell's own padding box — the right inset lines up with
+                              // pr-[14px] exactly, so it can't overflow the table and force a
+                              // horizontal scrollbar.
+                              "after:absolute after:-inset-[14px] after:content-['']",
+                              'hover:text-destructive-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            )}
                           >
                             <X size={12} aria-hidden="true" />
                           </button>
