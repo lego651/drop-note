@@ -440,20 +440,22 @@ export function ItemsPageClient({
         </div>
       )}
 
-      {/* Bulk action toolbar */}
+      {/* Sticky so Tag/Move/Delete stay reachable while scrolling, alongside the fixed envelope tray. */}
       {isBulkMode && (
-        <BulkActionToolbar
-          selectedIds={selectedIds}
-          allPageIds={allPageIds}
-          userTier={userTier}
-          categories={categories}
-          onDeleted={handleBulkDeleted}
-          onTagged={handleBulkTagged}
-          onMoved={handleBulkMoved}
-          onSelectAll={selectAll}
-          onDeselectPage={() => deselectIds(allPageIds)}
-          onDeselectAll={deselectAll}
-        />
+        <div className="sticky top-0 z-20 bg-canvas py-1">
+          <BulkActionToolbar
+            selectedIds={selectedIds}
+            allPageIds={allPageIds}
+            userTier={userTier}
+            categories={categories}
+            onDeleted={handleBulkDeleted}
+            onTagged={handleBulkTagged}
+            onMoved={handleBulkMoved}
+            onSelectAll={selectAll}
+            onDeselectPage={() => deselectIds(allPageIds)}
+            onDeselectAll={deselectAll}
+          />
+        </div>
       )}
 
       {/* List header: item count (left) + sort + view controls (right) */}
