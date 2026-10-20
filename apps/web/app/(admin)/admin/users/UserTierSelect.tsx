@@ -39,7 +39,7 @@ export function UserTierSelect({ userId, currentTier }: UserTierSelectProps) {
         value={tier}
         onChange={handleChange}
         disabled={loading}
-        className="h-8 px-2 text-xs"
+        className="h-8 px-2 text-base md:text-xs"
       >
         {TIERS.map((t) => (
           <option key={t} value={t}>{t}</option>

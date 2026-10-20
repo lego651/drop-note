@@ -76,16 +76,16 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
         <div className="flex flex-col gap-1 flex-1 min-w-[160px]">
           <label className="text-xs text-muted-foreground">Value</label>
           <Input
-            type="text"
+            type={type === 'email' ? 'email' : 'text'}
+            inputMode={type === 'email' ? 'email' : 'text'}
+            enterKeyHint="done"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={type === 'email' ? 'spam@example.com' : '1.2.3.4'}
             required
-            inputMode={type === 'email' ? 'email' : 'text'}
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
-            enterKeyHint="done"
             className="h-11 w-full text-base sm:h-9 sm:text-sm"
           />
         </div>
