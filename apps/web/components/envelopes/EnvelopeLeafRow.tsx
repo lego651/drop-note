@@ -84,7 +84,7 @@ export function EnvelopeLeafRow({
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
         {isEditing ? (
           <form
-            className="flex min-w-0 flex-1 items-center gap-1"
+            className="flex min-w-0 flex-1 basis-full items-center gap-1"
             onSubmit={(e) => {
               e.preventDefault()
               commit()

@@ -611,24 +611,26 @@ function AddTableRowForm({ columns, onAdd }: { columns: string[]; onAdd: (cells:
           className="h-8 min-w-[7rem] flex-1 text-base md:text-sm"
         />
       ))}
-      <button
-        type="submit"
-        onMouseDown={(e) => e.preventDefault()}
-        aria-label="Save this row"
-        disabled={values.some((v) => !v.trim())}
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
-      >
-        <Check size={16} aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={cancel}
-        aria-label="Cancel adding this row"
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <X size={16} aria-hidden="true" />
-      </button>
+      <div className="ml-auto flex shrink-0 gap-1">
+        <button
+          type="submit"
+          onMouseDown={(e) => e.preventDefault()}
+          aria-label="Save this row"
+          disabled={values.some((v) => !v.trim())}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+        >
+          <Check size={16} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={cancel}
+          aria-label="Cancel adding this row"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <X size={16} aria-hidden="true" />
+        </button>
+      </div>
     </form>
   )
 }
@@ -675,7 +677,7 @@ function AddSectionForm({
           value={blockType}
           onChange={(e) => setBlockType(e.target.value as NewSectionBlockType)}
           aria-label="Section type"
-          className="shrink-0"
+          className="shrink-0 text-base md:text-sm"
         >
           <option value="checklist">Checklist</option>
           <option value="list">List</option>
