@@ -220,7 +220,7 @@ export function ItemDetailEditor({
               <button
                 type="button"
                 onClick={() => removeTag(tag)}
-                className="text-muted-foreground hover:text-foreground ml-1 leading-none"
+                className="relative ml-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full leading-none text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:bg-accent hover:text-foreground"
                 aria-label={`Remove tag ${tag.name}`}
               >
                 ×
@@ -252,6 +252,7 @@ export function ItemDetailEditor({
               type="button"
               size="sm"
               variant="secondary"
+              className="h-11 sm:h-9"
               disabled={!tagInput.trim() || !!inputMatchesExisting || savingTag}
               onClick={() => {
                 if (highlightedIndex >= 0 && highlightedIndex < suggestions.length) {

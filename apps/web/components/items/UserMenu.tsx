@@ -39,7 +39,7 @@ export function UserMenu({ avatarUrl, userInitials, avatarColor, userEmail, user
         <button
           type="button"
           aria-label="Account menu"
-          className="flex items-center gap-2 rounded-full pr-1 outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex min-h-11 items-center gap-2 rounded-full px-1 outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
         >
           {avatarUrl ? (
             <Image

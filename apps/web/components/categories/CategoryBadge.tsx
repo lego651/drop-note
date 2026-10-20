@@ -63,7 +63,7 @@ export const CategoryBadge = forwardRef<HTMLButtonElement, CategoryBadgeProps>(
         className={cn(
           shared,
           'relative hover:bg-[var(--cat-bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-          "after:absolute after:-inset-x-1 after:-inset-y-2 after:content-['']",
+          "after:absolute after:-inset-x-2 after:-inset-y-3 after:content-['']",
         )}
         {...props}
       >
