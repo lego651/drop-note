@@ -79,4 +79,24 @@ describe('ListCard — pin/delete reachable on touch', () => {
     expect(screen.queryByRole('button', { name: 'Pin item' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Delete item' })).toBeNull()
   })
+
+  it('stacks pin/delete vertically on touch so they stay clear of the centred YouTube play button', () => {
+    const youtubeItem: ItemSummary = {
+      ...item,
+      source_type: 'youtube',
+      source_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      thumbnail_url: 'https://example.com/thumb.jpg',
+    }
+    render(<ListCard item={youtubeItem} />)
+
+    const pinButton = screen.getByRole('button', { name: 'Pin item' })
+    const controlsWrapper = pinButton.parentElement
+
+    // Side-by-side (row) controls sit near the thumbnail's horizontal center and
+    // overlap the play button's tap target; stacking them in a column keeps the
+    // whole 44px column to the right of the centred play button instead.
+    expect(controlsWrapper?.className).toContain('[@media(hover:none)]:flex-col')
+
+    expect(screen.getByRole('button', { name: 'Play video' })).toBeInTheDocument()
+  })
 })

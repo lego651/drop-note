@@ -84,9 +84,11 @@ export function ListCard({
   const media = (
     <div className="relative h-[104px] w-[148px] shrink-0 overflow-hidden rounded-lg border-stroke border-ink bg-muted">
       {/* Pin / delete — over the thumbnail so they never cover the title text. Visible on
-          hover (desktop) and always on touch (no :hover) devices, DRO-240 */}
+          hover (desktop) and always on touch (no :hover) devices, DRO-240. Stacked vertically
+          on touch (instead of side by side) so the 44px targets stay clear of the centred
+          YouTube play button rather than overlapping its top half. */}
       {!isBulkMode && (
-        <div className="absolute right-1.5 top-1.5 z-10 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100">
+        <div className="absolute right-1.5 top-1.5 z-10 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:flex-col [@media(hover:none)]:gap-1 [@media(hover:none)]:opacity-100">
           <button
             type="button"
             aria-label={item.pinned ? 'Unpin item' : 'Pin item'}

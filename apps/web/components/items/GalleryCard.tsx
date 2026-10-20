@@ -143,7 +143,7 @@ export function GalleryCard({
 
       {/* Pin / delete — visible on hover (desktop) and always on touch (no :hover) devices, DRO-240 */}
       {!isBulkMode && (
-        <div className="absolute right-2 top-2 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100">
+        <div className="absolute right-2 top-2 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
           <button
             type="button"
             aria-label={item.pinned ? 'Unpin item' : 'Pin item'}
