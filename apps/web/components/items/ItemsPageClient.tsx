@@ -442,7 +442,7 @@ export function ItemsPageClient({
 
       {/* Sticky so Tag/Move/Delete stay reachable while scrolling, alongside the fixed envelope tray. */}
       {isBulkMode && (
-        <div className="sticky top-0 z-20 bg-canvas py-1">
+        <div className="sticky top-0 z-20 -mx-1 bg-canvas px-1 py-1">
           <BulkActionToolbar
             selectedIds={selectedIds}
             allPageIds={allPageIds}

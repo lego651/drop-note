@@ -182,7 +182,7 @@ export function BulkActionToolbar({
         {/* Add tag popover */}
         <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-11 px-3 sm:h-9 sm:px-4" disabled={isTagging}>
+            <Button variant="outline" size="sm" className="h-11 min-w-11 px-3 sm:h-9 sm:px-4" disabled={isTagging}>
               <Tag size={14} />
               <span className="hidden sm:inline">Add tag</span>
             </Button>
@@ -217,7 +217,7 @@ export function BulkActionToolbar({
             <Button
               variant="outline"
               size="sm"
-              className="h-11 px-3 sm:h-9 sm:px-4"
+              className="h-11 min-w-11 px-3 sm:h-9 sm:px-4"
               disabled={isMoving || overMoveLimit}
               aria-disabled={overMoveLimit}
               aria-label={`Move ${count} items to a category`}
@@ -247,7 +247,7 @@ export function BulkActionToolbar({
         {/* Delete with confirmation */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm" className="h-11 px-3 sm:h-9 sm:px-4" disabled={isDeleting}>
+            <Button variant="destructive" size="sm" className="h-11 min-w-11 px-3 sm:h-9 sm:px-4" disabled={isDeleting}>
               <Trash2 size={14} />
               <span className="hidden sm:inline">Delete</span>
             </Button>
