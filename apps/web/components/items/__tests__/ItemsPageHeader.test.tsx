@@ -39,7 +39,7 @@ beforeEach(() => {
 })
 
 describe('ItemsPageHeader', () => {
-  it('renders the drop-note wordmark', () => {
+  it('does not repeat the drop-note wordmark (already shown by the sidebar / mobile top bar)', () => {
     render(
       <ItemsPageHeader
         avatarUrl={null}
@@ -47,7 +47,7 @@ describe('ItemsPageHeader', () => {
         avatarColor="214 89% 52%"
       />
     )
-    expect(screen.getByText('drop-note')).toBeDefined()
+    expect(screen.queryByText('drop-note')).toBeNull()
   })
 
   it('renders the bell icon with aria-label', () => {

@@ -17,9 +17,10 @@ export function ItemsPageHeader({
   userName,
 }: ItemsPageHeaderProps) {
   return (
-    // h-16 matches the sidebar's logo header height exactly so the two top bars align
-    <div className="flex h-16 items-center justify-between border-b-stroke border-ink bg-background px-3 sm:px-6 lg:px-8">
-      <span className="text-sm font-semibold text-foreground">drop-note</span>
+    // h-16 matches the sidebar's logo header height exactly so the two top bars align.
+    // No brand wordmark here — the sidebar (desktop) and mobile top bar already show it,
+    // so repeating it here was a duplicate stacking header on mobile (DRO-249).
+    <div className="flex h-16 items-center justify-end border-b-stroke border-ink bg-background px-3 sm:px-6 lg:px-8">
       <div className="flex items-center gap-4">
         {/* Bell — decorative, with unread indicator dot */}
         <span className="relative inline-flex" aria-label="Notifications">

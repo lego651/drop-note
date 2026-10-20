@@ -21,24 +21,28 @@ interface StatCardProps {
 }
 
 // Postage stamp (AIRMAIL § 6.2): the one "stamp moment" on the inbox.
+// Mobile (<sm) gets one compact row — smaller padding, no icon, no sub text —
+// so the four stamps don't push the item list a screen and a half down (DRO-249).
 function StatCard({ label, value, sub, accent, Icon, tilt }: StatCardProps) {
   return (
     <div className={cn('stamp min-w-0', tilt)}>
-      <div className="stamp-in h-full p-[18px] sm:p-[22px]" style={{ '--a': accent } as CSSProperties}>
+      <div className="stamp-in h-full p-2 sm:p-[18px] md:p-[22px]" style={{ '--a': accent } as CSSProperties}>
         <div className="flex items-start justify-between gap-2">
-          <span className="type-label text-[11px] text-foreground">{label}</span>
+          <span className="type-label min-w-0 flex-1 truncate text-[9px] text-foreground sm:text-[11px]">
+            {label}
+          </span>
           <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-stroke border-dashed bg-card"
+            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border-stroke border-dashed bg-card sm:flex"
             style={{ borderColor: `hsl(${accent})`, color: `hsl(${accent})` }}
             aria-hidden="true"
           >
             <Icon size={16} />
           </span>
         </div>
-        <p className="type-display mt-4 truncate text-[26px] font-black leading-none text-foreground sm:text-[36px]">
+        <p className="type-display mt-1 truncate text-lg font-black leading-none text-foreground sm:mt-4 sm:text-[26px] md:text-[36px]">
           {value}
         </p>
-        <p className="mt-2 font-mono text-[11px] text-muted-foreground">{sub}</p>
+        <p className="mt-2 hidden truncate font-mono text-[11px] text-muted-foreground sm:block">{sub}</p>
       </div>
     </div>
   )
@@ -57,7 +61,7 @@ export function StatsBar({
       : `${weekDelta >= 0 ? '+' : ''}${weekDelta} vs last week`
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-[22px]">
+    <div className="grid grid-cols-4 gap-2 sm:gap-4 md:gap-[22px]">
       <StatCard
         label="Total saved"
         value={String(totalCount)}
