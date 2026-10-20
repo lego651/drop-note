@@ -411,6 +411,38 @@ describe('EnvelopeBodyView table block (DRO-196)', () => {
     expect(removeRow.className).toContain("after:-inset-[14px]")
   })
 
+  it('expands a citation chip\'s hit area to 44px tall without growing its visual pill (DRO-271)', () => {
+    render(
+      <EnvelopeBodyView
+        envelopeId="env-1"
+        body={tableBody()}
+        citationLabels={{ 'item-1': 'Pasta recipe' }}
+      />,
+    )
+
+    const chip = screen.getByRole('link', { name: 'Pasta recipe' })
+    // DRO-296 review: a px inset computed from an assumed pill height was
+    // wrong (the pill's actual height isn't 26px), and putting the overlay
+    // on the same element as `truncate` clipped it via that element's own
+    // overflow:hidden. So the overlay lives on this outer, non-truncating
+    // wrapper — a fixed 44px tall, centered on the pill regardless of its
+    // real height — while the truncating 26px visual pill is a separate
+    // inner element.
+    expect(chip).toHaveClass('relative')
+    expect(chip.className).not.toMatch(/\btruncate\b/)
+    expect(chip.className).not.toMatch(/overflow-hidden/)
+    expect(chip.className).toContain('after:inset-x-0')
+    expect(chip.className).toContain('after:top-1/2')
+    expect(chip.className).toContain('after:h-11')
+    expect(chip.className).toContain('after:-translate-y-1/2')
+
+    const pill = chip.querySelector('span')
+    expect(pill).toHaveClass('px-2')
+    expect(pill).toHaveClass('py-0.5')
+    expect(pill).toHaveClass('truncate')
+    expect(pill).toHaveClass('max-w-[160px]')
+  })
+
   it('(DRO-235) tapping Save on the "Add row" form commits once every column is filled in', async () => {
     const body = tableBody()
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ body }), { status: 200 }))
@@ -489,7 +521,9 @@ describe('EnvelopeBodyView table block (DRO-196)', () => {
     )
 
     const chip = screen.getByRole('link', { name: 'Pasta recipe' })
-    expect(chip.className).toContain('truncate')
+    // DRO-271/DRO-296: truncate moved to an inner span so it doesn't clip
+    // the outer Link's 44px tap-target overlay via overflow:hidden.
+    expect(chip.querySelector('span')?.className).toContain('truncate')
     expect(chip).toHaveAttribute('title', 'Pasta recipe')
 
     const cellText = screen.getByText('Pasta primavera')

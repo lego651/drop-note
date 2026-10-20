@@ -131,6 +131,31 @@ describe('EnvelopeLeafRow (DRO-232 extensibility)', () => {
     expect(screen.getByText('Edited')).toBeInTheDocument()
     expect(screen.queryByText('Added by you')).not.toBeInTheDocument()
   })
+
+  it('expands a citation chip\'s hit area to 44px tall without growing its visual pill (DRO-271)', () => {
+    render(
+      <EnvelopeLeafRow
+        leaf={leaf({ sourceItemIds: ['item-1'], confidence: 'from_item' })}
+        citationLabels={{ 'item-1': 'Packing list' }}
+      />,
+    )
+
+    const chip = screen.getByRole('link', { name: 'Packing list' })
+    // DRO-296 review: a px inset computed from an assumed 26px pill height
+    // doesn't hold here — text-[11px] doesn't set its own line-height, and
+    // the border-stroke padding-box shrink (the DRO-263 trap) makes the
+    // actual rendered height unreliable. Use a fixed 44px overlay centered
+    // on the pill instead, independent of its real height.
+    expect(chip).toHaveClass('relative')
+    expect(chip).toHaveClass('px-2')
+    expect(chip).toHaveClass('py-0.5')
+    expect(chip.className).not.toMatch(/\btruncate\b/)
+    expect(chip.className).not.toMatch(/overflow-hidden/)
+    expect(chip.className).toContain('after:inset-x-0')
+    expect(chip.className).toContain('after:top-1/2')
+    expect(chip.className).toContain('after:h-11')
+    expect(chip.className).toContain('after:-translate-y-1/2')
+  })
 })
 
 describe('EnvelopeLeafRow — editing on mobile (DRO-235)', () => {
