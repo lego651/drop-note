@@ -26,7 +26,7 @@ interface StatCardProps {
 function StatCard({ label, value, sub, accent, Icon, tilt }: StatCardProps) {
   return (
     <div className={cn('stamp min-w-0', tilt)}>
-      <div className="stamp-in h-full p-2 sm:p-[18px] md:p-[22px]" style={{ '--a': accent } as CSSProperties}>
+      <div className="stamp-in h-full p-3 sm:p-[18px] md:p-[22px]" style={{ '--a': accent } as CSSProperties}>
         <div className="flex items-start justify-between gap-2">
           <span className="type-label min-w-0 flex-1 truncate text-[9px] text-foreground sm:text-[11px]">
             {label}

@@ -17,10 +17,11 @@ export function ItemsPageHeader({
   userName,
 }: ItemsPageHeaderProps) {
   return (
-    // h-16 matches the sidebar's logo header height exactly so the two top bars align.
-    // No brand wordmark here — the sidebar (desktop) and mobile top bar already show it,
-    // so repeating it here was a duplicate stacking header on mobile (DRO-249).
-    <div className="flex h-16 items-center justify-end border-b-stroke border-ink bg-background px-3 sm:px-6 lg:px-8">
+    // h-16 matches the sidebar's logo header height exactly so the two top bars align at md+.
+    // No brand wordmark here — the sidebar (desktop) and mobile top bar already show it.
+    // Below md this bar also shrinks to h-12: the mobile top bar above it already carries
+    // the brand + nav, so this second bar only needs room for bell + avatar (DRO-249).
+    <div className="flex h-12 items-center justify-end border-b-stroke border-ink bg-background px-3 sm:px-6 md:h-16 lg:px-8">
       <div className="flex items-center gap-4">
         {/* Bell — decorative, with unread indicator dot */}
         <span className="relative inline-flex" aria-label="Notifications">
