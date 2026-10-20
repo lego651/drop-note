@@ -138,6 +138,94 @@ describe('EnvelopeBodyView — add/delete (DRO-232)', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('(DRO-235) tapping the Save button commits the "Add item" input, for mobile where Enter is not reliable', async () => {
+    const body = checklistBody([{ text: 'Leaf A' }])
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ body }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={body} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add item' }))
+    const input = screen.getByPlaceholderText('Add a line…')
+    fireEvent.change(input, { target: { value: 'Pack sunscreen' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save this line' }))
+    })
+
+    expect(screen.getByText('Pack sunscreen')).toBeInTheDocument()
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    const [, init] = fetchMock.mock.calls[0]
+    expect(JSON.parse((init as RequestInit).body as string)).toMatchObject({ action: 'addItem', sectionIndex: 0, text: 'Pack sunscreen' })
+  })
+
+  it('(DRO-235) submitting the <form> (mobile keyboard Go/Done key) commits the "Add item" input', async () => {
+    const body = checklistBody([{ text: 'Leaf A' }])
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ body }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={body} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add item' }))
+    const input = screen.getByPlaceholderText('Add a line…')
+    fireEvent.change(input, { target: { value: 'Pack sunscreen' } })
+    await act(async () => {
+      fireEvent.submit(input.closest('form')!)
+    })
+
+    expect(screen.getByText('Pack sunscreen')).toBeInTheDocument()
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+  })
+
+  it('(DRO-235) blurring away from the "Add item" input commits a non-empty value', async () => {
+    const body = checklistBody([{ text: 'Leaf A' }])
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ body }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={body} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add item' }))
+    const input = screen.getByPlaceholderText('Add a line…')
+    fireEvent.change(input, { target: { value: 'Pack sunscreen' } })
+    await act(async () => {
+      fireEvent.blur(input)
+    })
+
+    expect(screen.getByText('Pack sunscreen')).toBeInTheDocument()
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+  })
+
+  it('(DRO-235) tapping Cancel on the "Add item" input discards the draft without sending a request', async () => {
+    const body = checklistBody([{ text: 'Leaf A' }])
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={body} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add item' }))
+    const input = screen.getByPlaceholderText('Add a line…')
+    fireEvent.change(input, { target: { value: 'Discarded' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel adding this line' }))
+
+    expect(screen.queryByText('Discarded')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add item' })).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('(DRO-235) suppresses the mousedown default on Save/Cancel so WebKit/Firefox (no relatedTarget on a button tap) never blur-commit before the click runs', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={checklistBody([{ text: 'Leaf A' }])} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add item' }))
+    // The Save button is disabled (and so won't dispatch mousedown at all)
+    // until the input is non-empty.
+    fireEvent.change(screen.getByPlaceholderText('Add a line…'), { target: { value: 'Pack sunscreen' } })
+    const saveButton = screen.getByRole('button', { name: 'Save this line' })
+    const cancelButton = screen.getByRole('button', { name: 'Cancel adding this line' })
+
+    // fireEvent returns false when a handler called preventDefault() on a
+    // cancelable event — this is the guard that stops the browser's default
+    // "shift focus, which blurs the input" action on a button tap.
+    expect(fireEvent.mouseDown(saveButton)).toBe(false)
+    expect(fireEvent.mouseDown(cancelButton)).toBe(false)
+  })
+
   it('rolls back an optimistically-added line when the addItem PATCH fails', async () => {
     const body = checklistBody([{ text: 'Leaf A' }])
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'failed to save' }), { status: 500 }))
@@ -221,6 +309,56 @@ describe('EnvelopeBodyView — add/delete (DRO-232)', () => {
     const [, init] = fetchMock.mock.calls[0]
     expect(JSON.parse((init as RequestInit).body as string)).toMatchObject({ action: 'addSection', blockType: 'checklist', text: 'Book flights' })
   })
+
+  it('(DRO-235) submitting the "Add section" <form> (mobile keyboard Go/Done key) commits the new section', async () => {
+    const body = checklistBody([{ text: 'Leaf A' }])
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ body }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={body} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add section' }))
+    const textInput = screen.getByPlaceholderText('First line in this section…')
+    fireEvent.change(textInput, { target: { value: 'Book flights' } })
+    await act(async () => {
+      fireEvent.submit(textInput.closest('form')!)
+    })
+
+    expect(screen.getByText('Book flights')).toBeInTheDocument()
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+  })
+
+  it('(DRO-235) blurring away from the "Add section" form commits a non-empty first line', async () => {
+    const body = checklistBody([{ text: 'Leaf A' }])
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ body }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={body} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add section' }))
+    const textInput = screen.getByPlaceholderText('First line in this section…')
+    fireEvent.change(textInput, { target: { value: 'Book flights' } })
+    await act(async () => {
+      fireEvent.blur(textInput)
+    })
+
+    expect(screen.getByText('Book flights')).toBeInTheDocument()
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+  })
+
+  it('(DRO-235) suppresses the mousedown default on the "Add section" Save/Cancel so WebKit/Firefox never blur-commit before the click runs', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={checklistBody([{ text: 'Leaf A' }])} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add section' }))
+    // The submit button is disabled (and so won't dispatch mousedown at all)
+    // until the first line is non-empty.
+    fireEvent.change(screen.getByPlaceholderText('First line in this section…'), { target: { value: 'Book flights' } })
+    const cancelButton = screen.getByRole('button', { name: 'Cancel' })
+    const addButton = screen.getByRole('button', { name: 'Add section' })
+
+    expect(fireEvent.mouseDown(cancelButton)).toBe(false)
+    expect(fireEvent.mouseDown(addButton)).toBe(false)
+  })
 })
 
 describe('EnvelopeBodyView table block (DRO-196)', () => {
@@ -264,5 +402,93 @@ describe('EnvelopeBodyView table block (DRO-196)', () => {
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
     fireEvent.click(screen.getByText('20 min'))
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
+
+  it('(DRO-235) tapping Save on the "Add row" form commits once every column is filled in', async () => {
+    const body = tableBody()
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ body }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={body} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add row' }))
+    fireEvent.change(screen.getByPlaceholderText('Recipe'), { target: { value: 'Soup' } })
+    fireEvent.change(screen.getByPlaceholderText('Prep time'), { target: { value: '10 min' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save this row' }))
+    })
+
+    expect(screen.getByText('Soup')).toBeInTheDocument()
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    const [, init] = fetchMock.mock.calls[0]
+    expect(JSON.parse((init as RequestInit).body as string)).toMatchObject({ action: 'addRow', sectionIndex: 0, cells: ['Soup', '10 min'] })
+  })
+
+  it('(DRO-235) blurring away from the "Add row" form commits once every column is filled in', async () => {
+    const body = tableBody()
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ body }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={body} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add row' }))
+    fireEvent.change(screen.getByPlaceholderText('Recipe'), { target: { value: 'Soup' } })
+    const prepTimeInput = screen.getByPlaceholderText('Prep time')
+    fireEvent.change(prepTimeInput, { target: { value: '10 min' } })
+    await act(async () => {
+      fireEvent.blur(prepTimeInput)
+    })
+
+    expect(screen.getByText('Soup')).toBeInTheDocument()
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+  })
+
+  it('(DRO-235) tapping Cancel on the "Add row" form discards the draft without sending a request', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={tableBody()} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add row' }))
+    fireEvent.change(screen.getByPlaceholderText('Recipe'), { target: { value: 'Discarded' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel adding this row' }))
+
+    expect(screen.queryByText('Discarded')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add row' })).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('(DRO-235) suppresses the mousedown default on the "Add row" Save/Cancel so WebKit/Firefox never blur-commit before the click runs', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={tableBody()} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add row' }))
+    // The Save button is disabled (and so won't dispatch mousedown at all)
+    // until every column is non-empty.
+    fireEvent.change(screen.getByPlaceholderText('Recipe'), { target: { value: 'Soup' } })
+    fireEvent.change(screen.getByPlaceholderText('Prep time'), { target: { value: '10 min' } })
+    const saveButton = screen.getByRole('button', { name: 'Save this row' })
+    const cancelButton = screen.getByRole('button', { name: 'Cancel adding this row' })
+
+    expect(fireEvent.mouseDown(saveButton)).toBe(false)
+    expect(fireEvent.mouseDown(cancelButton)).toBe(false)
+  })
+
+  it('keeps citation chips and cell text readable at mobile widths (DRO-242)', () => {
+    render(
+      <EnvelopeBodyView
+        envelopeId="env-1"
+        body={tableBody()}
+        citationLabels={{ 'item-1': 'Pasta recipe' }}
+      />,
+    )
+
+    const chip = screen.getByRole('link', { name: 'Pasta recipe' })
+    expect(chip.className).toContain('truncate')
+    expect(chip).toHaveAttribute('title', 'Pasta recipe')
+
+    const cellText = screen.getByText('Pasta primavera')
+    expect(cellText.className).toContain('break-words')
+
+    const columnHeader = screen.getByRole('columnheader', { name: 'Recipe' })
+    expect(columnHeader.className).toContain('min-w-[150px]')
   })
 })

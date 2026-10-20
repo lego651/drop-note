@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import Link from 'next/link'
-import { Plus, X } from 'lucide-react'
+import { Check, Plus, X } from 'lucide-react'
 import type { EnvelopeBlock, EnvelopeBody, EnvelopeLeaf } from '@drop-note/shared'
 import {
   ENVELOPE_TEXT_MAX_LENGTH,
@@ -234,7 +234,10 @@ export function EnvelopeBodyView({ envelopeId, body: initialBody, citationLabels
                   <thead className="bg-muted">
                     <tr>
                       {block.columns.map((column, c) => (
-                        <th key={c} className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        <th
+                          key={c}
+                          className="min-w-[150px] px-4 py-2 text-left text-xs font-semibold text-muted-foreground"
+                        >
                           {column}
                         </th>
                       ))}
@@ -388,7 +391,7 @@ function reinsertEnvelopeTableRow(body: EnvelopeBody, sectionIndex: number, rowI
  */
 function EnvelopeTableCell({ leaf, citationLabels }: { leaf: EnvelopeLeaf; citationLabels: CitationLabels }) {
   return (
-    <td className="px-4 py-2 align-top">
+    <td className="min-w-[150px] px-4 py-2 align-top">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span
           aria-hidden="true"
@@ -397,7 +400,7 @@ function EnvelopeTableCell({ leaf, citationLabels }: { leaf: EnvelopeLeaf; citat
             leaf.origin !== 'user' && leaf.confidence === 'suggested' && 'border-dashed',
           )}
         />
-        <span className="text-sm text-foreground">{leaf.text}</span>
+        <span className="break-words text-sm text-foreground">{leaf.text}</span>
         {leaf.origin === 'user' ? (
           <span className="inline-flex items-center rounded-full border-stroke border-ink/55 bg-card px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
             Added by you
@@ -407,7 +410,8 @@ function EnvelopeTableCell({ leaf, citationLabels }: { leaf: EnvelopeLeaf; citat
             <Link
               key={itemId}
               href={`/items/${itemId}`}
-              className="inline-flex items-center rounded-full border-stroke border-ink bg-card px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted"
+              title={citationLabels[itemId] ?? 'Source'}
+              className="inline-block max-w-[160px] truncate rounded-full border-stroke border-ink bg-card px-2 py-0.5 align-middle text-[11px] font-medium text-foreground hover:bg-muted"
             >
               {citationLabels[itemId] ?? 'Source'}
             </Link>
@@ -425,9 +429,13 @@ function EnvelopeTableCell({ leaf, citationLabels }: { leaf: EnvelopeLeaf; citat
 
 /**
  * The "+ Add item" row at the end of a checklist/list/notes block (DRO-232).
- * Collapsed to a dashed button until clicked; Enter commits and clears the
- * input (staying open, ready for the next line, per the ticket's "keeps the
- * input open for the next one"); Esc collapses back to the button.
+ * Collapsed to a dashed button until clicked. Desktop: Enter commits and
+ * clears the input (staying open, ready for the next line). Mobile (DRO-235):
+ * the input is a <form> so the keyboard's Go/Done key submits it too, and an
+ * explicit Save/Cancel pair covers devices where that key doesn't act as
+ * submit. Tapping away (blur) commits a non-empty value, unless the blur was
+ * caused by focus moving to Save/Cancel within this same form — those decide
+ * for themselves what happens next. Esc collapses back to the button.
  */
 function AddItemRow({ onAdd }: { onAdd: (text: string) => void }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -435,9 +443,17 @@ function AddItemRow({ onAdd }: { onAdd: (text: string) => void }) {
 
   function commit() {
     const trimmed = value.trim()
-    if (!trimmed) return
+    if (!trimmed) {
+      setIsOpen(false)
+      return
+    }
     onAdd(trimmed)
     setValue('')
+  }
+
+  function cancel() {
+    setValue('')
+    setIsOpen(false)
   }
 
   if (!isOpen) {
@@ -459,40 +475,78 @@ function AddItemRow({ onAdd }: { onAdd: (text: string) => void }) {
   }
 
   return (
-    <li className="flex items-start gap-2.5 py-1.5">
+    <li className="flex items-center gap-2.5 py-1.5">
       <span
         aria-hidden="true"
-        className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-stroke border-dashed border-ink/40"
+        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-stroke border-dashed border-ink/40"
       >
         <Plus size={10} aria-hidden="true" />
       </span>
-      <Input
-        autoFocus
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            commit()
-          }
-          if (e.key === 'Escape') {
-            e.preventDefault()
-            setValue('')
-            setIsOpen(false)
-          }
+      <form
+        className="flex min-w-0 flex-1 items-center gap-1"
+        onSubmit={(e) => {
+          e.preventDefault()
+          commit()
         }}
-        onBlur={() => {
-          if (!value.trim()) setIsOpen(false)
+        onBlur={(e) => {
+          const next = e.relatedTarget as Node | null
+          if (next && e.currentTarget.contains(next)) return
+          commit()
         }}
-        placeholder="Add a line…"
-        maxLength={ENVELOPE_TEXT_MAX_LENGTH}
-        className="h-8 min-w-0 flex-1 text-base md:text-sm"
-      />
+      >
+        <Input
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              // Real browsers already submit the <form> on Enter; this
+              // preventDefault stops that native implicit submission so
+              // commit() below is the only thing that runs.
+              e.preventDefault()
+              commit()
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              cancel()
+            }
+          }}
+          enterKeyHint="done"
+          placeholder="Add a line…"
+          maxLength={ENVELOPE_TEXT_MAX_LENGTH}
+          className="h-8 min-w-0 flex-1 text-base md:text-sm"
+        />
+        <button
+          type="submit"
+          onMouseDown={(e) => e.preventDefault()}
+          aria-label="Save this line"
+          disabled={!value.trim()}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+        >
+          <Check size={16} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={cancel}
+          aria-label="Cancel adding this line"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <X size={16} aria-hidden="true" />
+        </button>
+      </form>
     </li>
   )
 }
 
-/** The trailing "+ Add row" form for a table block (DRO-232) — one inline input per column. */
+/**
+ * The trailing "+ Add row" form for a table block (DRO-232) — one inline
+ * input per column. Wrapped in a <form> (DRO-235) so the mobile keyboard's
+ * Go/Done key submits it, with an explicit Save/Cancel pair and a blur-commit
+ * fallback for devices where that key doesn't act as submit. A row only
+ * commits once every column is filled in, same as before — blurring out of
+ * the form with some columns still empty just leaves it open.
+ */
 function AddTableRowForm({ columns, onAdd }: { columns: string[]; onAdd: (cells: string[]) => void }) {
   const [isOpen, setIsOpen] = useState(false)
   const [values, setValues] = useState<string[]>(() => columns.map(() => ''))
@@ -502,6 +556,11 @@ function AddTableRowForm({ columns, onAdd }: { columns: string[]; onAdd: (cells:
     if (trimmed.some((v) => v.length === 0)) return
     onAdd(trimmed)
     setValues(columns.map(() => ''))
+  }
+
+  function cancel() {
+    setValues(columns.map(() => ''))
+    setIsOpen(false)
   }
 
   if (!isOpen) {
@@ -518,7 +577,18 @@ function AddTableRowForm({ columns, onAdd }: { columns: string[]; onAdd: (cells:
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-2.5">
+    <form
+      className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-2.5"
+      onSubmit={(e) => {
+        e.preventDefault()
+        commit()
+      }}
+      onBlur={(e) => {
+        const next = e.relatedTarget as Node | null
+        if (next && e.currentTarget.contains(next)) return
+        commit()
+      }}
+    >
       {columns.map((column, c) => (
         <Input
           key={c}
@@ -527,26 +597,55 @@ function AddTableRowForm({ columns, onAdd }: { columns: string[]; onAdd: (cells:
           onChange={(e) => setValues((prev) => prev.map((v, i) => (i === c ? e.target.value : v)))}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
+              // Real browsers already submit the <form> on Enter; this
+              // preventDefault stops that native implicit submission so
+              // commit() below is the only thing that runs.
               e.preventDefault()
               commit()
             }
             if (e.key === 'Escape') {
               e.preventDefault()
-              setValues(columns.map(() => ''))
-              setIsOpen(false)
+              cancel()
             }
           }}
+          enterKeyHint="done"
           placeholder={column}
           aria-label={column}
           maxLength={ENVELOPE_TEXT_MAX_LENGTH}
           className="h-8 min-w-[7rem] flex-1 text-base md:text-sm"
         />
       ))}
-    </div>
+      <div className="ml-auto flex shrink-0 gap-1">
+        <button
+          type="submit"
+          onMouseDown={(e) => e.preventDefault()}
+          aria-label="Save this row"
+          disabled={values.some((v) => !v.trim())}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+        >
+          <Check size={16} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={cancel}
+          aria-label="Cancel adding this row"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <X size={16} aria-hidden="true" />
+        </button>
+      </div>
+    </form>
   )
 }
 
-/** The trailing "+ Add section" form for the whole plan (DRO-232). */
+/**
+ * The trailing "+ Add section" form for the whole plan (DRO-232). Already had
+ * a visible Save ("Add section")/Cancel pair; DRO-235 wraps it in a <form> so
+ * the mobile keyboard's Go/Done key submits it too, and commits on blur if
+ * focus leaves the form entirely with a non-empty first line (tabbing between
+ * the heading/type fields inside the form doesn't count as leaving it).
+ */
 function AddSectionForm({
   onAdd,
   onCancel,
@@ -565,13 +664,24 @@ function AddSectionForm({
   }
 
   return (
-    <div className="space-y-3 rounded-xl border-stroke border-ink bg-card p-4 shadow-ink-lg">
+    <form
+      className="space-y-3 rounded-xl border-stroke border-ink bg-card p-4 shadow-ink-lg"
+      onSubmit={(e) => {
+        e.preventDefault()
+        commit()
+      }}
+      onBlur={(e) => {
+        const next = e.relatedTarget as Node | null
+        if (next && e.currentTarget.contains(next)) return
+        commit()
+      }}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <NativeSelect
           value={blockType}
           onChange={(e) => setBlockType(e.target.value as NewSectionBlockType)}
           aria-label="Section type"
-          className="shrink-0"
+          className="shrink-0 text-base md:text-sm"
         >
           <option value="checklist">Checklist</option>
           <option value="list">List</option>
@@ -593,6 +703,9 @@ function AddSectionForm({
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
+            // Real browsers already submit the <form> on Enter; this
+            // preventDefault stops that native implicit submission so
+            // commit() below is the only thing that runs.
             e.preventDefault()
             commit()
           }
@@ -601,6 +714,7 @@ function AddSectionForm({
             onCancel()
           }
         }}
+        enterKeyHint="done"
         placeholder="First line in this section…"
         maxLength={ENVELOPE_TEXT_MAX_LENGTH}
         className="text-base md:text-sm"
@@ -608,20 +722,21 @@ function AddSectionForm({
       <div className="flex justify-end gap-2">
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={onCancel}
           className="min-h-11 rounded-[10px] px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
         >
           Cancel
         </button>
         <button
-          type="button"
-          onClick={commit}
+          type="submit"
+          onMouseDown={(e) => e.preventDefault()}
           disabled={!text.trim()}
           className="min-h-11 rounded-[10px] border-stroke border-ink bg-primary px-4 text-sm font-medium text-primary-foreground shadow-ink-md hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
         >
           Add section
         </button>
       </div>
-    </div>
+    </form>
   )
 }
