@@ -265,4 +265,11 @@ describe('EnvelopeBodyView table block (DRO-196)', () => {
     fireEvent.click(screen.getByText('20 min'))
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
   })
+
+  it('expands the "Remove this row" control to a full 44px square (DRO-241)', () => {
+    render(<EnvelopeBodyView envelopeId="env-1" body={tableBody()} citationLabels={{}} />)
+
+    const removeRow = screen.getByRole('button', { name: 'Remove this row' })
+    expect(removeRow.className).toContain("after:-inset-[14px]")
+  })
 })
