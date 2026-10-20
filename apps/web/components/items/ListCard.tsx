@@ -82,7 +82,7 @@ export function ListCard({
   const placeholderHsl = colorForTagHsl(item.subject ?? sourceLabel(item))
 
   const media = (
-    <div className="relative h-[104px] w-[148px] shrink-0 overflow-hidden rounded-lg border-stroke border-ink bg-muted">
+    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-stroke border-ink bg-muted sm:h-[104px] sm:w-[148px]">
       {isDone && item.thumbnail_url ? (
         <>
           <Image
@@ -90,7 +90,7 @@ export function ListCard({
             alt={item.subject ?? ''}
             fill
             className="object-cover"
-            sizes="148px"
+            sizes="(max-width: 639px) 64px, 148px"
           />
           {youtubeId && (
             <button
@@ -185,7 +185,7 @@ export function ListCard({
   const card = (
     <article
       className={cn(
-        'lift group relative flex items-start gap-5 rounded-xl border-stroke border-ink bg-card p-4 shadow-ink-lg',
+        'lift group relative flex items-start gap-3 rounded-xl border-stroke border-ink bg-card p-4 shadow-ink-lg sm:gap-5',
         isSelected && 'ring-2 ring-ring ring-offset-2',
         isBulkMode && 'cursor-pointer',
       )}

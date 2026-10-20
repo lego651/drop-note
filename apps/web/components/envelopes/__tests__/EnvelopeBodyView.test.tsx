@@ -471,4 +471,24 @@ describe('EnvelopeBodyView table block (DRO-196)', () => {
     expect(fireEvent.mouseDown(saveButton)).toBe(false)
     expect(fireEvent.mouseDown(cancelButton)).toBe(false)
   })
+
+  it('keeps citation chips and cell text readable at mobile widths (DRO-242)', () => {
+    render(
+      <EnvelopeBodyView
+        envelopeId="env-1"
+        body={tableBody()}
+        citationLabels={{ 'item-1': 'Pasta recipe' }}
+      />,
+    )
+
+    const chip = screen.getByRole('link', { name: 'Pasta recipe' })
+    expect(chip.className).toContain('truncate')
+    expect(chip).toHaveAttribute('title', 'Pasta recipe')
+
+    const cellText = screen.getByText('Pasta primavera')
+    expect(cellText.className).toContain('break-words')
+
+    const columnHeader = screen.getByRole('columnheader', { name: 'Recipe' })
+    expect(columnHeader.className).toContain('min-w-[150px]')
+  })
 })
