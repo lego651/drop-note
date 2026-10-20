@@ -72,6 +72,20 @@ describe('EnvelopeTray (DRO-194, restyled DRO-227)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  // DRO-244: below 391px the hint and the button stack onto their own lines
+  // (instead of squeezing onto one row) so the hint has room to wrap instead
+  // of being clipped.
+  it('stacks the hint above the action button at narrow widths', () => {
+    bulkState = {
+      isBulkMode: true,
+      selectedIds: new Set(['a', 'b', 'c']),
+      exitSelectMode: vi.fn(),
+    }
+    render(<EnvelopeTray />)
+    expect(screen.getByText('3 of 2–8 · tap cards to add').className).toContain('min-w-0')
+    expect(screen.getByRole('button', { name: /Make a plan/ }).className).toContain('max-[390px]:w-full')
+  })
+
   it('exits pick mode entirely when the cancel button is clicked', () => {
     const exitSelectMode = vi.fn()
     bulkState = {

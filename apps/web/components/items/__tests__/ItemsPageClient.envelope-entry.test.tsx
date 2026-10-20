@@ -102,4 +102,26 @@ describe('ItemsPageClient — envelopes entry banner + FAB (DRO-227)', () => {
     expect(screen.getByText('0 picked')).toBeInTheDocument()
     expect(screen.queryByText('Turn saves into a plan')).not.toBeInTheDocument()
   })
+
+  // DRO-244: the FAB and tray are fixed bottom-right and must not cover the
+  // last card — the scroll container needs bottom padding that also clears
+  // the home-indicator safe area, not just the element's own height.
+  it('reserves safe-area-aware bottom padding while the floating FAB is shown', () => {
+    const { container } = renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
+
+    const scrollPad = container.querySelector('.mx-auto.max-w-6xl')
+    expect(scrollPad?.className).toContain('safe-area-inset-bottom')
+  })
+
+  it('reserves taller safe-area-aware bottom padding while the pick-mode tray is shown', () => {
+    const { container } = renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Edit items' }))
+
+    const scrollPad = container.querySelector('.mx-auto.max-w-6xl')
+    expect(scrollPad?.className).toContain('safe-area-inset-bottom')
+    // Narrow phones stack the tray's hint and button onto two lines, so they
+    // need more clearance than the single-row layout used above 390px.
+    expect(scrollPad?.className).toContain('220px')
+  })
 })
