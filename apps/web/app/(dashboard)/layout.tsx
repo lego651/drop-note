@@ -84,7 +84,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <BulkSelectProvider>
-      <div className="flex h-screen overflow-hidden bg-background">
+      {/* h-dvh (after h-screen) tracks the visible area when iOS Safari's chrome
+          shows/hides, so the FAB and last list item aren't hidden behind the
+          toolbar; h-screen stays as the fallback for browsers without dvh support. */}
+      <div className="flex h-screen h-dvh overflow-hidden bg-background">
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:rounded-md focus:px-3 focus:py-2 focus:bg-background focus:text-foreground focus:text-sm focus:font-medium focus:ring-2 focus:ring-ring"
