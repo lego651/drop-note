@@ -20,15 +20,17 @@ interface StatCardProps {
   tilt?: string
 }
 
-// Postage stamp (AIRMAIL § 6.2): the one "stamp moment" on the inbox.
-// Mobile (<sm) gets one compact row — smaller padding, no icon, no sub text —
-// so the four stamps don't push the item list a screen and a half down (DRO-249).
+// Postage stamp (AIRMAIL § 6.2/§ 7): the one "stamp moment" on the inbox — 4 across,
+// 2×2 below lg. The stamp's perforated frame (14px inset, see .stamp-in) leaves too
+// little room per card for a single 4-up mobile row, so 2×2 is the only layout that
+// fits full labels/values without truncating (DRO-249/DRO-274). Padding and the
+// hidden icon/sub below sm keep the 2×2 block as short as it can be.
 function StatCard({ label, value, sub, accent, Icon, tilt }: StatCardProps) {
   return (
     <div className={cn('stamp min-w-0', tilt)}>
-      <div className="stamp-in h-full p-3 sm:p-[18px] md:p-[22px]" style={{ '--a': accent } as CSSProperties}>
+      <div className="stamp-in h-full p-2.5 sm:p-[18px] lg:p-[22px]" style={{ '--a': accent } as CSSProperties}>
         <div className="flex items-start justify-between gap-2">
-          <span className="type-label min-w-0 flex-1 truncate text-[9px] text-foreground sm:text-[11px]">
+          <span className="type-label min-w-0 flex-1 truncate text-[10.5px] text-foreground sm:text-[11px]">
             {label}
           </span>
           <span
@@ -39,7 +41,7 @@ function StatCard({ label, value, sub, accent, Icon, tilt }: StatCardProps) {
             <Icon size={16} />
           </span>
         </div>
-        <p className="type-display mt-1 truncate text-lg font-black leading-none text-foreground sm:mt-4 sm:text-[26px] md:text-[36px]">
+        <p className="type-display mt-0.5 truncate text-[28px] font-black leading-none text-foreground sm:mt-4 lg:text-[36px]">
           {value}
         </p>
         <p className="mt-2 hidden truncate font-mono text-[11px] text-muted-foreground sm:block">{sub}</p>
@@ -61,7 +63,7 @@ export function StatsBar({
       : `${weekDelta >= 0 ? '+' : ''}${weekDelta} vs last week`
 
   return (
-    <div className="grid grid-cols-4 gap-2 sm:gap-4 md:gap-[22px]">
+    <div className="grid grid-cols-2 gap-1.5 sm:gap-4 lg:grid-cols-4 lg:gap-[22px]">
       <StatCard
         label="Total saved"
         value={String(totalCount)}
