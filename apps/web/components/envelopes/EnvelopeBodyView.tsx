@@ -420,9 +420,18 @@ function EnvelopeTableCell({ leaf, citationLabels }: { leaf: EnvelopeLeaf; citat
               key={itemId}
               href={`/items/${itemId}`}
               title={citationLabels[itemId] ?? 'Source'}
-              className="relative inline-block max-w-[160px] truncate rounded-full border-stroke border-ink bg-card px-2 py-0.5 align-middle text-[11px] font-medium text-foreground after:absolute after:inset-x-0 after:-inset-y-[9px] after:content-[''] hover:bg-muted"
+              // DRO-271: the hit-area overlay lives on this wrapper (not the
+              // truncating pill below), since `overflow:hidden` from
+              // `truncate` would otherwise clip the after-pseudo-element's
+              // padding. The overlay is a fixed 44px tall, centered on the
+              // pill regardless of its actual rendered height, rather than a
+              // px inset computed from an assumed pill height (which the
+              // pill's border/line-height make unreliable, DRO-296 review).
+              className="group relative inline-flex items-center after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']"
             >
-              {citationLabels[itemId] ?? 'Source'}
+              <span className="max-w-[160px] truncate rounded-full border-stroke border-ink bg-card px-2 py-0.5 text-[11px] font-medium text-foreground group-hover:bg-muted">
+                {citationLabels[itemId] ?? 'Source'}
+              </span>
             </Link>
           ))
         )}

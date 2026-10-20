@@ -180,7 +180,12 @@ export function EnvelopeLeafRow({
             <Link
               key={itemId}
               href={`/items/${itemId}`}
-              className="relative inline-flex items-center rounded-full border-stroke border-ink bg-card px-2 py-0.5 text-[11px] font-medium text-foreground after:absolute after:inset-x-0 after:-inset-y-[9px] after:content-[''] hover:bg-muted"
+              // DRO-271: a fixed 44px overlay centered on the pill, rather
+              // than a px inset computed from an assumed pill height — this
+              // chip's actual height depends on text-[11px]'s inherited
+              // line-height and the border-stroke padding-box shrink, which
+              // an inset can't account for (DRO-296 review).
+              className="relative inline-flex items-center rounded-full border-stroke border-ink bg-card px-2 py-0.5 text-[11px] font-medium text-foreground after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-[''] hover:bg-muted"
             >
               {citationLabels[itemId] ?? 'Source'}
             </Link>

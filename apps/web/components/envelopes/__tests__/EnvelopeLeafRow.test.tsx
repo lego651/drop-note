@@ -141,14 +141,20 @@ describe('EnvelopeLeafRow (DRO-232 extensibility)', () => {
     )
 
     const chip = screen.getByRole('link', { name: 'Packing list' })
-    // The visual pill stays a 26px-tall (py-0.5, text-[11px]) chip; only the
-    // invisible after-pseudo hit area grows, via a 9px inset on every side:
-    // 26 + 9 + 9 = 44 (same math as the EnvelopeBodyView table-cell chip).
+    // DRO-296 review: a px inset computed from an assumed 26px pill height
+    // doesn't hold here — text-[11px] doesn't set its own line-height, and
+    // the border-stroke padding-box shrink (the DRO-263 trap) makes the
+    // actual rendered height unreliable. Use a fixed 44px overlay centered
+    // on the pill instead, independent of its real height.
     expect(chip).toHaveClass('relative')
     expect(chip).toHaveClass('px-2')
     expect(chip).toHaveClass('py-0.5')
-    expect(chip.className).toContain("after:inset-x-0")
-    expect(chip.className).toContain("after:-inset-y-[9px]")
+    expect(chip.className).not.toMatch(/\btruncate\b/)
+    expect(chip.className).not.toMatch(/overflow-hidden/)
+    expect(chip.className).toContain('after:inset-x-0')
+    expect(chip.className).toContain('after:top-1/2')
+    expect(chip.className).toContain('after:h-11')
+    expect(chip.className).toContain('after:-translate-y-1/2')
   })
 })
 

@@ -421,14 +421,26 @@ describe('EnvelopeBodyView table block (DRO-196)', () => {
     )
 
     const chip = screen.getByRole('link', { name: 'Pasta recipe' })
-    // The visual pill stays a 26px-tall (py-0.5, text-[11px]) truncating
-    // chip (DRO-242); only the invisible after-pseudo hit area grows, via a
-    // 9px inset on every side: 26 + 9 + 9 = 44.
+    // DRO-296 review: a px inset computed from an assumed pill height was
+    // wrong (the pill's actual height isn't 26px), and putting the overlay
+    // on the same element as `truncate` clipped it via that element's own
+    // overflow:hidden. So the overlay lives on this outer, non-truncating
+    // wrapper — a fixed 44px tall, centered on the pill regardless of its
+    // real height — while the truncating 26px visual pill is a separate
+    // inner element.
     expect(chip).toHaveClass('relative')
-    expect(chip).toHaveClass('px-2')
-    expect(chip).toHaveClass('py-0.5')
-    expect(chip.className).toContain("after:inset-x-0")
-    expect(chip.className).toContain("after:-inset-y-[9px]")
+    expect(chip.className).not.toMatch(/\btruncate\b/)
+    expect(chip.className).not.toMatch(/overflow-hidden/)
+    expect(chip.className).toContain('after:inset-x-0')
+    expect(chip.className).toContain('after:top-1/2')
+    expect(chip.className).toContain('after:h-11')
+    expect(chip.className).toContain('after:-translate-y-1/2')
+
+    const pill = chip.querySelector('span')
+    expect(pill).toHaveClass('px-2')
+    expect(pill).toHaveClass('py-0.5')
+    expect(pill).toHaveClass('truncate')
+    expect(pill).toHaveClass('max-w-[160px]')
   })
 
   it('(DRO-235) tapping Save on the "Add row" form commits once every column is filled in', async () => {
@@ -509,7 +521,9 @@ describe('EnvelopeBodyView table block (DRO-196)', () => {
     )
 
     const chip = screen.getByRole('link', { name: 'Pasta recipe' })
-    expect(chip.className).toContain('truncate')
+    // DRO-271/DRO-296: truncate moved to an inner span so it doesn't clip
+    // the outer Link's 44px tap-target overlay via overflow:hidden.
+    expect(chip.querySelector('span')?.className).toContain('truncate')
     expect(chip).toHaveAttribute('title', 'Pasta recipe')
 
     const cellText = screen.getByText('Pasta primavera')
