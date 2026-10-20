@@ -207,6 +207,25 @@ describe('EnvelopeBodyView — add/delete (DRO-232)', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('(DRO-235) suppresses the mousedown default on Save/Cancel so WebKit/Firefox (no relatedTarget on a button tap) never blur-commit before the click runs', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={checklistBody([{ text: 'Leaf A' }])} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add item' }))
+    // The Save button is disabled (and so won't dispatch mousedown at all)
+    // until the input is non-empty.
+    fireEvent.change(screen.getByPlaceholderText('Add a line…'), { target: { value: 'Pack sunscreen' } })
+    const saveButton = screen.getByRole('button', { name: 'Save this line' })
+    const cancelButton = screen.getByRole('button', { name: 'Cancel adding this line' })
+
+    // fireEvent returns false when a handler called preventDefault() on a
+    // cancelable event — this is the guard that stops the browser's default
+    // "shift focus, which blurs the input" action on a button tap.
+    expect(fireEvent.mouseDown(saveButton)).toBe(false)
+    expect(fireEvent.mouseDown(cancelButton)).toBe(false)
+  })
+
   it('rolls back an optimistically-added line when the addItem PATCH fails', async () => {
     const body = checklistBody([{ text: 'Leaf A' }])
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'failed to save' }), { status: 500 }))
@@ -324,6 +343,22 @@ describe('EnvelopeBodyView — add/delete (DRO-232)', () => {
     expect(screen.getByText('Book flights')).toBeInTheDocument()
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
   })
+
+  it('(DRO-235) suppresses the mousedown default on the "Add section" Save/Cancel so WebKit/Firefox never blur-commit before the click runs', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={checklistBody([{ text: 'Leaf A' }])} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add section' }))
+    // The submit button is disabled (and so won't dispatch mousedown at all)
+    // until the first line is non-empty.
+    fireEvent.change(screen.getByPlaceholderText('First line in this section…'), { target: { value: 'Book flights' } })
+    const cancelButton = screen.getByRole('button', { name: 'Cancel' })
+    const addButton = screen.getByRole('button', { name: 'Add section' })
+
+    expect(fireEvent.mouseDown(cancelButton)).toBe(false)
+    expect(fireEvent.mouseDown(addButton)).toBe(false)
+  })
 })
 
 describe('EnvelopeBodyView table block (DRO-196)', () => {
@@ -418,5 +453,22 @@ describe('EnvelopeBodyView table block (DRO-196)', () => {
     expect(screen.queryByText('Discarded')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Add row' })).toBeInTheDocument()
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('(DRO-235) suppresses the mousedown default on the "Add row" Save/Cancel so WebKit/Firefox never blur-commit before the click runs', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<EnvelopeBodyView envelopeId="env-1" body={tableBody()} citationLabels={{}} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add row' }))
+    // The Save button is disabled (and so won't dispatch mousedown at all)
+    // until every column is non-empty.
+    fireEvent.change(screen.getByPlaceholderText('Recipe'), { target: { value: 'Soup' } })
+    fireEvent.change(screen.getByPlaceholderText('Prep time'), { target: { value: '10 min' } })
+    const saveButton = screen.getByRole('button', { name: 'Save this row' })
+    const cancelButton = screen.getByRole('button', { name: 'Cancel adding this row' })
+
+    expect(fireEvent.mouseDown(saveButton)).toBe(false)
+    expect(fireEvent.mouseDown(cancelButton)).toBe(false)
   })
 })

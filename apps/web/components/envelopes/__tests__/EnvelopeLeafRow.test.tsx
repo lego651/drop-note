@@ -206,4 +206,20 @@ describe('EnvelopeLeafRow — editing on mobile (DRO-235)', () => {
     expect(onEditText).not.toHaveBeenCalled()
     expect(screen.getByText('Pack a towel')).toBeInTheDocument()
   })
+
+  it('suppresses the mousedown default on Save/Cancel so WebKit/Firefox (which report no relatedTarget on a button tap) never blur-commit before the click runs', () => {
+    const onEditText = vi.fn()
+    render(<EnvelopeLeafRow leaf={leaf()} citationLabels={{}} onEditText={onEditText} />)
+
+    fireEvent.click(screen.getByText('Pack a towel'))
+    const saveButton = screen.getByRole('button', { name: 'Save this line' })
+    const cancelButton = screen.getByRole('button', { name: 'Cancel editing this line' })
+
+    // fireEvent returns false when a handler called preventDefault() on a
+    // cancelable event — this is the guard that stops the browser's default
+    // "shift focus, which blurs the input" action on a button tap, so the
+    // blur-commit handler never races the button's own click.
+    expect(fireEvent.mouseDown(saveButton)).toBe(false)
+    expect(fireEvent.mouseDown(cancelButton)).toBe(false)
+  })
 })

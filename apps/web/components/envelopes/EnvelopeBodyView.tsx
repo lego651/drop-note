@@ -514,6 +514,7 @@ function AddItemRow({ onAdd }: { onAdd: (text: string) => void }) {
         />
         <button
           type="submit"
+          onMouseDown={(e) => e.preventDefault()}
           aria-label="Save this line"
           disabled={!value.trim()}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
@@ -522,6 +523,7 @@ function AddItemRow({ onAdd }: { onAdd: (text: string) => void }) {
         </button>
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={cancel}
           aria-label="Cancel adding this line"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -611,6 +613,7 @@ function AddTableRowForm({ columns, onAdd }: { columns: string[]; onAdd: (cells:
       ))}
       <button
         type="submit"
+        onMouseDown={(e) => e.preventDefault()}
         aria-label="Save this row"
         disabled={values.some((v) => !v.trim())}
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
@@ -619,6 +622,7 @@ function AddTableRowForm({ columns, onAdd }: { columns: string[]; onAdd: (cells:
       </button>
       <button
         type="button"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={cancel}
         aria-label="Cancel adding this row"
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -712,6 +716,7 @@ function AddSectionForm({
       <div className="flex justify-end gap-2">
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={onCancel}
           className="min-h-11 rounded-[10px] px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
         >
@@ -719,6 +724,7 @@ function AddSectionForm({
         </button>
         <button
           type="submit"
+          onMouseDown={(e) => e.preventDefault()}
           disabled={!text.trim()}
           className="min-h-11 rounded-[10px] border-stroke border-ink bg-primary px-4 text-sm font-medium text-primary-foreground shadow-ink-md hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
         >

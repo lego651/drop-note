@@ -119,6 +119,7 @@ export function EnvelopeLeafRow({
             />
             <button
               type="submit"
+              onMouseDown={(e) => e.preventDefault()}
               aria-label="Save this line"
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
@@ -126,6 +127,7 @@ export function EnvelopeLeafRow({
             </button>
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={cancel}
               aria-label="Cancel editing this line"
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
