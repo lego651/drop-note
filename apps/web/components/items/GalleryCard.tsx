@@ -141,9 +141,9 @@ export function GalleryCard({
         </span>
       )}
 
-      {/* Hover actions — pin / delete */}
+      {/* Pin / delete — visible on hover (desktop) and always on touch (no :hover) devices, DRO-240 */}
       {!isBulkMode && (
-        <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute right-2 top-2 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
           <button
             type="button"
             aria-label={item.pinned ? 'Unpin item' : 'Pin item'}
@@ -152,7 +152,7 @@ export function GalleryCard({
               e.stopPropagation()
               onPinChange?.(item.id, !item.pinned)
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-foreground"
+            className="flex h-7 w-7 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-foreground [@media(hover:none)]:h-11 [@media(hover:none)]:w-11"
           >
             <Pin
               size={13}
@@ -167,7 +167,7 @@ export function GalleryCard({
               e.stopPropagation()
               onDelete?.(item.id)
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-destructive"
+            className="flex h-7 w-7 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-destructive [@media(hover:none)]:h-11 [@media(hover:none)]:w-11"
           >
             <Trash2 size={13} />
           </button>
