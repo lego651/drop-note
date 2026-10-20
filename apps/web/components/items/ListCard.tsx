@@ -82,7 +82,50 @@ export function ListCard({
   const placeholderHsl = colorForTagHsl(item.subject ?? sourceLabel(item))
 
   const media = (
-    <div className="relative h-[104px] w-[148px] shrink-0 overflow-hidden rounded-lg border-stroke border-ink bg-muted">
+    // Outer wrapper is intentionally NOT overflow-hidden: the pin/delete buttons live here
+    // (not inside the clipped thumbnail box) so they're never clipped by the mobile 64px
+    // thumbnail, and min-h reserves enough room so the stacked touch targets stay inside
+    // this card instead of bleeding into the next one. DRO-240 + DRO-251.
+    <div className="relative min-h-[104px] shrink-0">
+      <div className="relative h-16 w-16 overflow-hidden rounded-lg border-stroke border-ink bg-muted sm:h-[104px] sm:w-[148px]">
+        {isDone && item.thumbnail_url ? (
+          <>
+            <Image
+              src={item.thumbnail_url}
+              alt={item.subject ?? ''}
+              fill
+              className="object-cover"
+              sizes="(max-width: 639px) 64px, 148px"
+            />
+            {youtubeId && (
+              <button
+                type="button"
+                aria-label="Play video"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setVideoOpen(true)
+                }}
+                className="absolute inset-0 flex items-center justify-center"
+              >
+                <span
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                  style={{ boxShadow: '0 0 0 2px hsl(var(--badge-ring))' }}
+                >
+                  <Play size={14} className="ml-0.5 fill-current" />
+                </span>
+              </button>
+            )}
+          </>
+        ) : (
+          <div
+            className="flex h-full w-full items-center justify-center"
+            style={{ backgroundColor: `hsl(${placeholderHsl} / 0.12)` }}
+          >
+            <FileText size={30} style={{ color: `hsl(${placeholderHsl})` }} />
+          </div>
+        )}
+      </div>
       {/* Pin / delete — over the thumbnail so they never cover the title text. Visible on
           hover (desktop) and always on touch (no :hover) devices, DRO-240. Stacked vertically
           on touch (instead of side by side) so the 44px targets stay clear of the centred
@@ -113,43 +156,6 @@ export function ListCard({
           >
             <Trash2 size={13} />
           </button>
-        </div>
-      )}
-      {isDone && item.thumbnail_url ? (
-        <>
-          <Image
-            src={item.thumbnail_url}
-            alt={item.subject ?? ''}
-            fill
-            className="object-cover"
-            sizes="148px"
-          />
-          {youtubeId && (
-            <button
-              type="button"
-              aria-label="Play video"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                setVideoOpen(true)
-              }}
-              className="absolute inset-0 flex items-center justify-center"
-            >
-              <span
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"
-                style={{ boxShadow: '0 0 0 2px hsl(var(--badge-ring))' }}
-              >
-                <Play size={14} className="ml-0.5 fill-current" />
-              </span>
-            </button>
-          )}
-        </>
-      ) : (
-        <div
-          className="flex h-full w-full items-center justify-center"
-          style={{ backgroundColor: `hsl(${placeholderHsl} / 0.12)` }}
-        >
-          <FileText size={30} style={{ color: `hsl(${placeholderHsl})` }} />
         </div>
       )}
     </div>
@@ -217,7 +223,7 @@ export function ListCard({
   const card = (
     <article
       className={cn(
-        'lift group relative flex items-start gap-5 rounded-xl border-stroke border-ink bg-card p-4 shadow-ink-lg',
+        'lift group relative flex items-start gap-3 rounded-xl border-stroke border-ink bg-card p-4 shadow-ink-lg sm:gap-5',
         isSelected && 'ring-2 ring-ring ring-offset-2',
         isBulkMode && 'cursor-pointer',
       )}

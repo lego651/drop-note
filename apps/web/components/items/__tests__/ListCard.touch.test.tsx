@@ -66,11 +66,11 @@ describe('ListCard — pin/delete reachable on touch', () => {
     const pinButton = screen.getByRole('button', { name: 'Pin item' })
     const title = screen.getByText('Test subject')
 
-    // The button's positioning ancestor must be the thumbnail wrapper, which is a
+    // The button's positioning ancestor must be the media wrapper, which is a
     // sibling of (not an ancestor of) the title's container.
-    const thumbnailWrapper = pinButton.closest('.relative.h-\\[104px\\]')
-    expect(thumbnailWrapper).not.toBeNull()
-    expect(thumbnailWrapper?.contains(title)).toBe(false)
+    const mediaWrapper = pinButton.closest('.relative.min-h-\\[104px\\]')
+    expect(mediaWrapper).not.toBeNull()
+    expect(mediaWrapper?.contains(title)).toBe(false)
   })
 
   it('does not render pin/delete while in bulk-select mode (checkbox takes over)', () => {
@@ -98,5 +98,24 @@ describe('ListCard — pin/delete reachable on touch', () => {
     expect(controlsWrapper?.className).toContain('[@media(hover:none)]:flex-col')
 
     expect(screen.getByRole('button', { name: 'Play video' })).toBeInTheDocument()
+  })
+
+  it('keeps the stacked touch controls outside the clipped (overflow-hidden) thumbnail box, so DRO-251\'s 64px mobile thumbnail never clips the delete button', () => {
+    render(<ListCard item={item} />)
+
+    const pinButton = screen.getByRole('button', { name: 'Pin item' })
+    const controlsWrapper = pinButton.parentElement
+    const mediaWrapper = pinButton.closest('.relative.min-h-\\[104px\\]')
+
+    // The buttons' own positioning ancestor must not be the overflow-hidden thumbnail
+    // box — if it were, the stacked 44px pair (~92px tall) would get clipped by the
+    // mobile 64px-tall thumbnail and the delete button would be invisible/untappable.
+    expect(controlsWrapper?.className).not.toContain('overflow-hidden')
+    expect(mediaWrapper?.className).not.toContain('overflow-hidden')
+
+    // The media wrapper reserves at least 104px of layout height regardless of the
+    // thumbnail's own (possibly smaller) box, so the stacked buttons stay within this
+    // card instead of overflowing into the next one.
+    expect(mediaWrapper?.className).toContain('min-h-[104px]')
   })
 })

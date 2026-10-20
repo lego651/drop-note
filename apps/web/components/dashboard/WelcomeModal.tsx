@@ -55,23 +55,23 @@ export function WelcomeModal() {
         </DialogHeader>
 
         {/* Steps */}
-        <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground">
+        <div className="flex flex-col gap-2 py-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-center sm:gap-3">
           <span className="flex items-center gap-1.5">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
               1
             </span>
             Send anything to your drop address
           </span>
-          <span className="text-border">→</span>
+          <span className="hidden text-border sm:inline">→</span>
           <span className="flex items-center gap-1.5">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
               2
             </span>
             AI summarizes and tags it
           </span>
-          <span className="text-border">→</span>
+          <span className="hidden text-border sm:inline">→</span>
           <span className="flex items-center gap-1.5">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-foreground">
               3
             </span>
             Find it in your dashboard
