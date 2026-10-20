@@ -9,7 +9,10 @@ export function AdminMobileNav() {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <button aria-label="Open admin menu" className="md:hidden p-2 text-foreground">
+        <button
+          aria-label="Open admin menu"
+          className="md:hidden -ml-1.5 inline-flex h-11 w-11 items-center justify-center text-foreground"
+        >
           <Menu size={20} />
         </button>
       </SheetTrigger>
@@ -22,7 +25,10 @@ export function AdminMobileNav() {
         </div>
         <div className="px-3 py-3 border-t-stroke border-ink">
           <SheetClose asChild>
-            <Link href="/items" className="text-xs text-muted-foreground hover:underline">
+            <Link
+              href="/items"
+              className="flex min-h-11 items-center px-1 text-xs text-muted-foreground hover:underline"
+            >
               &larr; Back to app
             </Link>
           </SheetClose>

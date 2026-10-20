@@ -67,7 +67,7 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
           <NativeSelect
             value={type}
             onChange={(e) => setType(e.target.value as 'email' | 'ip')}
-            className="h-9 text-sm"
+            className="h-11 text-base sm:h-9 sm:text-sm"
           >
             <option value="email">Email</option>
             <option value="ip">IP</option>
@@ -81,10 +81,15 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
             onChange={(e) => setValue(e.target.value)}
             placeholder={type === 'email' ? 'spam@example.com' : '1.2.3.4'}
             required
-            className="h-9 w-full text-sm"
+            inputMode={type === 'email' ? 'email' : 'text'}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="done"
+            className="h-11 w-full text-base sm:h-9 sm:text-sm"
           />
         </div>
-        <Button type="submit" size="sm" disabled={adding}>
+        <Button type="submit" size="sm" className="h-11 sm:h-9" disabled={adding}>
           {adding ? 'Adding\u2026' : 'Add block'}
         </Button>
         {addError && <p className="w-full text-xs text-destructive-text">{addError}</p>}
@@ -117,7 +122,7 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-destructive-text"
+                    className="h-11 sm:h-9 text-destructive-text"
                     onClick={() => handleRemove(b.id)}
                   >
                     Remove

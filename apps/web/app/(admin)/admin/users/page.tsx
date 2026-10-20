@@ -82,7 +82,7 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
         <div className="flex items-center justify-between">
           <a
             href={page > 1 ? `/admin/users?page=${page - 1}` : '#'}
-            className="text-sm text-muted-foreground hover:underline disabled:opacity-50"
+            className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline disabled:opacity-50"
             aria-disabled={page <= 1}
           >
             &larr; Previous
@@ -92,7 +92,7 @@ export default async function AdminUsersPage({ searchParams }: UsersPageProps) {
           </span>
           <a
             href={page < totalPages ? `/admin/users?page=${page + 1}` : '#'}
-            className="text-sm text-muted-foreground hover:underline"
+            className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:underline"
             aria-disabled={page >= totalPages}
           >
             Next &rarr;
