@@ -401,7 +401,7 @@ function reinsertEnvelopeTableRow(body: EnvelopeBody, sectionIndex: number, rowI
 function EnvelopeTableCell({ leaf, citationLabels }: { leaf: EnvelopeLeaf; citationLabels: CitationLabels }) {
   return (
     <td className="min-w-[150px] px-4 py-2 align-top">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-5">
         <span
           aria-hidden="true"
           className={cn(
@@ -420,7 +420,7 @@ function EnvelopeTableCell({ leaf, citationLabels }: { leaf: EnvelopeLeaf; citat
               key={itemId}
               href={`/items/${itemId}`}
               title={citationLabels[itemId] ?? 'Source'}
-              className="inline-block max-w-[160px] truncate rounded-full border-stroke border-ink bg-card px-2 py-0.5 align-middle text-[11px] font-medium text-foreground hover:bg-muted"
+              className="relative inline-block max-w-[160px] truncate rounded-full border-stroke border-ink bg-card px-2 py-0.5 align-middle text-[11px] font-medium text-foreground after:absolute after:inset-x-0 after:-inset-y-[9px] after:content-[''] hover:bg-muted"
             >
               {citationLabels[itemId] ?? 'Source'}
             </Link>

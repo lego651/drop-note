@@ -411,6 +411,26 @@ describe('EnvelopeBodyView table block (DRO-196)', () => {
     expect(removeRow.className).toContain("after:-inset-[14px]")
   })
 
+  it('expands a citation chip\'s hit area to 44px tall without growing its visual pill (DRO-271)', () => {
+    render(
+      <EnvelopeBodyView
+        envelopeId="env-1"
+        body={tableBody()}
+        citationLabels={{ 'item-1': 'Pasta recipe' }}
+      />,
+    )
+
+    const chip = screen.getByRole('link', { name: 'Pasta recipe' })
+    // The visual pill stays a 26px-tall (py-0.5, text-[11px]) truncating
+    // chip (DRO-242); only the invisible after-pseudo hit area grows, via a
+    // 9px inset on every side: 26 + 9 + 9 = 44.
+    expect(chip).toHaveClass('relative')
+    expect(chip).toHaveClass('px-2')
+    expect(chip).toHaveClass('py-0.5')
+    expect(chip.className).toContain("after:inset-x-0")
+    expect(chip.className).toContain("after:-inset-y-[9px]")
+  })
+
   it('(DRO-235) tapping Save on the "Add row" form commits once every column is filled in', async () => {
     const body = tableBody()
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ body }), { status: 200 }))

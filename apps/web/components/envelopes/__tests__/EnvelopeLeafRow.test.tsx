@@ -131,6 +131,25 @@ describe('EnvelopeLeafRow (DRO-232 extensibility)', () => {
     expect(screen.getByText('Edited')).toBeInTheDocument()
     expect(screen.queryByText('Added by you')).not.toBeInTheDocument()
   })
+
+  it('expands a citation chip\'s hit area to 44px tall without growing its visual pill (DRO-271)', () => {
+    render(
+      <EnvelopeLeafRow
+        leaf={leaf({ sourceItemIds: ['item-1'], confidence: 'from_item' })}
+        citationLabels={{ 'item-1': 'Packing list' }}
+      />,
+    )
+
+    const chip = screen.getByRole('link', { name: 'Packing list' })
+    // The visual pill stays a 26px-tall (py-0.5, text-[11px]) chip; only the
+    // invisible after-pseudo hit area grows, via a 9px inset on every side:
+    // 26 + 9 + 9 = 44 (same math as the EnvelopeBodyView table-cell chip).
+    expect(chip).toHaveClass('relative')
+    expect(chip).toHaveClass('px-2')
+    expect(chip).toHaveClass('py-0.5')
+    expect(chip.className).toContain("after:inset-x-0")
+    expect(chip.className).toContain("after:-inset-y-[9px]")
+  })
 })
 
 describe('EnvelopeLeafRow — editing on mobile (DRO-235)', () => {

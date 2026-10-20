@@ -89,7 +89,7 @@ export function EnvelopeLeafRow({
           {bulletVariant === 'check' ? <Check size={10} /> : <Minus size={10} />}
         </span>
       )}
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-5">
         {isEditing ? (
           <form
             className="flex min-w-0 flex-1 basis-full items-center gap-1"
@@ -180,7 +180,7 @@ export function EnvelopeLeafRow({
             <Link
               key={itemId}
               href={`/items/${itemId}`}
-              className="inline-flex items-center rounded-full border-stroke border-ink bg-card px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted"
+              className="relative inline-flex items-center rounded-full border-stroke border-ink bg-card px-2 py-0.5 text-[11px] font-medium text-foreground after:absolute after:inset-x-0 after:-inset-y-[9px] after:content-[''] hover:bg-muted"
             >
               {citationLabels[itemId] ?? 'Source'}
             </Link>
