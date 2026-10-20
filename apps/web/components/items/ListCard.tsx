@@ -82,11 +82,12 @@ export function ListCard({
   const placeholderHsl = colorForTagHsl(item.subject ?? sourceLabel(item))
 
   const media = (
-    // Outer wrapper is intentionally NOT overflow-hidden: the pin/delete buttons live here
-    // (not inside the clipped thumbnail box) so they're never clipped by the mobile 64px
-    // thumbnail, and min-h reserves enough room so the stacked touch targets stay inside
-    // this card instead of bleeding into the next one. DRO-240 + DRO-251.
-    <div className="relative min-h-[104px] shrink-0">
+    // Outer wrapper is intentionally NOT overflow-hidden: the pin/delete overlay (sm+ only,
+    // see below) lives here, not inside the clipped thumbnail box, so it's never clipped.
+    // sm:min-h reserves enough room so the stacked touch targets stay inside this card
+    // instead of bleeding into the next one; below sm the overlay doesn't render, so the
+    // wrapper just matches the 64px thumbnail. DRO-240 + DRO-251.
+    <div className="relative shrink-0 sm:min-h-[104px]">
       <div className="relative h-16 w-16 overflow-hidden rounded-lg border-stroke border-ink bg-muted sm:h-[104px] sm:w-[148px]">
         {isDone && item.thumbnail_url ? (
           <>
@@ -126,12 +127,15 @@ export function ListCard({
           </div>
         )}
       </div>
-      {/* Pin / delete — over the thumbnail so they never cover the title text. Visible on
-          hover (desktop) and always on touch (no :hover) devices, DRO-240. Stacked vertically
-          on touch (instead of side by side) so the 44px targets stay clear of the centred
-          YouTube play button rather than overlapping its top half. */}
+      {/* Pin / delete overlay — over the thumbnail so they never cover the title text.
+          sm+ only: below sm the thumbnail shrinks to 64px (DRO-251), too small for any
+          44px touch target to avoid the centred play button, so mobile uses the separate
+          always-visible row in the meta line instead (DRO-240). */}
       {!isBulkMode && (
-        <div className="absolute right-1.5 top-1.5 z-10 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:flex-col [@media(hover:none)]:gap-1 [@media(hover:none)]:opacity-100">
+        <div
+          data-testid="touch-controls-overlay"
+          className="absolute right-1.5 top-1.5 z-10 hidden gap-1.5 opacity-0 transition-opacity sm:flex group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:flex-col [@media(hover:none)]:gap-1 [@media(hover:none)]:opacity-100"
+        >
           <button
             type="button"
             aria-label={item.pinned ? 'Unpin item' : 'Pin item'}
@@ -163,22 +167,55 @@ export function ListCard({
 
   const body = (
     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-      {/* Meta row: dot · domain · read time · date */}
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-mono text-[11px] text-muted-foreground">
-        <span
-          className="h-2 w-2 shrink-0 rounded-full"
-          style={{ backgroundColor: SOURCE_DOT[item.source_type ?? 'default'] }}
-          aria-hidden="true"
-        />
-        <span className="truncate">{sourceLabel(item)}</span>
-        {readMin && (
-          <>
-            <span aria-hidden="true">·</span>
-            <span>{readMin} min read</span>
-          </>
+      {/* Meta row: dot · domain · read time · date, plus (below sm) the pin/delete
+          row-based touch controls — see the overlay comment in `media` for why mobile
+          can't use the thumbnail overlay, DRO-240. */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-0.5 font-mono text-[11px] text-muted-foreground">
+          <span
+            className="h-2 w-2 shrink-0 rounded-full"
+            style={{ backgroundColor: SOURCE_DOT[item.source_type ?? 'default'] }}
+            aria-hidden="true"
+          />
+          <span className="truncate">{sourceLabel(item)}</span>
+          {readMin && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>{readMin} min read</span>
+            </>
+          )}
+          <span aria-hidden="true">·</span>
+          <time dateTime={item.created_at}>{formatDate(item.created_at)}</time>
+        </div>
+
+        {!isBulkMode && (
+          <div data-testid="touch-controls-mobile" className="flex shrink-0 gap-1.5 sm:hidden">
+            <button
+              type="button"
+              aria-label={item.pinned ? 'Unpin item' : 'Pin item'}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onPinChange?.(item.id, !item.pinned)
+              }}
+              className="flex h-11 w-11 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-foreground"
+            >
+              <Pin size={13} className={cn(item.pinned && 'fill-foreground text-foreground')} />
+            </button>
+            <button
+              type="button"
+              aria-label="Delete item"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onDelete?.(item.id)
+              }}
+              className="flex h-11 w-11 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-destructive"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
         )}
-        <span aria-hidden="true">·</span>
-        <time dateTime={item.created_at}>{formatDate(item.created_at)}</time>
       </div>
 
       {/* Title */}
