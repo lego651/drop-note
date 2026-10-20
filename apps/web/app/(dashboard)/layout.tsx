@@ -84,7 +84,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <BulkSelectProvider>
-      <div className="flex h-screen overflow-hidden bg-background">
+      {/* Tailwind emits .h-dvh before .h-screen in the generated CSS, so with equal
+          specificity h-screen always wins regardless of class order in the HTML —
+          "h-screen h-dvh" never actually applies dvh. Gate the dvh value behind a
+          @supports check instead: h-screen is the base value, and browsers that
+          support 100dvh (iOS 15.4+) override it so the shell tracks the visible
+          area as Safari's chrome shows/hides, keeping the FAB and last list item
+          out from behind the toolbar. */}
+      <div className="flex h-screen supports-[height:100dvh]:h-dvh overflow-hidden bg-background">
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:rounded-md focus:px-3 focus:py-2 focus:bg-background focus:text-foreground focus:text-sm focus:font-medium focus:ring-2 focus:ring-ring"

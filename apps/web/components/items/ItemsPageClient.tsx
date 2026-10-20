@@ -351,8 +351,8 @@ export function ItemsPageClient({
 
   const isEmpty = displayItems.length === 0 && !isSearching
   // The floating "Make a plan" FAB and the pick-mode tray are both fixed
-  // bottom-right (DRO-227) — reserve room so neither covers the last row or
-  // the pagination controls.
+  // bottom-right (DRO-227) — reserve room (height + the home-indicator safe
+  // area, DRO-244) so neither covers the last row or the pagination controls.
   const showFab = !isBulkMode && !bannerOccupiesCta
   const reserveFabSpace = isBulkMode || showFab
 
@@ -368,7 +368,9 @@ export function ItemsPageClient({
       <div
         className={cn(
           'mx-auto max-w-6xl px-3 sm:px-6 lg:px-8 py-6 space-y-5',
-          isBulkMode ? 'pb-[184px] sm:pb-[200px]' : reserveFabSpace && 'pb-28 sm:pb-24',
+          isBulkMode
+            ? 'pb-[calc(184px_+_env(safe-area-inset-bottom))] sm:pb-[calc(200px_+_env(safe-area-inset-bottom))] max-[390px]:pb-[calc(220px_+_env(safe-area-inset-bottom))]'
+            : reserveFabSpace && 'pb-[calc(112px_+_env(safe-area-inset-bottom))] sm:pb-[calc(96px_+_env(safe-area-inset-bottom))]',
         )}
       >
       <WelcomeModal />
@@ -407,10 +409,11 @@ export function ItemsPageClient({
           />
           <Input
             type="search"
+            enterKeyHint="search"
             placeholder="Search items, summaries, keywords…"
             value={searchQuery}
             onChange={handleSearchChange}
-            className="h-11 pl-11 pr-4 text-sm"
+            className="h-11 pl-11 pr-4 text-base md:text-sm"
             aria-label="Search items"
           />
         </div>
@@ -440,20 +443,22 @@ export function ItemsPageClient({
         </div>
       )}
 
-      {/* Bulk action toolbar */}
+      {/* Sticky so Tag/Move/Delete stay reachable while scrolling, alongside the fixed envelope tray. */}
       {isBulkMode && (
-        <BulkActionToolbar
-          selectedIds={selectedIds}
-          allPageIds={allPageIds}
-          userTier={userTier}
-          categories={categories}
-          onDeleted={handleBulkDeleted}
-          onTagged={handleBulkTagged}
-          onMoved={handleBulkMoved}
-          onSelectAll={selectAll}
-          onDeselectPage={() => deselectIds(allPageIds)}
-          onDeselectAll={deselectAll}
-        />
+        <div className="sticky top-0 z-20 -mx-1 bg-canvas px-1 py-1">
+          <BulkActionToolbar
+            selectedIds={selectedIds}
+            allPageIds={allPageIds}
+            userTier={userTier}
+            categories={categories}
+            onDeleted={handleBulkDeleted}
+            onTagged={handleBulkTagged}
+            onMoved={handleBulkMoved}
+            onSelectAll={selectAll}
+            onDeselectPage={() => deselectIds(allPageIds)}
+            onDeselectAll={deselectAll}
+          />
+        </div>
       )}
 
       {/* List header: item count (left) + sort + view controls (right) */}
@@ -485,7 +490,7 @@ export function ItemsPageClient({
             <Button
               variant="ghost"
               className={cn(
-                'h-10 w-10 justify-center gap-2 px-0 text-sm font-semibold sm:w-auto sm:px-5',
+                'h-11 w-11 justify-center gap-2 px-0 text-sm font-semibold sm:h-10 sm:w-auto sm:px-5',
                 isBulkMode && 'border-stroke border-ink bg-accent text-accent-foreground shadow-ink-sm hover:bg-accent hover:text-accent-foreground',
               )}
               aria-pressed={isBulkMode}

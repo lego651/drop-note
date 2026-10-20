@@ -3,7 +3,7 @@ import { Archivo, JetBrains_Mono, Noto_Sans_SC } from 'next/font/google'
 import { ThemeProvider } from 'next-themes'
 import { Toaster } from '@/components/ui/toaster'
 import { CookieBanner } from '@/components/CookieBanner'
-import Link from 'next/link'
+import { SiteFooter } from '@/components/layout/SiteFooter'
 import './globals.css'
 
 // Airmail type (docs/design/AIRMAIL.md § 4). Archivo keeps its width axis for the 125% display cut.
@@ -50,15 +50,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
-          <footer className="border-t border-border py-6 px-4">
-            <div className="max-w-5xl mx-auto flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
-              <span>© {new Date().getFullYear()} drop-note</span>
-              <Link href="/roadmap" className="hover:text-foreground transition-colors">Roadmap</Link>
-              <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
-              <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
-              <Link href="/aup" className="hover:text-foreground transition-colors">Acceptable Use</Link>
-            </div>
-          </footer>
+          <SiteFooter />
           <Toaster />
           <CookieBanner />
         </ThemeProvider>

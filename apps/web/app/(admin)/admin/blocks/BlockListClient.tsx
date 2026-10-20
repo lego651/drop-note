@@ -67,32 +67,37 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
           <NativeSelect
             value={type}
             onChange={(e) => setType(e.target.value as 'email' | 'ip')}
-            className="h-9 text-sm"
+            className="h-11 text-base sm:h-9 sm:text-sm"
           >
             <option value="email">Email</option>
             <option value="ip">IP</option>
           </NativeSelect>
         </div>
-        <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
+        <div className="flex flex-col gap-1 flex-1 min-w-[160px]">
           <label className="text-xs text-muted-foreground">Value</label>
           <Input
-            type="text"
+            type={type === 'email' ? 'email' : 'text'}
+            inputMode={type === 'email' ? 'email' : 'text'}
+            enterKeyHint="done"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={type === 'email' ? 'spam@example.com' : '1.2.3.4'}
             required
-            className="h-9 text-sm"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className="h-11 w-full text-base sm:h-9 sm:text-sm"
           />
         </div>
-        <Button type="submit" size="sm" disabled={adding}>
+        <Button type="submit" size="sm" className="h-11 sm:h-9" disabled={adding}>
           {adding ? 'Adding\u2026' : 'Add block'}
         </Button>
         {addError && <p className="w-full text-xs text-destructive-text">{addError}</p>}
       </form>
 
       {/* Table */}
-      <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-muted">
             <tr>
               <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Type</th>
@@ -117,7 +122,7 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-destructive-text"
+                    className="h-11 sm:h-9 text-destructive-text"
                     onClick={() => handleRemove(b.id)}
                   >
                     Remove

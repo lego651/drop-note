@@ -59,9 +59,9 @@ export function InviteCodesClient({ initialCodes, initialMode }: InviteCodesClie
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h1 className="type-display text-[32px] sm:text-[42px]">Invite Codes</h1>
-        <Button size="sm" onClick={handleGenerate} disabled={generating}>
+        <Button size="sm" className="h-11 sm:h-9" onClick={handleGenerate} disabled={generating}>
           {generating ? 'Generating\u2026' : 'Generate code'}
         </Button>
       </div>
@@ -93,8 +93,8 @@ export function InviteCodesClient({ initialCodes, initialMode }: InviteCodesClie
       </div>
 
       {/* Codes table */}
-      <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg overflow-x-auto">
+        <table className="w-full min-w-[520px] text-sm">
           <thead className="bg-muted">
             <tr>
               <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Code</th>
@@ -125,7 +125,7 @@ export function InviteCodesClient({ initialCodes, initialMode }: InviteCodesClie
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-destructive-text"
+                      className="h-11 sm:h-9 text-destructive-text"
                       onClick={() => handleRevoke(c.id)}
                     >
                       Revoke

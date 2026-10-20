@@ -37,4 +37,14 @@ describe('CategoryBadge', () => {
     render(<CategoryBadge category={category} />)
     expect(screen.getByText('Food & Drink').parentElement).toHaveClass('font-sans')
   })
+
+  // DRO-247: the chip stays visually small, but needs a >=44px tap target on touch,
+  // via an invisible pseudo-element that extends the hit area beyond the chip bounds.
+  it('extends the interactive chip hit area past its visual bounds for touch', () => {
+    render(<CategoryBadge category={category} interactive />)
+    const button = screen.getByRole('button')
+    expect(button.className).toContain("after:absolute")
+    expect(button.className).toContain('after:-inset-x-2')
+    expect(button.className).toContain('after:-inset-y-3')
+  })
 })

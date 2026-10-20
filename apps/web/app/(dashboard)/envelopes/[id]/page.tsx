@@ -43,7 +43,10 @@ export default async function EnvelopeDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="mx-auto max-w-3xl px-3 sm:px-6 lg:px-8 py-6 space-y-5">
-      <Link href="/items" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+      <Link
+        href="/items"
+        className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground sm:min-h-0"
+      >
         <ArrowLeft size={14} />
         Back to items
       </Link>
