@@ -10,7 +10,10 @@ export function MobileSidebar(props: SidebarProps) {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <button aria-label="Open menu" className="md:hidden p-2 text-foreground">
+        <button
+          aria-label="Open menu"
+          className="flex h-11 w-11 items-center justify-center text-foreground md:hidden"
+        >
           <Menu size={20} />
         </button>
       </SheetTrigger>

@@ -26,7 +26,7 @@ export function ViewSwitcher({ activeView, onViewChange }: ViewSwitcherProps) {
     <div
       role="group"
       aria-label="View mode"
-      className="inline-flex h-10 items-center gap-0.5 rounded-[10px] border-stroke border-ink bg-card p-[3px] shadow-ink-md"
+      className="inline-flex items-center gap-0.5 rounded-[10px] border-stroke border-ink bg-card p-[3px] shadow-ink-md"
     >
       {VIEWS.map(({ value, label, Icon }) => {
         const active = activeView === value
@@ -38,7 +38,7 @@ export function ViewSwitcher({ activeView, onViewChange }: ViewSwitcherProps) {
             aria-pressed={active}
             onClick={() => onViewChange(value)}
             className={cn(
-              'flex h-[30px] w-9 items-center justify-center rounded-md transition-colors',
+              'flex h-11 w-11 items-center justify-center rounded-md transition-colors sm:h-[30px] sm:w-9',
               active
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground',

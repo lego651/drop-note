@@ -490,7 +490,7 @@ export function ItemsPageClient({
             <Button
               variant="ghost"
               className={cn(
-                'h-10 w-10 justify-center gap-2 px-0 text-sm font-semibold sm:w-auto sm:px-5',
+                'h-11 w-11 justify-center gap-2 px-0 text-sm font-semibold sm:h-10 sm:w-auto sm:px-5',
                 isBulkMode && 'border-stroke border-ink bg-accent text-accent-foreground shadow-ink-sm hover:bg-accent hover:text-accent-foreground',
               )}
               aria-pressed={isBulkMode}
