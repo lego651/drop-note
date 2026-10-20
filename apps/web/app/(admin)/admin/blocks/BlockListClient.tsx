@@ -73,7 +73,7 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
             <option value="ip">IP</option>
           </NativeSelect>
         </div>
-        <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
+        <div className="flex flex-col gap-1 flex-1 min-w-[160px]">
           <label className="text-xs text-muted-foreground">Value</label>
           <Input
             type="text"
@@ -81,7 +81,7 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
             onChange={(e) => setValue(e.target.value)}
             placeholder={type === 'email' ? 'spam@example.com' : '1.2.3.4'}
             required
-            className="h-9 text-sm"
+            className="h-9 w-full text-sm"
           />
         </div>
         <Button type="submit" size="sm" disabled={adding}>
@@ -91,8 +91,8 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
       </form>
 
       {/* Table */}
-      <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-xl border-stroke border-ink bg-card shadow-ink-lg overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-muted">
             <tr>
               <th className="text-left px-4 py-2 text-xs font-semibold text-muted-foreground">Type</th>

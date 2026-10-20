@@ -53,7 +53,7 @@ export function StatsClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h1 className="type-display text-[32px] sm:text-[42px]">System Stats</h1>
         <Button size="sm" variant="outline" onClick={fetchStats} disabled={loading}>
           {loading ? 'Loading\u2026' : 'Refresh'}
