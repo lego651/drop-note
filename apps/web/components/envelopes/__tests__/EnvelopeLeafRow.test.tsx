@@ -122,3 +122,104 @@ describe('EnvelopeLeafRow (DRO-232 extensibility)', () => {
     expect(screen.queryByText('Added by you')).not.toBeInTheDocument()
   })
 })
+
+describe('EnvelopeLeafRow — editing on mobile (DRO-235)', () => {
+  it('tapping the Save button commits an edit', () => {
+    const onEditText = vi.fn()
+    render(<EnvelopeLeafRow leaf={leaf()} citationLabels={{}} onEditText={onEditText} />)
+
+    fireEvent.click(screen.getByText('Pack a towel'))
+    const input = screen.getByDisplayValue('Pack a towel')
+    fireEvent.change(input, { target: { value: 'Pack two towels' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save this line' }))
+
+    expect(onEditText).toHaveBeenCalledWith('Pack two towels')
+  })
+
+  it('submitting the <form> (mobile keyboard Go/Done key) commits an edit', () => {
+    const onEditText = vi.fn()
+    render(<EnvelopeLeafRow leaf={leaf()} citationLabels={{}} onEditText={onEditText} />)
+
+    fireEvent.click(screen.getByText('Pack a towel'))
+    const input = screen.getByDisplayValue('Pack a towel')
+    fireEvent.change(input, { target: { value: 'Pack two towels' } })
+    fireEvent.submit(input.closest('form')!)
+
+    expect(onEditText).toHaveBeenCalledWith('Pack two towels')
+  })
+
+  it('blurring away from the edit input commits a changed, non-empty value', () => {
+    const onEditText = vi.fn()
+    render(<EnvelopeLeafRow leaf={leaf()} citationLabels={{}} onEditText={onEditText} />)
+
+    fireEvent.click(screen.getByText('Pack a towel'))
+    const input = screen.getByDisplayValue('Pack a towel')
+    fireEvent.change(input, { target: { value: 'Pack two towels' } })
+    fireEvent.blur(input)
+
+    expect(onEditText).toHaveBeenCalledWith('Pack two towels')
+  })
+
+  it('tapping Cancel discards the draft without committing', () => {
+    const onEditText = vi.fn()
+    render(<EnvelopeLeafRow leaf={leaf()} citationLabels={{}} onEditText={onEditText} />)
+
+    fireEvent.click(screen.getByText('Pack a towel'))
+    const input = screen.getByDisplayValue('Pack a towel')
+    fireEvent.change(input, { target: { value: 'Discarded' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel editing this line' }))
+
+    expect(onEditText).not.toHaveBeenCalled()
+    expect(screen.getByText('Pack a towel')).toBeInTheDocument()
+  })
+
+  it('does not double-commit when a tap moves focus from the input to the Save button (blur fires first, then click)', () => {
+    const onEditText = vi.fn()
+    render(<EnvelopeLeafRow leaf={leaf()} citationLabels={{}} onEditText={onEditText} />)
+
+    fireEvent.click(screen.getByText('Pack a towel'))
+    const input = screen.getByDisplayValue('Pack a towel')
+    fireEvent.change(input, { target: { value: 'Pack two towels' } })
+    const saveButton = screen.getByRole('button', { name: 'Save this line' })
+    // Browsers blur the input (relatedTarget = the element gaining focus) before
+    // the click on that element fires — the component must recognize the Save
+    // button as "still inside the form" and let the click's submit commit once,
+    // not fire commit() a second time from the blur handler too.
+    fireEvent.blur(input, { relatedTarget: saveButton })
+    fireEvent.click(saveButton)
+
+    expect(onEditText).toHaveBeenCalledTimes(1)
+    expect(onEditText).toHaveBeenCalledWith('Pack two towels')
+  })
+
+  it('does not commit a discarded draft when a tap moves focus from the input to the Cancel button', () => {
+    const onEditText = vi.fn()
+    render(<EnvelopeLeafRow leaf={leaf()} citationLabels={{}} onEditText={onEditText} />)
+
+    fireEvent.click(screen.getByText('Pack a towel'))
+    const input = screen.getByDisplayValue('Pack a towel')
+    fireEvent.change(input, { target: { value: 'Discarded' } })
+    const cancelButton = screen.getByRole('button', { name: 'Cancel editing this line' })
+    fireEvent.blur(input, { relatedTarget: cancelButton })
+    fireEvent.click(cancelButton)
+
+    expect(onEditText).not.toHaveBeenCalled()
+    expect(screen.getByText('Pack a towel')).toBeInTheDocument()
+  })
+
+  it('suppresses the mousedown default on Save/Cancel so WebKit/Firefox (which report no relatedTarget on a button tap) never blur-commit before the click runs', () => {
+    const onEditText = vi.fn()
+    render(<EnvelopeLeafRow leaf={leaf()} citationLabels={{}} onEditText={onEditText} />)
+
+    fireEvent.click(screen.getByText('Pack a towel'))
+    const saveButton = screen.getByRole('button', { name: 'Save this line' })
+    const cancelButton = screen.getByRole('button', { name: 'Cancel editing this line' })
+
+    // fireEvent returns false when a handler called preventDefault() on a
+    // cancelable event — this is the guard that stops the browser's default
+    // "shift focus, which blurs the input" action on a button tap, so the
+    // blur-commit handler never races the button's own click.
+    expect(fireEvent.mouseDown(saveButton)).toBe(false)
+    expect(fireEvent.mouseDown(cancelButton)).toBe(false)
+  })
+})
