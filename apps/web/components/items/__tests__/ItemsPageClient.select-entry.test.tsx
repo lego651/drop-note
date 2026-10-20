@@ -102,6 +102,15 @@ describe('ItemsPageClient — selection entry point (DRO-213)', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
+  // DRO-247: the button was 40x40 on mobile — needs a 44px tap target below sm.
+  it('gives "Edit items" a 44px tap target on mobile that shrinks back at sm+', () => {
+    renderPage()
+    const button = screen.getByRole('button', { name: 'Edit items' })
+    expect(button.className).toContain('h-11')
+    expect(button.className).toContain('w-11')
+    expect(button.className).toContain('sm:h-10')
+  })
+
   it('clicking "Edit items" reveals checkboxes with 0 selected, and selecting an item shows the EnvelopeTray', () => {
     renderPage()
 
