@@ -67,7 +67,7 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
           <NativeSelect
             value={type}
             onChange={(e) => setType(e.target.value as 'email' | 'ip')}
-            className="h-9 text-sm"
+            className="h-9"
           >
             <option value="email">Email</option>
             <option value="ip">IP</option>
@@ -76,12 +76,14 @@ export function BlockListClient({ initialBlocks }: BlockListClientProps) {
         <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
           <label className="text-xs text-muted-foreground">Value</label>
           <Input
-            type="text"
+            type={type === 'email' ? 'email' : 'text'}
+            inputMode={type === 'email' ? 'email' : 'text'}
+            enterKeyHint="done"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={type === 'email' ? 'spam@example.com' : '1.2.3.4'}
             required
-            className="h-9 text-sm"
+            className="h-9"
           />
         </div>
         <Button type="submit" size="sm" disabled={adding}>

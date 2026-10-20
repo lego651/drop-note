@@ -409,10 +409,11 @@ export function ItemsPageClient({
           />
           <Input
             type="search"
+            enterKeyHint="search"
             placeholder="Search items, summaries, keywords…"
             value={searchQuery}
             onChange={handleSearchChange}
-            className="h-11 pl-11 pr-4 text-sm"
+            className="h-11 pl-11 pr-4 text-base md:text-sm"
             aria-label="Search items"
           />
         </div>

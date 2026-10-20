@@ -186,7 +186,7 @@ export function ItemDetailEditor({
         <label htmlFor="item-ai-summary" className="text-sm font-medium">AI Summary</label>
         <textarea
           id="item-ai-summary"
-          className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+          className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring"
           value={summary}
           onChange={e => setSummary(e.target.value)}
           onBlur={handleSummaryBlur}
@@ -199,7 +199,7 @@ export function ItemDetailEditor({
         <label htmlFor="item-notes" className="text-sm font-medium">Notes</label>
         <textarea
           id="item-notes"
-          className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+          className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring"
           value={notes}
           onChange={e => setNotes(e.target.value)}
           onBlur={handleNotesBlur}
@@ -234,7 +234,8 @@ export function ItemDetailEditor({
               ref={tagInputRef}
               id="item-tag-input"
               type="text"
-              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              enterKeyHint="done"
+              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Search or add tag..."
               value={tagInput}
               onChange={e => handleTagInputChange(e.target.value)}
