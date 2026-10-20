@@ -193,12 +193,13 @@ export function BulkActionToolbar({
               <div className="flex gap-2">
                 <Input
                   placeholder="Tag name…"
+                  enterKeyHint="done"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleAddTag()
                   }}
-                  className="h-8 text-sm"
+                  className="h-8 text-base md:text-sm"
                   disabled={isTagging}
                   autoFocus
                 />
