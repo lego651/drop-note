@@ -69,8 +69,12 @@ export function EnvelopeLeafRow({
             // DRO-241: the row is py-3 (12px) around a text-sm line (20px),
             // a 44px pitch — so a 14px inset on every side exactly fills it
             // (12 padding + 2 offset ± 14 = 0..44) with zero overlap into the
-            // neighbouring row, while staying a 16px visual box.
-            "after:absolute after:-inset-x-[14px] after:-inset-y-3.5 after:content-['']",
+            // neighbouring row, while staying a 16px visual box. The inset is
+            // computed from the checkbox's own padding box though, which
+            // border-stroke shrinks by border-stroke*2 — so the inset must add
+            // back half the border (var(--stroke)) on each side to still land
+            // on a full 44px square (DRO-263 design review).
+            "after:absolute after:-inset-[calc(14px+var(--stroke))] after:content-['']",
             showSuggestedMarker && 'border-dashed',
           )}
         />
