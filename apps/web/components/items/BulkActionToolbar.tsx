@@ -162,7 +162,7 @@ export function BulkActionToolbar({
   return (
     <div className="flex items-center gap-2 rounded-[10px] border-stroke border-ink bg-card px-3 py-2 shadow-ink-md">
       {/* Select all on page checkbox */}
-      <label className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer select-none">
+      <label className="relative flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer select-none after:absolute after:-inset-[14px] after:content-[''] sm:after:hidden">
         <Checkbox
           checked={allPageSelected}
           onCheckedChange={(checked) => {
@@ -174,7 +174,7 @@ export function BulkActionToolbar({
         <span className="hidden sm:inline">Select all</span>
       </label>
 
-      <span className="text-sm font-medium">
+      <span className="whitespace-nowrap text-sm font-medium">
         {count} selected
       </span>
 
@@ -182,7 +182,7 @@ export function BulkActionToolbar({
         {/* Add tag popover */}
         <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" disabled={isTagging}>
+            <Button variant="outline" size="sm" className="h-11 min-w-11 px-3 sm:h-9 sm:px-4" disabled={isTagging}>
               <Tag size={14} />
               <span className="hidden sm:inline">Add tag</span>
             </Button>
@@ -199,11 +199,11 @@ export function BulkActionToolbar({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleAddTag()
                   }}
-                  className="h-8 text-base md:text-sm"
+                  className="h-11 text-base sm:h-8 sm:text-sm"
                   disabled={isTagging}
                   autoFocus
                 />
-                <Button size="sm" onClick={handleAddTag} disabled={isTagging || !tagInput.trim()}>
+                <Button size="sm" className="h-11 px-4 sm:h-8" onClick={handleAddTag} disabled={isTagging || !tagInput.trim()}>
                   Add
                 </Button>
               </div>
@@ -217,6 +217,7 @@ export function BulkActionToolbar({
             <Button
               variant="outline"
               size="sm"
+              className="h-11 min-w-11 px-3 sm:h-9 sm:px-4"
               disabled={isMoving || overMoveLimit}
               aria-disabled={overMoveLimit}
               aria-label={`Move ${count} items to a category`}
@@ -246,7 +247,7 @@ export function BulkActionToolbar({
         {/* Delete with confirmation */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm" disabled={isDeleting}>
+            <Button variant="destructive" size="sm" className="h-11 min-w-11 px-3 sm:h-9 sm:px-4" disabled={isDeleting}>
               <Trash2 size={14} />
               <span className="hidden sm:inline">Delete</span>
             </Button>
@@ -273,7 +274,7 @@ export function BulkActionToolbar({
         </AlertDialog>
 
         {/* Deselect all */}
-        <Button variant="ghost" size="sm" onClick={onDeselectAll} aria-label="Deselect all">
+        <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-9 sm:w-9" onClick={onDeselectAll} aria-label="Deselect all">
           <X size={14} />
         </Button>
       </div>
