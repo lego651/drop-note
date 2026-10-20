@@ -83,24 +83,56 @@ export function EnvelopeLeafRow({
       )}
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
         {isEditing ? (
-          <input
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                commit()
-              }
-              if (e.key === 'Escape') {
-                e.preventDefault()
-                cancel()
-              }
+          <form
+            className="flex min-w-0 flex-1 items-center gap-1"
+            onSubmit={(e) => {
+              e.preventDefault()
+              commit()
             }}
-            maxLength={ENVELOPE_TEXT_MAX_LENGTH}
-            className="min-w-0 flex-1 rounded-[6px] border-stroke border-ink bg-card px-1.5 py-0.5 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
-          />
+            onBlur={(e) => {
+              const next = e.relatedTarget as Node | null
+              if (next && e.currentTarget.contains(next)) return
+              commit()
+            }}
+          >
+            <input
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  // Real browsers already submit the <form> on Enter; this
+                  // preventDefault stops that native implicit submission so
+                  // commit() below is the only thing that runs — not a
+                  // duplicate caused by both firing.
+                  e.preventDefault()
+                  commit()
+                }
+                if (e.key === 'Escape') {
+                  e.preventDefault()
+                  cancel()
+                }
+              }}
+              enterKeyHint="done"
+              maxLength={ENVELOPE_TEXT_MAX_LENGTH}
+              className="min-w-0 flex-1 rounded-[6px] border-stroke border-ink bg-card px-1.5 py-0.5 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+            />
+            <button
+              type="submit"
+              aria-label="Save this line"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Check size={16} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={cancel}
+              aria-label="Cancel editing this line"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          </form>
         ) : (
           <span
             role={onEditText ? 'button' : undefined}
