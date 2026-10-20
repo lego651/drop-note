@@ -83,6 +83,36 @@ export function ListCard({
 
   const media = (
     <div className="relative h-[104px] w-[148px] shrink-0 overflow-hidden rounded-lg border-stroke border-ink bg-muted">
+      {/* Pin / delete — over the thumbnail so they never cover the title text. Visible on
+          hover (desktop) and always on touch (no :hover) devices, DRO-240 */}
+      {!isBulkMode && (
+        <div className="absolute right-1.5 top-1.5 z-10 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100">
+          <button
+            type="button"
+            aria-label={item.pinned ? 'Unpin item' : 'Pin item'}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onPinChange?.(item.id, !item.pinned)
+            }}
+            className="flex h-7 w-7 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-foreground [@media(hover:none)]:h-11 [@media(hover:none)]:w-11"
+          >
+            <Pin size={13} className={cn(item.pinned && 'fill-foreground text-foreground')} />
+          </button>
+          <button
+            type="button"
+            aria-label="Delete item"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onDelete?.(item.id)
+            }}
+            className="flex h-7 w-7 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-destructive [@media(hover:none)]:h-11 [@media(hover:none)]:w-11"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      )}
       {isDone && item.thumbnail_url ? (
         <>
           <Image
@@ -218,36 +248,6 @@ export function ListCard({
 
       {media}
       {body}
-
-      {/* Hover actions — pin / delete */}
-      {!isBulkMode && (
-        <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <button
-            type="button"
-            aria-label={item.pinned ? 'Unpin item' : 'Pin item'}
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onPinChange?.(item.id, !item.pinned)
-            }}
-            className="flex h-7 w-7 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-foreground"
-          >
-            <Pin size={13} className={cn(item.pinned && 'fill-foreground text-foreground')} />
-          </button>
-          <button
-            type="button"
-            aria-label="Delete item"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onDelete?.(item.id)
-            }}
-            className="flex h-7 w-7 items-center justify-center rounded-full border-stroke border-ink bg-card text-muted-foreground shadow-ink-sm transition-colors hover:text-destructive"
-          >
-            <Trash2 size={13} />
-          </button>
-        </div>
-      )}
     </article>
   )
 
