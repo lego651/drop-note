@@ -57,7 +57,7 @@ Use as Tailwind tokens (`bg-x`, `text-x`) where wired in `tailwind.config.ts`, o
 - **Tags** — `--color-tag-{blue,purple,pink,green,yellow,orange,teal,indigo}`
 - **Source dots** — `--color-source-{email,youtube,article,note,default}`
 - **Stat cards** — `--color-stat-{total(ink),week(green),processing(amber),tag(red)}`
-- **Hero wash** — `--hero-gradient-{rose,violet}` (very subtle radial only). **Deprecated** (restyle audit K-5): § 5 forbids gradients outside `--stripe`; kept until the landing hero wash is removed (backlog)
+- **Hero wash** — `--hero-gradient-{rose,violet}` (very subtle radial only). **Deprecated** (restyle audit K-5): AIRMAIL § 5 forbids gradients outside `--stripe`; kept until the landing hero wash is removed (backlog)
 
 ### Helpers — `apps/web/lib/design-tokens.ts`
 | Helper | Returns | Use |
@@ -134,13 +134,49 @@ Use as Tailwind tokens (`bg-x`, `text-x`) where wired in `tailwind.config.ts`, o
 
 ---
 
-## 5. Checklist before any UI PR
+## 5. Mobile-friendly before merge (board rule, 2026-10-19)
+
+**Every new feature must be mobile-friendly before it merges.** Phone users are a large share of beta testers, and a
+feature that only works with a mouse and a hardware keyboard is a bug, not a follow-up. "Works on desktop, mobile later"
+isn't allowed. These checks apply to every UI PR:
+
+1. **375px viewport, no horizontal scroll.** The page fits a 375px-wide screen (iPhone SE / mini) with no sideways page
+   scroll. Rows that are meant to scroll sideways (tag chips, filter chips) scroll inside their own container. Long
+   words, URLs and Chinese titles wrap or truncate (`min-w-0`, `truncate`, `break-words`) instead of pushing the layout.
+2. **Tap targets ≥ 44px.** Every tappable control (buttons, icon buttons, links in lists, checkboxes, chips, menu items)
+   has a hit area of at least 44×44px on mobile. A smaller visual is fine if the hit area is padded out
+   (e.g. `h-11 w-11` wrapper, or `min-h-11`). Adjacent targets don't overlap.
+3. **Every action is reachable by tap.** No Enter-only, hover-only or keyboard-only actions:
+   - Inputs that submit have a visible submit button, or sit inside a `<form>` so the phone keyboard's Go/Done submits it.
+   - Anything revealed on `:hover` (row actions, tooltips that hold actions) is also visible or reachable on touch.
+   - Keyboard shortcuts are extras, never the only path.
+4. **Mobile keyboards are set up right.** Inputs use the correct `type` / `inputmode` (`email`, `url`, `search`,
+   `numeric`, `decimal`) and `enterKeyHint` (`search`, `go`, `done`, `send`, `next`). Inputs, textareas and selects are
+   **at least 16px (`text-base`) on mobile** so iOS Safari doesn't zoom in on focus (`text-base sm:text-sm` is fine).
+5. **Fixed / floating elements don't cover content.** Floating buttons (e.g. "Make a plan"), trays (the envelope tray),
+   toasts and sticky bars leave the content under them reachable: add bottom padding to the scroll container equal to
+   the element's height, and respect `env(safe-area-inset-bottom)`. The last item in a list must be fully visible and
+   tappable when scrolled to the end.
+6. **Dialogs fit the screen.** Dialogs, sheets and popovers fit inside a 375×667 viewport with the keyboard closed,
+   scroll their body when content is long (`max-h-[85dvh] overflow-y-auto`), keep the primary action and close button
+   on screen, and don't hide the focused input behind the on-screen keyboard.
+7. **Design review includes a mobile check.** Every UI PR's report includes 375px (or 390px) screenshots of the changed
+   screens, and the design review checks items 1–6 at that width. A PR that fails any of them gets
+   `changes requested`.
+
+How to check: Chrome DevTools device mode at 375×667, or Playwright with `viewport: { width: 375, height: 667 }`,
+`hasTouch: true`, `isMobile: true`. Scroll to the bottom of every list and open every dialog.
+
+---
+
+## 6. Checklist before any UI PR
 
 - [ ] Zero hardcoded hex / raw Tailwind colors — everything via tokens or `lib/design-tokens.ts` helpers.
 - [ ] New color? Added to `globals.css` (light **and** dark), wired in `tailwind.config.ts` if used as a class.
 - [ ] Cards = `rounded-xl border-stroke border-ink bg-card shadow-ink-lg`; pinned uses `--color-pin`; canvas = `bg-canvas bg-dot-grid`.
 - [ ] Outlines use `border-ink` (never `border-foreground`); no hand-written box-shadows.
 - [ ] Checked in light **and** dark, and with a long Chinese title.
+- [ ] Mobile-friendly at 375px (§ 5): no horizontal scroll, 44px tap targets, every action tappable, right `inputmode` / `enterKeyHint` + `text-base` inputs, floating elements don't cover content, dialogs fit, 375px screenshots in the report.
 - [ ] Sort/filter/tag changes show loading (`useTransition` + skeleton); mutations are optimistic.
 - [ ] Lint + typecheck + build + tests all green.
 

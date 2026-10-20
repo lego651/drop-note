@@ -277,7 +277,11 @@ docked tray once picking starts — used for the envelopes "Make a plan" entry p
 - Tag pill text is measured against the 8% tint **composited over the card**, not the bare card. That is
   the pair that fails first when a tag color changes.
 - Focus is always visible: a 2px `--ring` with offset, never removed.
-- Hit targets ≥ 36px (44px for primary controls on mobile).
+- Hit targets ≥ 36px on desktop; **≥ 44px for every tappable control on mobile**.
+- **Mobile-friendly before merge:** every new feature must pass the mobile checks in
+  [`STYLE_GUIDE.md` § 5](../STYLE_GUIDE.md#5-mobile-friendly-before-merge-board-rule-2026-10-19) at 375px (no
+  horizontal scroll, 44px tap targets, every action tappable, correct mobile keyboards, floating elements don't cover
+  content, dialogs fit), and every design review includes that mobile check.
 - Never use color as the only signal (status also uses an icon or text).
 - Tilted stamps never hold interactive elements.
 
@@ -336,7 +340,7 @@ Tags (blue, purple, pink, green, yellow, orange, teal, indigo): `#80ACFA` `#C9A3
    return `var(--color-tag-*)` so tags follow the theme.
 5. Restyle components per § 7 (cards, controls, chips, sidebar, stats, play badge, dates).
 6. Update `docs/STYLE_GUIDE.md` § 1–3 values to match, and link this doc.
-7. Screenshots at 1440px and 390px, light and dark, attached to the PR report.
+7. Screenshots at 1440px and 375px (or 390px), light and dark, attached to the PR report; the 375px pass follows [`STYLE_GUIDE.md` § 5](../STYLE_GUIDE.md#5-mobile-friendly-before-merge-board-rule-2026-10-19).
 
 **Every later UI change:** use tokens, never hex; outlines from `--ink`, shadows from `shadow-ink-*`; check the
 change in light **and** dark and with a long Chinese title; new color = a token in both blocks plus a contrast check.
