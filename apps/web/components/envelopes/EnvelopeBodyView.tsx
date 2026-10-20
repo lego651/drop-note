@@ -234,7 +234,10 @@ export function EnvelopeBodyView({ envelopeId, body: initialBody, citationLabels
                   <thead className="bg-muted">
                     <tr>
                       {block.columns.map((column, c) => (
-                        <th key={c} className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        <th
+                          key={c}
+                          className="min-w-[150px] px-4 py-2 text-left text-xs font-semibold text-muted-foreground"
+                        >
                           {column}
                         </th>
                       ))}
@@ -388,7 +391,7 @@ function reinsertEnvelopeTableRow(body: EnvelopeBody, sectionIndex: number, rowI
  */
 function EnvelopeTableCell({ leaf, citationLabels }: { leaf: EnvelopeLeaf; citationLabels: CitationLabels }) {
   return (
-    <td className="px-4 py-2 align-top">
+    <td className="min-w-[150px] px-4 py-2 align-top">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span
           aria-hidden="true"
@@ -397,7 +400,7 @@ function EnvelopeTableCell({ leaf, citationLabels }: { leaf: EnvelopeLeaf; citat
             leaf.origin !== 'user' && leaf.confidence === 'suggested' && 'border-dashed',
           )}
         />
-        <span className="text-sm text-foreground">{leaf.text}</span>
+        <span className="break-words text-sm text-foreground">{leaf.text}</span>
         {leaf.origin === 'user' ? (
           <span className="inline-flex items-center rounded-full border-stroke border-ink/55 bg-card px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
             Added by you
@@ -407,7 +410,8 @@ function EnvelopeTableCell({ leaf, citationLabels }: { leaf: EnvelopeLeaf; citat
             <Link
               key={itemId}
               href={`/items/${itemId}`}
-              className="inline-flex items-center rounded-full border-stroke border-ink bg-card px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted"
+              title={citationLabels[itemId] ?? 'Source'}
+              className="inline-block max-w-[160px] truncate rounded-full border-stroke border-ink bg-card px-2 py-0.5 align-middle text-[11px] font-medium text-foreground hover:bg-muted"
             >
               {citationLabels[itemId] ?? 'Source'}
             </Link>
