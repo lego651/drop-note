@@ -411,7 +411,7 @@ function EnvelopeTableCell({ leaf, citationLabels }: { leaf: EnvelopeLeaf; citat
               key={itemId}
               href={`/items/${itemId}`}
               title={citationLabels[itemId] ?? 'Source'}
-              className="inline-flex max-w-[160px] items-center truncate rounded-full border-stroke border-ink bg-card px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted"
+              className="inline-block max-w-[160px] truncate rounded-full border-stroke border-ink bg-card px-2 py-0.5 align-middle text-[11px] font-medium text-foreground hover:bg-muted"
             >
               {citationLabels[itemId] ?? 'Source'}
             </Link>
