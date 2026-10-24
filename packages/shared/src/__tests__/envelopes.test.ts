@@ -20,7 +20,14 @@ import {
   getEnvelopeTitle,
   EnvelopeIntentInputSchema,
   EnvelopePatchRequestSchema,
+  tokenizeEnvelopeSuggestQuery,
+  filterEnvelopeSuggestPicksToCandidates,
+  buildEnvelopeSuggestSystemPrompt,
+  buildEnvelopeSuggestUserPrompt,
+  parseEnvelopeSuggestResponse,
+  EnvelopeSuggestRequestSchema,
   type EnvelopeBody,
+  type EnvelopeSuggestCandidateItem,
 } from '../envelopes'
 
 describe('parseEnvelopeBody', () => {
@@ -1068,5 +1075,142 @@ describe('EnvelopePatchRequestSchema (DRO-232)', () => {
 
   it('rejects a negative sectionIndex', () => {
     expect(EnvelopePatchRequestSchema.safeParse({ action: 'addItem', sectionIndex: -1, text: 'x' }).success).toBe(false)
+  })
+})
+
+// --- DRO-300: envelope suggest (Engine B retrieval) ------------------------
+
+describe('EnvelopeSuggestRequestSchema', () => {
+  it('accepts a bare query', () => {
+    expect(EnvelopeSuggestRequestSchema.safeParse({ query: 'weekend errands' }).success).toBe(true)
+  })
+
+  it('accepts a query with seedTerms', () => {
+    const result = EnvelopeSuggestRequestSchema.safeParse({ query: 'weekend errands', seedTerms: ['costco', 'groceries'] })
+    expect(result.success).toBe(true)
+  })
+
+  it('trims the query', () => {
+    const result = EnvelopeSuggestRequestSchema.safeParse({ query: '  weekend errands  ' })
+    expect(result.success).toBe(true)
+    if (!result.success) throw new Error('expected success')
+    expect(result.data.query).toBe('weekend errands')
+  })
+
+  it('rejects an empty query', () => {
+    expect(EnvelopeSuggestRequestSchema.safeParse({ query: '' }).success).toBe(false)
+    expect(EnvelopeSuggestRequestSchema.safeParse({ query: '   ' }).success).toBe(false)
+  })
+
+  it('rejects a query over 500 chars', () => {
+    expect(EnvelopeSuggestRequestSchema.safeParse({ query: 'a'.repeat(501) }).success).toBe(false)
+  })
+
+  it('rejects seedTerms that are not an array of strings', () => {
+    expect(EnvelopeSuggestRequestSchema.safeParse({ query: 'x', seedTerms: [1, 2] }).success).toBe(false)
+    expect(EnvelopeSuggestRequestSchema.safeParse({ query: 'x', seedTerms: 'costco' }).success).toBe(false)
+  })
+})
+
+describe('tokenizeEnvelopeSuggestQuery', () => {
+  it('lowercases, splits on non-alphanumeric characters, and dedupes', () => {
+    expect(tokenizeEnvelopeSuggestQuery('Costco, Costco! Weekend-errands')).toEqual(['costco', 'weekend', 'errands'])
+  })
+
+  it('merges in seedTerms', () => {
+    expect(tokenizeEnvelopeSuggestQuery('errands', ['Costco', 'groceries'])).toEqual(['errands', 'costco', 'groceries'])
+  })
+
+  it('drops tokens under 2 chars', () => {
+    expect(tokenizeEnvelopeSuggestQuery('a b costco')).toEqual(['costco'])
+  })
+
+  it('strips characters that would be unsafe to interpolate into a filter string', () => {
+    expect(tokenizeEnvelopeSuggestQuery("costco%,ilike.()' OR 1=1")).toEqual(['costco', 'ilike', 'or', '1', '1'].filter((t) => t.length >= 2))
+  })
+
+  it('caps at 20 tokens', () => {
+    const manyWords = Array.from({ length: 30 }, (_, i) => `word${i}`).join(' ')
+    expect(tokenizeEnvelopeSuggestQuery(manyWords).length).toBe(20)
+  })
+
+  it('returns [] for text with no tokenizable words', () => {
+    expect(tokenizeEnvelopeSuggestQuery('a b c')).toEqual([])
+  })
+})
+
+describe('filterEnvelopeSuggestPicksToCandidates', () => {
+  const ALLOWED = ['item-1', 'item-2']
+
+  it('keeps picks whose itemId is in the allowed set', () => {
+    const picks = [{ itemId: 'item-1', reason: 'a' }, { itemId: 'item-2', reason: 'b' }]
+    expect(filterEnvelopeSuggestPicksToCandidates(picks, ALLOWED)).toEqual(picks)
+  })
+
+  it('drops a pick whose itemId is outside the allowed set (hallucinated/foreign id)', () => {
+    const picks = [{ itemId: 'item-1', reason: 'a' }, { itemId: 'someone-elses-item', reason: 'b' }]
+    expect(filterEnvelopeSuggestPicksToCandidates(picks, ALLOWED)).toEqual([{ itemId: 'item-1', reason: 'a' }])
+  })
+
+  it('dedupes a repeated itemId, keeping the first occurrence', () => {
+    const picks = [{ itemId: 'item-1', reason: 'first' }, { itemId: 'item-1', reason: 'second' }]
+    expect(filterEnvelopeSuggestPicksToCandidates(picks, ALLOWED)).toEqual([{ itemId: 'item-1', reason: 'first' }])
+  })
+
+  it('accepts allowedItemIds as either a Set or an array', () => {
+    const picks = [{ itemId: 'item-1', reason: 'a' }]
+    expect(filterEnvelopeSuggestPicksToCandidates(picks, new Set(ALLOWED))).toEqual(picks)
+  })
+})
+
+describe('parseEnvelopeSuggestResponse', () => {
+  it('accepts a valid response', () => {
+    const result = parseEnvelopeSuggestResponse({ items: [{ itemId: 'item-1', reason: 'mentions Costco' }] })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts an empty items list', () => {
+    expect(parseEnvelopeSuggestResponse({ items: [] }).success).toBe(true)
+  })
+
+  it('rejects a pick missing "reason"', () => {
+    expect(parseEnvelopeSuggestResponse({ items: [{ itemId: 'item-1' }] }).success).toBe(false)
+  })
+
+  it('rejects a response missing "items"', () => {
+    expect(parseEnvelopeSuggestResponse({}).success).toBe(false)
+  })
+})
+
+describe('buildEnvelopeSuggestSystemPrompt / buildEnvelopeSuggestUserPrompt', () => {
+  it('system prompt names the min/max pick counts and forbids inventing ids', () => {
+    const prompt = buildEnvelopeSuggestSystemPrompt()
+    expect(prompt).toContain('Never invent an item id')
+    expect(prompt).toMatch(/between 2 and 8/)
+  })
+
+  it('user prompt includes every candidate\'s id, subject, category, tags, and the query', () => {
+    const candidates: EnvelopeSuggestCandidateItem[] = [
+      { id: 'item-1', subject: 'Costco run', aiSummary: 'Buy snacks', sourceType: 'email_body', notes: 'bring bags', categoryName: 'Shopping', tagNames: ['errands'] },
+    ]
+    const prompt = buildEnvelopeSuggestUserPrompt(candidates, 'weekend errands')
+
+    expect(prompt).toContain('id: item-1')
+    expect(prompt).toContain('Costco run')
+    expect(prompt).toContain('Shopping')
+    expect(prompt).toContain('errands')
+    expect(prompt).toContain('bring bags')
+    expect(prompt).toContain('weekend errands')
+  })
+
+  it('user prompt omits absent optional fields rather than printing empty labels', () => {
+    const candidates: EnvelopeSuggestCandidateItem[] = [
+      { id: 'item-1', subject: null, aiSummary: null, sourceType: null, notes: null, categoryName: null, tagNames: [] },
+    ]
+    const prompt = buildEnvelopeSuggestUserPrompt(candidates, 'weekend errands')
+
+    expect(prompt).not.toContain('subject:')
+    expect(prompt).not.toContain('category:')
+    expect(prompt).not.toContain('tags:')
   })
 })

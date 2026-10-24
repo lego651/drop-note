@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { AIProvider, EnvelopeBody, EnvelopeSourceItem } from '@drop-note/shared'
+import type { AIProvider, EnvelopeBody, EnvelopeSourceItem, EnvelopeSuggestCandidateItem } from '@drop-note/shared'
 import {
   fetchEnvelopeSourceItems,
+  fetchEnvelopeSuggestCandidates,
   runEnvelopeGeneration,
+  runEnvelopeSuggestion,
   ENVELOPE_GEN_RATE_LIMIT_PER_HOUR,
+  ENVELOPE_SUGGEST_RATE_LIMIT_PER_HOUR,
+  ENVELOPE_SUGGEST_CANDIDATE_CAP,
   buildEnvelopeListItem,
   type EnvelopeListRow,
 } from '../envelopes'
@@ -448,5 +452,261 @@ describe('buildEnvelopeListItem (DRO-223)', () => {
   it('returns null when intent_input does not match the stored schema', () => {
     const result = buildEnvelopeListItem(row({ intent_input: { nope: true } }), 0)
     expect(result).toBeNull()
+  })
+})
+
+// --- DRO-300: envelope suggest (Engine B retrieval) ------------------------
+
+describe('ENVELOPE_SUGGEST_RATE_LIMIT_PER_HOUR', () => {
+  it('is a sane positive hourly cap, separate from envelope_gen', () => {
+    expect(ENVELOPE_SUGGEST_RATE_LIMIT_PER_HOUR).toBeGreaterThan(0)
+  })
+})
+
+describe('fetchEnvelopeSuggestCandidates', () => {
+  // A richer stand-in than the module-level `chainable` above: supports the extra
+  // chain methods the suggest retrieval needs (`or`, `order`, `limit`), and lets a
+  // test queue up a different response per call to the same table (e.g. the
+  // `items` table is queried once per retrieval stage).
+  function queuedFrom(queues: Record<string, Array<() => { data: unknown; error: unknown }>>) {
+    const counters: Record<string, number> = {}
+    const calls: Record<string, { method: string; args: unknown[] }[][]> = {}
+    const from = vi.fn((table: string) => {
+      const queue = queues[table] ?? []
+      const idx = counters[table] ?? 0
+      counters[table] = idx + 1
+      const resolve = queue[Math.min(idx, queue.length - 1)] ?? (() => ({ data: null, error: null }))
+
+      const tableCalls: { method: string; args: unknown[] }[] = []
+      calls[table] = calls[table] ?? []
+      calls[table].push(tableCalls)
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const chain: any = {}
+      for (const method of ['select', 'eq', 'is', 'in', 'or', 'order', 'limit']) {
+        chain[method] = vi.fn((...args: unknown[]) => {
+          tableCalls.push({ method, args })
+          return chain
+        })
+      }
+      chain.then = (onFulfilled: (v: unknown) => unknown) => Promise.resolve(resolve()).then(onFulfilled)
+      return chain
+    })
+    return { from, calls }
+  }
+
+  function itemRow(id: string, overrides: Record<string, unknown> = {}) {
+    return {
+      id,
+      subject: `Subject ${id}`,
+      ai_summary: null,
+      notes: null,
+      source_type: null,
+      categories: null,
+      item_tags: [],
+      ...overrides,
+    }
+  }
+
+  it('returns stage-1 (text/exact tag/category) matches without widening when they already meet the pick threshold', async () => {
+    const rows = Array.from({ length: 8 }, (_, i) => itemRow(`item-${i}`))
+    const { from, calls } = queuedFrom({
+      tags: [() => ({ data: [], error: null })],
+      categories: [() => ({ data: [], error: null })],
+      items: [() => ({ data: rows, error: null })],
+    })
+
+    const result = await fetchEnvelopeSuggestCandidates({ from } as unknown as Parameters<typeof fetchEnvelopeSuggestCandidates>[0], 'user-1', 'weekend errands')
+
+    expect(result).toHaveLength(8)
+    expect(calls.items).toHaveLength(1) // no widen, no recency fallback needed
+  })
+
+  it('falls back to recency-only when nothing matches the query text/tags/categories', async () => {
+    const recentRows = [itemRow('recent-1'), itemRow('recent-2')]
+    const { from, calls } = queuedFrom({
+      tags: [() => ({ data: [], error: null })],
+      categories: [() => ({ data: [], error: null })],
+      items: [
+        () => ({ data: [], error: null }), // stage 1: nothing
+        () => ({ data: [], error: null }), // widen: still nothing
+        () => ({ data: recentRows, error: null }), // recency fallback
+      ],
+    })
+
+    const result = await fetchEnvelopeSuggestCandidates({ from } as unknown as Parameters<typeof fetchEnvelopeSuggestCandidates>[0], 'user-1', 'nothing matches this')
+
+    expect(result.map((c) => c.id)).toEqual(['recent-1', 'recent-2'])
+    expect(calls.items).toHaveLength(3)
+  })
+
+  it('skips straight to the recency fallback when the query tokenizes to nothing', async () => {
+    const recentRows = [itemRow('recent-1')]
+    const { from, calls } = queuedFrom({
+      items: [() => ({ data: recentRows, error: null })],
+    })
+
+    // Single-char "words" all get dropped by tokenizeEnvelopeSuggestQuery (min length 2).
+    const result = await fetchEnvelopeSuggestCandidates({ from } as unknown as Parameters<typeof fetchEnvelopeSuggestCandidates>[0], 'user-1', 'a b c')
+
+    expect(result.map((c) => c.id)).toEqual(['recent-1'])
+    expect(calls.tags).toBeUndefined()
+    expect(calls.categories).toBeUndefined()
+    expect(calls.items).toHaveLength(1)
+  })
+
+  it('includes an item matched only through an exact tag-name overlap with the query', async () => {
+    const { from, calls } = queuedFrom({
+      tags: [() => ({ data: [{ id: 'tag-1', name: 'Costco' }], error: null })],
+      categories: [() => ({ data: [], error: null })],
+      item_tags: [() => ({ data: [{ item_id: 'item-tagged' }], error: null })],
+      items: [() => ({ data: [itemRow('item-tagged')], error: null })],
+    })
+
+    const result = await fetchEnvelopeSuggestCandidates({ from } as unknown as Parameters<typeof fetchEnvelopeSuggestCandidates>[0], 'user-1', 'costco')
+
+    expect(result.map((c) => c.id)).toEqual(['item-tagged'])
+    const itemTagsCall = calls.item_tags[0].find((c) => c.method === 'in')
+    expect(itemTagsCall?.args).toEqual(['tag_id', ['tag-1']])
+  })
+
+  it('dedupes an item returned by more than one stage', async () => {
+    const dup = itemRow('item-dup')
+    const { from } = queuedFrom({
+      tags: [() => ({ data: [], error: null })],
+      categories: [() => ({ data: [], error: null })],
+      items: [
+        () => ({ data: [dup], error: null }), // stage 1
+        () => ({ data: [dup, itemRow('item-new')], error: null }), // widen re-finds it plus one new row
+      ],
+    })
+
+    const result = await fetchEnvelopeSuggestCandidates({ from } as unknown as Parameters<typeof fetchEnvelopeSuggestCandidates>[0], 'user-1', 'errands')
+
+    expect(result.map((c) => c.id).sort()).toEqual(['item-dup', 'item-new'])
+  })
+
+  it('maps the joined category name and tag names onto the candidate shape', async () => {
+    const row = itemRow('item-1', {
+      subject: 'Costco run',
+      ai_summary: 'Buy snacks',
+      source_type: 'email_body',
+      categories: { name: 'Shopping' },
+      item_tags: [{ tags: { name: 'errands' } }, { tags: null }],
+    })
+    const rows = [row, ...Array.from({ length: 7 }, (_, i) => itemRow(`filler-${i}`))]
+    const { from } = queuedFrom({
+      tags: [() => ({ data: [], error: null })],
+      categories: [() => ({ data: [], error: null })],
+      items: [() => ({ data: rows, error: null })],
+    })
+
+    const result = await fetchEnvelopeSuggestCandidates({ from } as unknown as Parameters<typeof fetchEnvelopeSuggestCandidates>[0], 'user-1', 'costco errands')
+
+    expect(result.find((c) => c.id === 'item-1')).toEqual({
+      id: 'item-1',
+      subject: 'Costco run',
+      aiSummary: 'Buy snacks',
+      sourceType: 'email_body',
+      notes: null,
+      categoryName: 'Shopping',
+      tagNames: ['errands'],
+    })
+  })
+
+  it('caps the merged candidate set at ENVELOPE_SUGGEST_CANDIDATE_CAP', async () => {
+    const rows = Array.from({ length: ENVELOPE_SUGGEST_CANDIDATE_CAP + 10 }, (_, i) => itemRow(`item-${i}`))
+    const { from } = queuedFrom({
+      tags: [() => ({ data: [], error: null })],
+      categories: [() => ({ data: [], error: null })],
+      items: [() => ({ data: rows, error: null })],
+    })
+
+    const result = await fetchEnvelopeSuggestCandidates({ from } as unknown as Parameters<typeof fetchEnvelopeSuggestCandidates>[0], 'user-1', 'errands')
+
+    expect(result.length).toBeLessThanOrEqual(ENVELOPE_SUGGEST_CANDIDATE_CAP)
+  })
+})
+
+describe('runEnvelopeSuggestion', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  const CANDIDATES: EnvelopeSuggestCandidateItem[] = [
+    { id: 'item-1', subject: 'Costco run', aiSummary: 'Buy snacks', sourceType: 'email_body', notes: null, categoryName: 'Shopping', tagNames: ['errands'] },
+    { id: 'item-2', subject: 'Trail map', aiSummary: 'A hiking trail', sourceType: 'article', notes: null, categoryName: 'Sports', tagNames: [] },
+  ]
+
+  it('returns status "ok" with the model\'s picks for a valid response', async () => {
+    const provider = fakeProvider([
+      JSON.stringify({ items: [{ itemId: 'item-1', reason: 'mentions Costco' }] }),
+    ])
+
+    const result = await runEnvelopeSuggestion(provider, CANDIDATES, 'weekend errands')
+    expect(result.status).toBe('ok')
+    if (result.status !== 'ok') throw new Error('expected ok')
+    expect(result.picks).toEqual([{ itemId: 'item-1', reason: 'mentions Costco' }])
+  })
+
+  it('drops a picked id outside the candidate set (hallucination guard)', async () => {
+    const provider = fakeProvider([
+      JSON.stringify({
+        items: [
+          { itemId: 'item-1', reason: 'mentions Costco' },
+          { itemId: 'not-a-real-candidate', reason: 'hallucinated' },
+        ],
+      }),
+    ])
+
+    const result = await runEnvelopeSuggestion(provider, CANDIDATES, 'weekend errands')
+    if (result.status !== 'ok') throw new Error('expected ok')
+    expect(result.picks.map((p) => p.itemId)).toEqual(['item-1'])
+  })
+
+  it('retries once with the validation error appended after an invalid first response', async () => {
+    const provider = fakeProvider([
+      JSON.stringify({ items: [{ itemId: 'item-1' }] }), // missing required "reason"
+      JSON.stringify({ items: [{ itemId: 'item-1', reason: 'mentions Costco' }] }),
+    ])
+
+    const result = await runEnvelopeSuggestion(provider, CANDIDATES, 'weekend errands')
+    expect(result.status).toBe('ok')
+    expect(provider.generateStructured).toHaveBeenCalledTimes(2)
+    const secondCallArgs = (provider.generateStructured as ReturnType<typeof vi.fn>).mock.calls[1]
+    expect(secondCallArgs[1]).toContain('Validation error')
+  })
+
+  it('returns status "failed" when both attempts are invalid JSON', async () => {
+    const provider = fakeProvider(['not json', 'still not json'])
+
+    const result = await runEnvelopeSuggestion(provider, CANDIDATES, 'weekend errands')
+    expect(result.status).toBe('failed')
+    if (result.status !== 'failed') throw new Error('expected failure')
+    expect(result.errorMessage).toBeTruthy()
+    expect(provider.generateStructured).toHaveBeenCalledTimes(2)
+  })
+
+  it('skips the retry when the first attempt already used most of the time budget', async () => {
+    const provider = fakeProvider(['not json', 'still not json'])
+    let now = 0
+    const clock = () => {
+      const current = now
+      now += 21_000
+      return current
+    }
+
+    const result = await runEnvelopeSuggestion(provider, CANDIDATES, 'weekend errands', clock)
+    expect(result.status).toBe('failed')
+    expect(provider.generateStructured).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns status "failed" when the AI provider throws', async () => {
+    const provider: AIProvider = {
+      processText: vi.fn(),
+      describeImage: vi.fn(),
+      generateStructured: vi.fn().mockRejectedValue(new Error('OpenAI HTTP 500')),
+    }
+
+    const result = await runEnvelopeSuggestion(provider, CANDIDATES, 'weekend errands')
+    expect(result.status).toBe('failed')
   })
 })
