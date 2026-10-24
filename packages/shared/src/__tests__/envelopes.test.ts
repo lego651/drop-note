@@ -20,7 +20,16 @@ import {
   getEnvelopeTitle,
   EnvelopeIntentInputSchema,
   EnvelopePatchRequestSchema,
+  parseEnvelopeIdeaPool,
+  enforceEnvelopeIdeaPoolItemIds,
+  pickRandomEnvelopeIdeas,
+  pickSurpriseEnvelopeIdea,
+  buildEnvelopeIdeaPoolSystemPrompt,
+  buildEnvelopeIdeaPoolUserPrompt,
+  ENVELOPE_STARTER_IDEAS,
+  ENVELOPE_IDEA_POOL_SIZE,
   type EnvelopeBody,
+  type EnvelopeIdea,
 } from '../envelopes'
 
 describe('parseEnvelopeBody', () => {
@@ -1068,5 +1077,159 @@ describe('EnvelopePatchRequestSchema (DRO-232)', () => {
 
   it('rejects a negative sectionIndex', () => {
     expect(EnvelopePatchRequestSchema.safeParse({ action: 'addItem', sectionIndex: -1, text: 'x' }).success).toBe(false)
+  })
+})
+
+describe('parseEnvelopeIdeaPool', () => {
+  it('accepts a valid pool', () => {
+    const raw = {
+      ideas: [
+        { label: 'Weekend hike ideas', emoji: '🥾', seedTerms: ['hike', 'trail'], matchingItemIds: ['item-1'] },
+      ],
+    }
+    const result = parseEnvelopeIdeaPool(raw)
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects an idea with no seedTerms', () => {
+    const raw = { ideas: [{ label: 'x', seedTerms: [], matchingItemIds: [] }] }
+    expect(parseEnvelopeIdeaPool(raw).success).toBe(false)
+  })
+
+  it('rejects more than ENVELOPE_IDEA_POOL_SIZE ideas', () => {
+    const idea = { label: 'x', seedTerms: ['a'], matchingItemIds: [] }
+    const raw = { ideas: Array.from({ length: ENVELOPE_IDEA_POOL_SIZE + 1 }, () => idea) }
+    expect(parseEnvelopeIdeaPool(raw).success).toBe(false)
+  })
+
+  it('rejects an empty ideas array', () => {
+    expect(parseEnvelopeIdeaPool({ ideas: [] }).success).toBe(false)
+  })
+
+  it('rejects malformed input entirely', () => {
+    expect(parseEnvelopeIdeaPool({ notIdeas: [] }).success).toBe(false)
+  })
+})
+
+describe('enforceEnvelopeIdeaPoolItemIds', () => {
+  it('strips matchingItemIds outside the allowed set', () => {
+    const pool = { ideas: [{ label: 'x', seedTerms: ['a'], matchingItemIds: ['item-1', 'item-2'] }] }
+    const result = enforceEnvelopeIdeaPoolItemIds(pool, ['item-1'])
+    expect(result.ideas[0].matchingItemIds).toEqual(['item-1'])
+  })
+
+  it('leaves an idea with no matchingItemIds untouched', () => {
+    const pool = { ideas: [{ label: 'x', seedTerms: ['a'], matchingItemIds: [] }] }
+    const result = enforceEnvelopeIdeaPoolItemIds(pool, ['item-1'])
+    expect(result.ideas[0].matchingItemIds).toEqual([])
+  })
+
+  it('accepts a Set as well as an array for allowedItemIds', () => {
+    const pool = { ideas: [{ label: 'x', seedTerms: ['a'], matchingItemIds: ['item-1', 'item-2'] }] }
+    const result = enforceEnvelopeIdeaPoolItemIds(pool, new Set(['item-2']))
+    expect(result.ideas[0].matchingItemIds).toEqual(['item-2'])
+  })
+})
+
+describe('pickRandomEnvelopeIdeas', () => {
+  const ideas: EnvelopeIdea[] = Array.from({ length: 12 }, (_, i) => ({
+    label: `idea-${i}`,
+    seedTerms: ['x'],
+    matchingItemIds: [],
+  }))
+
+  it('returns exactly `count` ideas', () => {
+    const result = pickRandomEnvelopeIdeas(ideas, 5, () => 0)
+    expect(result).toHaveLength(5)
+  })
+
+  it('never returns more than the pool has', () => {
+    const result = pickRandomEnvelopeIdeas(ideas.slice(0, 3), 5, () => 0)
+    expect(result).toHaveLength(3)
+  })
+
+  it('returns no duplicates', () => {
+    const result = pickRandomEnvelopeIdeas(ideas, 12, Math.random)
+    const labels = new Set(result.map((idea) => idea.label))
+    expect(labels.size).toBe(12)
+  })
+
+  it('does not mutate the input array', () => {
+    const copy = [...ideas]
+    pickRandomEnvelopeIdeas(ideas, 5)
+    expect(ideas).toEqual(copy)
+  })
+
+  it('is deterministic for a fixed rng', () => {
+    const a = pickRandomEnvelopeIdeas(ideas, 5, () => 0.5)
+    const b = pickRandomEnvelopeIdeas(ideas, 5, () => 0.5)
+    expect(a).toEqual(b)
+  })
+})
+
+describe('pickSurpriseEnvelopeIdea', () => {
+  it('returns null for an empty pool', () => {
+    expect(pickSurpriseEnvelopeIdea([])).toBeNull()
+  })
+
+  it('returns one of the given ideas', () => {
+    const ideas: EnvelopeIdea[] = [
+      { label: 'a', seedTerms: ['x'], matchingItemIds: [] },
+      { label: 'b', seedTerms: ['y'], matchingItemIds: [] },
+    ]
+    const result = pickSurpriseEnvelopeIdea(ideas, () => 0.9)
+    expect(result).toEqual(ideas[1])
+  })
+})
+
+describe('ENVELOPE_STARTER_IDEAS', () => {
+  it('has exactly the 4 board-specified starter chips', () => {
+    expect(ENVELOPE_STARTER_IDEAS.map((idea) => idea.label)).toEqual([
+      'Feel like exercising',
+      'Pick up some reading',
+      'Do some work',
+      'Play with my kid',
+    ])
+  })
+
+  it('every starter chip has at least one seed term', () => {
+    for (const idea of ENVELOPE_STARTER_IDEAS) {
+      expect(idea.seedTerms.length).toBeGreaterThan(0)
+    }
+  })
+})
+
+describe('buildEnvelopeIdeaPoolSystemPrompt', () => {
+  it('mentions the JSON shape and the pool size cap', () => {
+    const prompt = buildEnvelopeIdeaPoolSystemPrompt()
+    expect(prompt).toContain('"ideas"')
+    expect(prompt).toContain(String(ENVELOPE_IDEA_POOL_SIZE))
+  })
+})
+
+describe('buildEnvelopeIdeaPoolUserPrompt', () => {
+  it('includes category/tag counts and recent item subjects', () => {
+    const prompt = buildEnvelopeIdeaPoolUserPrompt({
+      categoryCounts: [{ name: 'Recipes', count: 4 }],
+      tagCounts: [{ name: 'italian', count: 2 }],
+      recentItems: [{ id: 'item-1', subject: 'Pasta recipe' }],
+    })
+    expect(prompt).toContain('Recipes: 4')
+    expect(prompt).toContain('italian: 2')
+    expect(prompt).toContain('Pasta recipe')
+  })
+
+  it('renders "(none)" for empty signals', () => {
+    const prompt = buildEnvelopeIdeaPoolUserPrompt({ categoryCounts: [], tagCounts: [], recentItems: [] })
+    expect(prompt).toContain('(none)')
+  })
+
+  it('skips items with a null subject', () => {
+    const prompt = buildEnvelopeIdeaPoolUserPrompt({
+      categoryCounts: [],
+      tagCounts: [],
+      recentItems: [{ id: 'item-1', subject: null }],
+    })
+    expect(prompt).not.toContain('item-1')
   })
 })

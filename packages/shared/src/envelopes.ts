@@ -650,3 +650,167 @@ export function buildEnvelopeUserPrompt(
 export function appendValidationRetryNote(userPrompt: string, validationError: string): string {
   return `${userPrompt}\n\nYour previous response did not match the required JSON shape. Validation error: ${validationError}\nRespond again with ONLY a corrected JSON object matching the shape described in the system message.`
 }
+
+// --- Daily idea pool (DRO-302, Mood Sheet slice 3) ------------------------
+//
+// Once a day per user (or lazily on sheet open, if the stored pool is
+// missing/stale), one GPT-4o-mini call reads the user's category/tag counts
+// plus ~30 recent item subjects and writes ~12 personalized ideas. The Mood
+// Sheet (DRO-301) shows 5 random ideas from the stored pool each time it
+// opens; Shuffle and "Surprise me" redraw from that same stored pool
+// client-side — see pickRandomEnvelopeIdeas/pickSurpriseEnvelopeIdea below —
+// with no extra AI call per shuffle.
+
+/** How many ideas a freshly generated pool holds. */
+export const ENVELOPE_IDEA_POOL_SIZE = 12
+/** How many of the pool's ideas the Mood Sheet shows per open, before Shuffle redraws from the rest. */
+export const ENVELOPE_IDEAS_SHOWN_PER_OPEN = 5
+/** A stored pool older than this is regenerated the next time the sheet opens. */
+export const ENVELOPE_IDEA_POOL_STALE_MS = 24 * 60 * 60 * 1000
+
+const EnvelopeIdeaSchema = z.object({
+  label: z.string().trim().min(1).max(60),
+  emoji: z.string().trim().max(8).optional(),
+  category: z.string().trim().max(60).optional(),
+  // Short keywords a chip tap widens the suggest endpoint's SQL pre-filter
+  // with (slice 1's `seedTerms` — see DRO-300's contract) — not shown to the user.
+  seedTerms: z.array(z.string().trim().min(1)).min(1).max(8),
+  // Which of the recent items given to the prompt this idea is grounded in.
+  // Validated against the same allow-list the prompt was built from — see
+  // enforceEnvelopeIdeaPoolItemIds — same spirit as enforceEnvelopeCitations
+  // above: the model never gets to hand back an id it wasn't given.
+  matchingItemIds: z.array(z.string()),
+})
+export type EnvelopeIdea = z.infer<typeof EnvelopeIdeaSchema>
+
+export const EnvelopeIdeaPoolSchema = z.object({
+  ideas: z.array(EnvelopeIdeaSchema).min(1).max(ENVELOPE_IDEA_POOL_SIZE),
+})
+export type EnvelopeIdeaPoolBody = z.infer<typeof EnvelopeIdeaPoolSchema>
+
+export type ParseEnvelopeIdeaPoolResult =
+  | { success: true; data: EnvelopeIdeaPoolBody }
+  | { success: false; error: string }
+
+/** Parses + validates a raw (already JSON.parse'd) AI response against the idea pool shape. */
+export function parseEnvelopeIdeaPool(raw: unknown): ParseEnvelopeIdeaPoolResult {
+  const result = EnvelopeIdeaPoolSchema.safeParse(raw)
+  if (!result.success) return { success: false, error: result.error.message }
+  return { success: true, data: result.data }
+}
+
+/**
+ * Drops any `matchingItemIds` the model cited that aren't in `allowedItemIds`
+ * (the recent items it was actually given) — same spirit as
+ * enforceEnvelopeCitations, applied to idea pool generation instead of plan
+ * generation. Never drops the idea itself; an idea grounded in nothing still
+ * has a usable label/seedTerms for the suggest endpoint to search from.
+ */
+export function enforceEnvelopeIdeaPoolItemIds(
+  pool: EnvelopeIdeaPoolBody,
+  allowedItemIds: ReadonlySet<string> | readonly string[],
+): EnvelopeIdeaPoolBody {
+  const allowed = allowedItemIds instanceof Set ? allowedItemIds : new Set(allowedItemIds)
+  return {
+    ideas: pool.ideas.map((idea) => ({
+      ...idea,
+      matchingItemIds: idea.matchingItemIds.filter((id) => allowed.has(id)),
+    })),
+  }
+}
+
+/**
+ * The 4 static starter chips (board spec, DRO-299/302): shown instead of a
+ * personalized pool for an empty/thin account (no stored pool yet, or too
+ * few items for a meaningful one) and as the Mood Sheet's fallback before a
+ * pool exists at all. Each still carries `seedTerms` so tapping one works
+ * exactly like tapping a personalized idea — it calls /api/envelopes/suggest
+ * with those terms (DRO-300's contract), same as any other chip.
+ */
+export const ENVELOPE_STARTER_IDEAS: ReadonlyArray<EnvelopeIdea> = [
+  { label: 'Feel like exercising', emoji: '🏃', seedTerms: ['exercise', 'workout', 'fitness', 'gym', 'run'], matchingItemIds: [] },
+  { label: 'Pick up some reading', emoji: '📖', seedTerms: ['read', 'reading', 'article', 'book'], matchingItemIds: [] },
+  { label: 'Do some work', emoji: '💼', seedTerms: ['work', 'task', 'project'], matchingItemIds: [] },
+  { label: 'Play with my kid', emoji: '🧸', seedTerms: ['kid', 'child', 'family', 'play'], matchingItemIds: [] },
+]
+
+/**
+ * Fisher-Yates shuffle, pure and side-effect free — the Mood Sheet's Shuffle
+ * control redraws from the already-fetched stored pool with this, never a
+ * new network/AI call. `rng` is injectable so tests can assert deterministic
+ * output instead of asserting on `Math.random`.
+ */
+export function pickRandomEnvelopeIdeas(
+  ideas: readonly EnvelopeIdea[],
+  count: number,
+  rng: () => number = Math.random,
+): EnvelopeIdea[] {
+  const pool = [...ideas]
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+  }
+  return pool.slice(0, Math.min(count, pool.length))
+}
+
+/** Picks one random idea for "🎲 Surprise me" — pure, no AI call. Null only when the pool is empty. */
+export function pickSurpriseEnvelopeIdea(
+  ideas: readonly EnvelopeIdea[],
+  rng: () => number = Math.random,
+): EnvelopeIdea | null {
+  if (ideas.length === 0) return null
+  return ideas[Math.floor(rng() * ideas.length)]
+}
+
+export interface EnvelopeIdeaPoolSourceItem {
+  id: string
+  subject: string | null
+}
+
+export interface EnvelopeIdeaPoolSignals {
+  categoryCounts: Array<{ name: string; count: number }>
+  tagCounts: Array<{ name: string; count: number }>
+  recentItems: EnvelopeIdeaPoolSourceItem[]
+}
+
+/** The fixed instruction block sent as the system message for idea pool generation. */
+export function buildEnvelopeIdeaPoolSystemPrompt(): string {
+  return `You are an assistant that suggests personalized "mood" ideas for what someone might want to do with their saved items.
+
+Respond ONLY with a JSON object of this exact shape:
+{ "ideas": [ <idea>, ... ] } — between 1 and ${ENVELOPE_IDEA_POOL_SIZE} ideas.
+
+Each <idea> is: { "label": "string", "emoji": "optional single emoji", "category": "optional short category name", "seedTerms": ["1-8 short lowercase keywords"], "matchingItemIds": ["..."] }
+- "label" is a short (under 8 words), inviting phrase for a mood or activity, e.g. "Weekend hike ideas" or "Catch up on recipes" — never generic filler like "Browse your saves".
+- "seedTerms" are short lowercase keywords (not full sentences) that would find saved items related to this idea via keyword/tag/category search — they are never shown to the user.
+- "matchingItemIds" lists the id(s) (from the items given below) that this idea is grounded in. Use [] if it isn't based on specific items. Only use ids given to you below — never invent one.
+
+Make the ideas varied (don't repeat the same theme twice) and genuinely personal to the signals given below, not generic self-help suggestions.`
+}
+
+/** The per-request user message: the user's category/tag counts and recent item subjects. */
+export function buildEnvelopeIdeaPoolUserPrompt(signals: EnvelopeIdeaPoolSignals): string {
+  const categoryLines = signals.categoryCounts.length > 0
+    ? signals.categoryCounts.map((c) => `  ${c.name}: ${c.count}`).join('\n')
+    : '  (none)'
+  const tagLines = signals.tagCounts.length > 0
+    ? signals.tagCounts.map((t) => `  ${t.name}: ${t.count}`).join('\n')
+    : '  (none)'
+  const itemLines = signals.recentItems.length > 0
+    ? signals.recentItems
+        .filter((item) => item.subject)
+        .map((item) => `  Item (id: ${item.id}): ${item.subject}`)
+        .join('\n')
+    : '  (none)'
+
+  return [
+    "The user's saved-item category counts:",
+    categoryLines,
+    '',
+    "The user's saved-item tag counts:",
+    tagLines,
+    '',
+    "The user's recent saved item subjects:",
+    itemLines,
+  ].join('\n')
+}
