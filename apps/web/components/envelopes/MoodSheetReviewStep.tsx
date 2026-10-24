@@ -34,17 +34,24 @@ export function MoodSheetReviewStep({
 }: MoodSheetReviewStepProps) {
   const [reviewItems, setReviewItems] = useState<EnvelopeSuggestItem[]>(initialItems)
   const [overlay, setOverlay] = useState<Overlay>(null)
+  // The server's insufficientMatches flag describes the initial suggest
+  // response, not the live list — once the user edits it (swap/remove/add),
+  // only the current count matters, or fixing it (e.g. adding a save) could
+  // never clear the fallback and re-enable "Make my plan".
+  const [hasEdited, setHasEdited] = useState(false)
 
-  const tooFew = insufficientMatches || reviewItems.length < ENVELOPE_MIN_ITEMS
+  const tooFew = hasEdited ? reviewItems.length < ENVELOPE_MIN_ITEMS : insufficientMatches || reviewItems.length < ENVELOPE_MIN_ITEMS
   const canMakePlan = !tooFew && reviewItems.length <= ENVELOPE_MAX_ITEMS && !isGenerating
 
   function handleRemove(id: string) {
+    setHasEdited(true)
     setReviewItems((prev) => prev.filter((item) => item.id !== id))
   }
 
   function handleSwapSelect(item: ItemSearchResult) {
     if (overlay?.kind !== 'swap') return
     const index = overlay.index
+    setHasEdited(true)
     setReviewItems((prev) =>
       prev.map((existing, i) => (i === index ? { id: item.id, subject: item.subject, reason: 'Added by you' } : existing)),
     )
@@ -52,6 +59,7 @@ export function MoodSheetReviewStep({
   }
 
   function handleAddSelect(item: ItemSearchResult) {
+    setHasEdited(true)
     setReviewItems((prev) => [...prev, { id: item.id, subject: item.subject, reason: 'Added by you' }])
     setOverlay(null)
   }
