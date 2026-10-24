@@ -699,6 +699,62 @@ export function parseEnvelopeIdeaPool(raw: unknown): ParseEnvelopeIdeaPoolResult
   return { success: true, data: result.data }
 }
 
+// --- Envelopes "suggest" (DRO-300, Mood Sheet slice 1 of 3): Engine B retrieval ----
+//
+// POST /api/envelopes/suggest picks 2-8 of the caller's own items to pre-fill an
+// envelope from a mood chip or free-text query, instead of requiring a manual
+// multi-select. The route's own SQL pre-filter (apps/web/lib/envelopes.ts) narrows
+// the caller's library down to a capped candidate set; the schema/prompt/citation
+// helpers below are the provider-facing half of that pipeline, mirroring the
+// generation pipeline above (buildEnvelopeSystemPrompt / enforceEnvelopeCitations).
+
+/**
+ * POST /api/envelopes/suggest request body — `query` has the same 1-500 char
+ * bound as EnvelopeIntentInputSchema's `text`. `seedTerms` is bounded too (a
+ * mood chip only ever carries a handful of short keywords) —
+ * tokenizeEnvelopeSuggestQuery would cap the *tokens* it derives from this at
+ * 20 regardless, but an unbounded array/string length here would still mean
+ * an unnecessarily large request body.
+ */
+export const EnvelopeSuggestRequestSchema = z.object({
+  query: z.string().trim().min(1).max(ENVELOPE_TEXT_MAX_LENGTH),
+  seedTerms: z.array(z.string().max(100)).max(20).optional(),
+})
+export type EnvelopeSuggestRequest = z.infer<typeof EnvelopeSuggestRequestSchema>
+
+/** A row from the route's SQL pre-filter — stored fields only, never a live fetch (same boundary as EnvelopeSourceItem). */
+export interface EnvelopeSuggestCandidateItem {
+  id: string
+  subject: string | null
+  aiSummary: string | null
+  sourceType: string | null
+  notes: string | null
+  categoryName: string | null
+  tagNames: string[]
+}
+
+const EnvelopeSuggestPickSchema = z.object({
+  itemId: z.string().min(1),
+  reason: z.string().trim().min(1).max(200),
+})
+export type EnvelopeSuggestPick = z.infer<typeof EnvelopeSuggestPickSchema>
+
+/** The raw shape the AI provider must return — validated before any candidate-membership check. */
+export const EnvelopeSuggestResponseSchema = z.object({
+  items: z.array(EnvelopeSuggestPickSchema),
+})
+export type EnvelopeSuggestResponse = z.infer<typeof EnvelopeSuggestResponseSchema>
+
+export type ParseEnvelopeSuggestResponseResult =
+  | { success: true; data: EnvelopeSuggestResponse }
+  | { success: false; error: string }
+
+export function parseEnvelopeSuggestResponse(raw: unknown): ParseEnvelopeSuggestResponseResult {
+  const result = EnvelopeSuggestResponseSchema.safeParse(raw)
+  if (!result.success) return { success: false, error: result.error.message }
+  return { success: true, data: result.data }
+}
+
 /**
  * Drops any `matchingItemIds` the model cited that aren't in `allowedItemIds`
  * (the recent items it was actually given) — same spirit as
@@ -819,5 +875,88 @@ export function buildEnvelopeIdeaPoolUserPrompt(signals: EnvelopeIdeaPoolSignals
     '',
     "The user's recent saved item subjects:",
     itemLines,
+  ].join('\n')
+}
+
+/**
+ * Splits free text into lowercase alphanumeric tokens for the SQL pre-filter's
+ * ILIKE/tag/category matching. Deliberately strips everything but `[a-z0-9]`
+ * (rather than just trusting the caller) so a token can always be interpolated
+ * into an `ilike`/`in` PostgREST filter string without any escaping concerns —
+ * commas, percent signs, parens etc. never survive tokenization. Tokens under 2
+ * chars are dropped as too noisy to usefully pre-filter on, and the result is
+ * capped at 20 tokens so a long paste can't blow up the filter string.
+ */
+export function tokenizeEnvelopeSuggestQuery(query: string, seedTerms: readonly string[] = []): string[] {
+  const combined = [query, ...seedTerms].join(' ').toLowerCase()
+  const seen = new Set<string>()
+  const tokens: string[] = []
+  for (const raw of combined.split(/[^a-z0-9]+/)) {
+    if (raw.length < 2 || seen.has(raw)) continue
+    seen.add(raw)
+    tokens.push(raw)
+    if (tokens.length >= 20) break
+  }
+  return tokens
+}
+
+/**
+ * Server-side hallucination guard (load-bearing, not optional — same spirit as
+ * enforceEnvelopeCitations): drops any pick whose itemId isn't in the SQL-filtered
+ * candidate set the model was given, and dedupes repeat picks of the same id. A
+ * model must never be able to surface an item outside the caller's own candidate
+ * set, however it got there (hallucination, or echoing a stale/foreign id).
+ */
+export function filterEnvelopeSuggestPicksToCandidates(
+  picks: readonly EnvelopeSuggestPick[],
+  allowedItemIds: ReadonlySet<string> | readonly string[],
+): EnvelopeSuggestPick[] {
+  const allowed = allowedItemIds instanceof Set ? allowedItemIds : new Set(allowedItemIds)
+  const seen = new Set<string>()
+  const kept: EnvelopeSuggestPick[] = []
+  for (const pick of picks) {
+    if (!allowed.has(pick.itemId) || seen.has(pick.itemId)) continue
+    seen.add(pick.itemId)
+    kept.push(pick)
+  }
+  return kept
+}
+
+/** The fixed instruction block sent as the system message for a suggest request. */
+export function buildEnvelopeSuggestSystemPrompt(): string {
+  return `You help pick saved items that match what a user is looking for.
+
+You will be given a candidate list of the user's saved items (id, subject, summary, source type, category, tags, notes) and a short request describing what they want.
+
+Respond ONLY with a JSON object of this exact shape:
+{ "items": [ { "itemId": "...", "reason": "short string" }, ... ] }
+
+Pick between ${ENVELOPE_MIN_ITEMS} and ${ENVELOPE_MAX_ITEMS} candidate items that genuinely match the request, best match first. "reason" is a short phrase (a few words) naming why that item was picked, e.g. "mentions Costco".
+
+Only use item ids that appear in the candidate list below. Never invent an item id. If fewer than ${ENVELOPE_MIN_ITEMS} candidates genuinely match, return only the ones that do (even zero or one) — never pad the list with unrelated items just to reach the minimum.`
+}
+
+/** The per-request user message: the candidate items and the free-text/chip query. */
+export function buildEnvelopeSuggestUserPrompt(candidates: readonly EnvelopeSuggestCandidateItem[], query: string): string {
+  const itemsBlock = candidates
+    .map((item, i) => {
+      const lines = [
+        `Item ${i + 1} (id: ${item.id})`,
+        item.subject ? `  subject: ${item.subject}` : null,
+        item.categoryName ? `  category: ${item.categoryName}` : null,
+        item.tagNames.length > 0 ? `  tags: ${item.tagNames.join(', ')}` : null,
+        item.sourceType ? `  source type: ${item.sourceType}` : null,
+        item.aiSummary ? `  summary: ${item.aiSummary}` : null,
+        item.notes ? `  user notes: ${item.notes}` : null,
+      ].filter((line): line is string => line !== null)
+      return lines.join('\n')
+    })
+    .join('\n\n')
+
+  return [
+    'Candidate items:',
+    itemsBlock,
+    '',
+    `The user's request: "${query}"`,
   ].join('\n')
 }
