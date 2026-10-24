@@ -79,6 +79,32 @@ export type Database = {
           },
         ]
       }
+      envelope_idea_pools: {
+        Row: {
+          generated_at: string
+          ideas: Json
+          user_id: string
+        }
+        Insert: {
+          generated_at?: string
+          ideas: Json
+          user_id: string
+        }
+        Update: {
+          generated_at?: string
+          ideas?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envelope_idea_pools_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       envelope_items: {
         Row: {
           envelope_id: string
