@@ -707,25 +707,83 @@ export function parseEnvelopeSuggestResponse(raw: unknown): ParseEnvelopeSuggest
   return { success: true, data: result.data }
 }
 
+// A maximal run of Unicode letters/digits — the unit tokenizeEnvelopeSuggestQuery splits
+// text into before separating Han (CJK ideograph) characters from everything else within
+// the run. Matching (never splitting on) `\p{L}\p{N}` is what keeps `, ( ) . : * %` and
+// quotes (`'` `"` `` ` ``) out of every token — those are punctuation/symbol code points,
+// never letters or digits, so none of them can ever be matched into a run.
+const UNICODE_WORD_PATTERN = /[\p{L}\p{N}]+/gu
+
+// Han script — Chinese hanzi (and Japanese kanji) text, which has no space-delimited word
+// boundaries the way Latin/Cyrillic/etc. text does. tokenizeEnvelopeSuggestQuery bigrams
+// runs of this instead of treating the whole run as one token.
+const HAN_CHAR_PATTERN = /\p{Script=Han}/u
+
+const ENVELOPE_SUGGEST_TOKEN_CAP = 20
+
 /**
- * Splits free text into lowercase alphanumeric tokens for the SQL pre-filter's
- * ILIKE/tag/category matching. Deliberately strips everything but `[a-z0-9]`
- * (rather than just trusting the caller) so a token can always be interpolated
- * into an `ilike`/`in` PostgREST filter string without any escaping concerns —
- * commas, percent signs, parens etc. never survive tokenization. Tokens under 2
- * chars are dropped as too noisy to usefully pre-filter on, and the result is
- * capped at 20 tokens so a long paste can't blow up the filter string.
+ * Splits free text into lowercase tokens for the SQL pre-filter's ILIKE/tag/category
+ * matching. A run of Unicode letters/digits is one token (e.g. "costco"), EXCEPT a run
+ * of Han-script (CJK ideograph) characters, which is split into overlapping bigrams
+ * instead ("周末带孩子" -> "周末", "末带", "带孩", "孩子") since ILIKE needs smaller
+ * substrings to match on when there are no space-delimited words to begin with. A
+ * lone leftover Han character is kept as its own token. Mixed input ("我想去costco")
+ * yields both: the Latin word and the CJK bigrams.
+ *
+ * Deliberately matches only `\p{L}\p{N}` (see UNICODE_WORD_PATTERN) rather than just
+ * trusting the caller, so a token can always be interpolated into an `ilike`/`in`
+ * PostgREST filter string with no escaping concerns. Non-Han tokens under 2 chars are
+ * dropped as too noisy to usefully pre-filter on. Deduped and capped at
+ * ENVELOPE_SUGGEST_TOKEN_CAP tokens so a long paste can't blow up the filter string.
  */
 export function tokenizeEnvelopeSuggestQuery(query: string, seedTerms: readonly string[] = []): string[] {
   const combined = [query, ...seedTerms].join(' ').toLowerCase()
   const seen = new Set<string>()
   const tokens: string[] = []
-  for (const raw of combined.split(/[^a-z0-9]+/)) {
-    if (raw.length < 2 || seen.has(raw)) continue
-    seen.add(raw)
-    tokens.push(raw)
-    if (tokens.length >= 20) break
+
+  const tryAddToken = (tok: string) => {
+    if (tokens.length >= ENVELOPE_SUGGEST_TOKEN_CAP || seen.has(tok)) return
+    seen.add(tok)
+    tokens.push(tok)
   }
+
+  const addHanRun = (run: string) => {
+    if (run.length === 1) {
+      tryAddToken(run)
+      return
+    }
+    for (let i = 0; i < run.length - 1 && tokens.length < ENVELOPE_SUGGEST_TOKEN_CAP; i++) {
+      tryAddToken(run.slice(i, i + 2))
+    }
+  }
+
+  const addSegment = (segment: string, isHan: boolean) => {
+    if (isHan) {
+      addHanRun(segment)
+    } else if (segment.length >= 2) {
+      tryAddToken(segment)
+    }
+  }
+
+  for (const run of combined.match(UNICODE_WORD_PATTERN) ?? []) {
+    if (tokens.length >= ENVELOPE_SUGGEST_TOKEN_CAP) break
+
+    // A run can mix scripts with no boundary of its own (e.g. "我想去costco" is one
+    // \p{L}\p{N} run), so re-split it into alternating Han / non-Han segments.
+    let segment = ''
+    let segmentIsHan = false
+    for (const ch of run) {
+      const isHan = HAN_CHAR_PATTERN.test(ch)
+      if (segment && isHan !== segmentIsHan) {
+        addSegment(segment, segmentIsHan)
+        segment = ''
+      }
+      segment += ch
+      segmentIsHan = isHan
+    }
+    if (segment) addSegment(segment, segmentIsHan)
+  }
+
   return tokens
 }
 
