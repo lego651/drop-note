@@ -660,10 +660,17 @@ export function appendValidationRetryNote(userPrompt: string, validationError: s
 // helpers below are the provider-facing half of that pipeline, mirroring the
 // generation pipeline above (buildEnvelopeSystemPrompt / enforceEnvelopeCitations).
 
-/** POST /api/envelopes/suggest request body — same 1-500 char bound as EnvelopeIntentInputSchema's `text`. */
+/**
+ * POST /api/envelopes/suggest request body — `query` has the same 1-500 char
+ * bound as EnvelopeIntentInputSchema's `text`. `seedTerms` is bounded too (a
+ * mood chip only ever carries a handful of short keywords) —
+ * tokenizeEnvelopeSuggestQuery would cap the *tokens* it derives from this at
+ * 20 regardless, but an unbounded array/string length here would still mean
+ * an unnecessarily large request body.
+ */
 export const EnvelopeSuggestRequestSchema = z.object({
   query: z.string().trim().min(1).max(ENVELOPE_TEXT_MAX_LENGTH),
-  seedTerms: z.array(z.string()).optional(),
+  seedTerms: z.array(z.string().max(100)).max(20).optional(),
 })
 export type EnvelopeSuggestRequest = z.infer<typeof EnvelopeSuggestRequestSchema>
 

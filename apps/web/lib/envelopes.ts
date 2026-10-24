@@ -268,8 +268,10 @@ type RawSuggestItemRow = {
   item_tags: { tags: { name: string } | null }[] | null
 }
 
-const SUGGEST_ITEM_SELECT =
-  'id, subject, ai_summary, notes, source_type, created_at, categories(name), item_tags(tags(name))'
+// created_at is intentionally not selected — it's only used to order the
+// query (PostgREST orders on the underlying column regardless of what's
+// projected), never read back into EnvelopeSuggestCandidateItem.
+const SUGGEST_ITEM_SELECT = 'id, subject, ai_summary, notes, source_type, categories(name), item_tags(tags(name))'
 
 function mapSuggestRow(row: RawSuggestItemRow): EnvelopeSuggestCandidateItem {
   const category = Array.isArray(row.categories) ? row.categories[0] : row.categories
@@ -301,10 +303,21 @@ async function fetchUserCategories(supabase: SuggestClient, userId: string): Pro
   return data as unknown as { id: string; name: string }[]
 }
 
-/** item_tags has no user_id column, but every tagId here was already fetched scoped to this user's own `tags` rows, so the item_ids it returns are this user's own. */
+/**
+ * item_tags has no user_id column, but every tagId here was already fetched
+ * scoped to this user's own `tags` rows, so the item_ids it returns are this
+ * user's own. Capped at the candidate cap — the result only ever feeds an
+ * `id.in.(...)` filter on the items query, so there's no point fetching more
+ * item ids than could ever end up in the final candidate set, and it keeps a
+ * heavily-tagged tag from inlining hundreds of ids into that filter string.
+ */
 async function fetchItemIdsForTags(supabase: SuggestClient, tagIds: string[]): Promise<string[]> {
   if (tagIds.length === 0) return []
-  const { data, error } = await supabase.from('item_tags').select('item_id').in('tag_id', tagIds)
+  const { data, error } = await supabase
+    .from('item_tags')
+    .select('item_id')
+    .in('tag_id', tagIds)
+    .limit(ENVELOPE_SUGGEST_CANDIDATE_CAP)
   if (error || !data) return []
   return (data as unknown as { item_id: string }[]).map((r) => r.item_id)
 }
