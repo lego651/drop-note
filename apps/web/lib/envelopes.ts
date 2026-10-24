@@ -286,7 +286,7 @@ function mapSuggestRow(row: RawSuggestItemRow): EnvelopeSuggestCandidateItem {
   }
 }
 
-/** Every token is `[a-z0-9]+` only (tokenizeEnvelopeSuggestQuery) so these are safe to interpolate into a PostgREST filter string with no escaping. */
+/** Every token is a run of `\p{L}\p{N}` only (tokenizeEnvelopeSuggestQuery) — Unicode letters/digits, never `, ( ) . : * %` or quotes — so these are safe to interpolate into a PostgREST filter string with no escaping. */
 function buildTextIlikeOrParts(tokens: string[]): string[] {
   return tokens.flatMap((t) => [`subject.ilike.%${t}%`, `ai_summary.ilike.%${t}%`, `notes.ilike.%${t}%`])
 }

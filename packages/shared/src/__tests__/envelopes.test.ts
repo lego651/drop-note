@@ -1137,6 +1137,41 @@ describe('tokenizeEnvelopeSuggestQuery', () => {
   it('returns [] for text with no tokenizable words', () => {
     expect(tokenizeEnvelopeSuggestQuery('a b c')).toEqual([])
   })
+
+  // DRO-312: Chinese/CJK queries used to produce zero tokens (the old pattern only
+  // allowed [a-z0-9]), silently falling back to recency-only suggestions.
+  it('emits overlapping bigrams for a pure-Chinese query', () => {
+    expect(tokenizeEnvelopeSuggestQuery('我想做饭')).toEqual(['我想', '想做', '做饭'])
+  })
+
+  it('emits overlapping bigrams for a longer pure-Chinese query', () => {
+    expect(tokenizeEnvelopeSuggestQuery('周末带孩子')).toEqual(['周末', '末带', '带孩', '孩子'])
+  })
+
+  it('yields both the Latin word and CJK bigrams for mixed input with no space between scripts', () => {
+    expect(tokenizeEnvelopeSuggestQuery('我想去costco')).toEqual(['我想', '想去', 'costco'])
+  })
+
+  it('keeps a lone leftover Han character as its own token (unlike a lone Latin letter)', () => {
+    expect(tokenizeEnvelopeSuggestQuery('去 a')).toEqual(['去'])
+  })
+
+  it('never lets PostgREST-filter-unsafe characters through on a classic injection attempt', () => {
+    const tokens = tokenizeEnvelopeSuggestQuery('a,b),id.eq.1')
+    expect(tokens).toEqual(['id', 'eq'])
+    for (const t of tokens) expect(t).not.toMatch(/[,().:*%'"`]/)
+  })
+
+  it('never lets %, *, :, or quote characters through, Latin or CJK', () => {
+    const tokens = tokenizeEnvelopeSuggestQuery(`100% *great* deal: 'quoted' "text" 去玩,孩子().另外:好耍%'"`)
+    for (const t of tokens) expect(t).not.toMatch(/[,().:*%'"`]/)
+    expect(tokens).toEqual(['100', 'great', 'deal', 'quoted', 'text', '去玩', '孩子', '另外', '好耍'])
+  })
+
+  it('caps CJK bigrams at 20 tokens same as Latin words', () => {
+    const manyChars = '做饭周末带孩子去买东西玩耍学习工作旅行运动休息聊天看书写字唱歌跳舞画画'
+    expect(tokenizeEnvelopeSuggestQuery(manyChars).length).toBe(20)
+  })
 })
 
 describe('filterEnvelopeSuggestPicksToCandidates', () => {
