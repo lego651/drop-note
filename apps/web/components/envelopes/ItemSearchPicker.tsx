@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Loader2, X } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -79,12 +79,14 @@ export function ItemSearchPicker({ title, excludeIds, onSelect, onCancel }: Item
           placeholder="Search your saves…"
           enterKeyHint="search"
           type="search"
-          className="h-11"
+          // The native WebKit search-clear icon duplicates our own Cancel
+          // control right next to it — suppress it (DRO-305 design review).
+          className="h-11 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
           autoFocus
           aria-label="Search your saves"
         />
-        <Button type="button" variant="ghost" size="icon" className="h-11 w-11 shrink-0" onClick={onCancel} aria-label="Cancel search">
-          <X size={16} />
+        <Button type="button" variant="ghost" className="h-11 shrink-0" onClick={onCancel}>
+          Cancel
         </Button>
       </div>
 
