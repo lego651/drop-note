@@ -25,25 +25,6 @@ export const ENVELOPE_PURPOSE_CHIPS: ReadonlyArray<{ hint: PurposeHint; label: s
   { hint: 'next_steps', label: 'Next steps', prefill: 'What are my next steps for these' },
 ]
 
-/**
- * Mood Sheet starter chips (DRO-301, Mood Sheet slice 2 of 3): the fallback
- * shown for thin accounts, and the only chip set until slice 3's personalized
- * idea pool exists. Each submits straight to POST /api/envelopes/suggest as
- * `{ query, seedTerms }` — seedTerms helps the match since the chip label
- * itself is a mood, not a search term.
- */
-export const ENVELOPE_MOOD_STARTER_CHIPS: ReadonlyArray<{
-  id: string
-  label: string
-  query: string
-  seedTerms: string[]
-}> = [
-  { id: 'exercise', label: 'Feel like exercising', query: 'Feel like exercising', seedTerms: ['exercise', 'workout', 'gym', 'run', 'fitness'] },
-  { id: 'reading', label: 'Pick up some reading', query: 'Pick up some reading', seedTerms: ['read', 'article', 'book'] },
-  { id: 'work', label: 'Do some work', query: 'Do some work', seedTerms: ['work', 'task', 'project'] },
-  { id: 'kid', label: 'Play with my kid', query: 'Play with my kid', seedTerms: ['kid', 'child', 'play', 'activity'] },
-]
-
 const PurposeHintSchema = z.enum(PURPOSE_HINTS)
 
 export const EnvelopeIntentInputSchema = z.object({
@@ -811,17 +792,13 @@ export function enforceEnvelopeIdeaPoolItemIds(
 /**
  * The 4 static starter chips (board spec, DRO-299/302): what
  * resolveIdeaPoolForSheet (apps/web/lib/envelope-idea-pool.ts) returns for an
- * empty/thin account, or before this endpoint has ever been wired into the
- * Mood Sheet. Each still carries `seedTerms` so tapping one works exactly
- * like tapping a personalized idea — it calls /api/envelopes/suggest with
- * those terms (DRO-300's contract), same as any other chip.
- *
- * Known duplication with ENVELOPE_MOOD_STARTER_CHIPS (DRO-301, same copy —
- * PR #80 landed in parallel and shipped its own static chip list rather than
- * wait on this slice, same spirit as that PR's local envelope-suggest-types
- * avoiding a slice-1 collision). Reconcile into one constant when the Mood
- * Sheet is wired up to call GET /api/envelopes/ideas instead of hardcoding
- * its chips.
+ * empty/thin account, or when a personalized pool can't be generated. The
+ * Mood Sheet (DRO-301/309) renders these the same way it renders any pool
+ * idea — same EnvelopeIdea shape — so there's exactly one starter-chip
+ * constant in the codebase. Each still carries `seedTerms` so tapping one
+ * works exactly like tapping a personalized idea — it calls
+ * /api/envelopes/suggest with those terms (DRO-300's contract), same as any
+ * other chip.
  */
 export const ENVELOPE_STARTER_IDEAS: ReadonlyArray<EnvelopeIdea> = [
   { label: 'Feel like exercising', emoji: '🏃', seedTerms: ['exercise', 'workout', 'fitness', 'gym', 'run'], matchingItemIds: [] },
