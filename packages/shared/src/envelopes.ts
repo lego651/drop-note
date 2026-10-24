@@ -720,12 +720,19 @@ export function enforceEnvelopeIdeaPoolItemIds(
 }
 
 /**
- * The 4 static starter chips (board spec, DRO-299/302): shown instead of a
- * personalized pool for an empty/thin account (no stored pool yet, or too
- * few items for a meaningful one) and as the Mood Sheet's fallback before a
- * pool exists at all. Each still carries `seedTerms` so tapping one works
- * exactly like tapping a personalized idea — it calls /api/envelopes/suggest
- * with those terms (DRO-300's contract), same as any other chip.
+ * The 4 static starter chips (board spec, DRO-299/302): what
+ * resolveIdeaPoolForSheet (apps/web/lib/envelope-idea-pool.ts) returns for an
+ * empty/thin account, or before this endpoint has ever been wired into the
+ * Mood Sheet. Each still carries `seedTerms` so tapping one works exactly
+ * like tapping a personalized idea — it calls /api/envelopes/suggest with
+ * those terms (DRO-300's contract), same as any other chip.
+ *
+ * Known duplication with ENVELOPE_MOOD_STARTER_CHIPS (DRO-301, same copy —
+ * PR #80 landed in parallel and shipped its own static chip list rather than
+ * wait on this slice, same spirit as that PR's local envelope-suggest-types
+ * avoiding a slice-1 collision). Reconcile into one constant when the Mood
+ * Sheet is wired up to call GET /api/envelopes/ideas instead of hardcoding
+ * its chips.
  */
 export const ENVELOPE_STARTER_IDEAS: ReadonlyArray<EnvelopeIdea> = [
   { label: 'Feel like exercising', emoji: '🏃', seedTerms: ['exercise', 'workout', 'fitness', 'gym', 'run'], matchingItemIds: [] },
