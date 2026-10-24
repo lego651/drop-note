@@ -37,8 +37,8 @@ describe('MoodSheet (DRO-301)', () => {
         ok: true,
         json: {
           items: [
-            { id: 'a', subject: 'Costco run', reason: 'mentions Costco' },
-            { id: 'b', subject: 'Trail map', reason: 'mentions a trail' },
+            { itemId: 'a', subject: 'Costco run', reason: 'mentions Costco' },
+            { itemId: 'b', subject: 'Trail map', reason: 'mentions a trail' },
           ],
           candidateCount: 5,
           insufficientMatches: false,
@@ -61,7 +61,7 @@ describe('MoodSheet (DRO-301)', () => {
 
   it('submitting free text via the form (not just Enter) calls suggest with the typed query', async () => {
     mockFetchSequence([
-      { ok: true, json: { items: [{ id: 'a', subject: 'Item A', reason: 'why' }, { id: 'b', subject: 'Item B', reason: 'why' }], candidateCount: 2, insufficientMatches: false } },
+      { ok: true, json: { items: [{ itemId: 'a', subject: 'Item A', reason: 'why' }, { itemId: 'b', subject: 'Item B', reason: 'why' }], candidateCount: 2, insufficientMatches: false } },
     ])
 
     render(<MoodSheet open onOpenChange={vi.fn()} onPickManually={vi.fn()} />)
@@ -78,7 +78,7 @@ describe('MoodSheet (DRO-301)', () => {
 
   it('shows the insufficient-matches fallback and routes it into the manual flow pre-filled with the returned items', async () => {
     mockFetchSequence([
-      { ok: true, json: { items: [{ id: 'a', subject: 'Only one', reason: 'why' }], candidateCount: 1, insufficientMatches: true } },
+      { ok: true, json: { items: [{ itemId: 'a', subject: 'Only one', reason: 'why' }], candidateCount: 1, insufficientMatches: true } },
     ])
     const onPickManually = vi.fn()
 
@@ -93,7 +93,7 @@ describe('MoodSheet (DRO-301)', () => {
 
   it('"Make my plan" calls /api/envelopes/generate with the reviewed item ids and the original query as text', async () => {
     mockFetchSequence([
-      { ok: true, json: { items: [{ id: 'a', subject: 'A', reason: 'why' }, { id: 'b', subject: 'B', reason: 'why' }], candidateCount: 2, insufficientMatches: false } },
+      { ok: true, json: { items: [{ itemId: 'a', subject: 'A', reason: 'why' }, { itemId: 'b', subject: 'B', reason: 'why' }], candidateCount: 2, insufficientMatches: false } },
       { ok: true, json: { id: 'envelope-1' } },
     ])
 
@@ -113,7 +113,7 @@ describe('MoodSheet (DRO-301)', () => {
 
   it('removing an item down below the minimum shows the insufficient-matches fallback', async () => {
     mockFetchSequence([
-      { ok: true, json: { items: [{ id: 'a', subject: 'A', reason: 'why' }, { id: 'b', subject: 'B', reason: 'why' }], candidateCount: 2, insufficientMatches: false } },
+      { ok: true, json: { items: [{ itemId: 'a', subject: 'A', reason: 'why' }, { itemId: 'b', subject: 'B', reason: 'why' }], candidateCount: 2, insufficientMatches: false } },
     ])
 
     render(<MoodSheet open onOpenChange={vi.fn()} onPickManually={vi.fn()} />)

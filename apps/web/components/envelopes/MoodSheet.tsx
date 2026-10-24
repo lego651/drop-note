@@ -94,7 +94,7 @@ export function MoodSheet({ open, onOpenChange, onPickManually }: MoodSheetProps
   }
 
   function handlePickManuallyFromReview(items: EnvelopeSuggestItem[]) {
-    onPickManually(items.map((item) => item.id))
+    onPickManually(items.map((item) => item.itemId))
     resetAndClose()
   }
 

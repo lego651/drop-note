@@ -10,8 +10,8 @@ beforeEach(() => {
 })
 
 const baseItems = [
-  { id: 'a', subject: 'Costco run', reason: 'mentions Costco' },
-  { id: 'b', subject: 'Trail map', reason: 'mentions a trail' },
+  { itemId: 'a', subject: 'Costco run', reason: 'mentions Costco' },
+  { itemId: 'b', subject: 'Trail map', reason: 'mentions a trail' },
 ]
 
 // SheetTitle (used inside MoodSheetReviewStep's header) is a Radix DialogTitle
@@ -44,7 +44,7 @@ describe('MoodSheetReviewStep (DRO-301)', () => {
   it('Remove drops an item and calls onMakePlan with the remaining ids', () => {
     const onMakePlan = vi.fn()
     renderStep({
-      initialItems: [...baseItems, { id: 'c', subject: 'Third', reason: 'why' }],
+      initialItems: [...baseItems, { itemId: 'c', subject: 'Third', reason: 'why' }],
       insufficientMatches: false,
       isGenerating: false,
       onBack: vi.fn(),

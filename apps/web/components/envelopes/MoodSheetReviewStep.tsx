@@ -43,9 +43,9 @@ export function MoodSheetReviewStep({
   const tooFew = hasEdited ? reviewItems.length < ENVELOPE_MIN_ITEMS : insufficientMatches || reviewItems.length < ENVELOPE_MIN_ITEMS
   const canMakePlan = !tooFew && reviewItems.length <= ENVELOPE_MAX_ITEMS && !isGenerating
 
-  function handleRemove(id: string) {
+  function handleRemove(itemId: string) {
     setHasEdited(true)
-    setReviewItems((prev) => prev.filter((item) => item.id !== id))
+    setReviewItems((prev) => prev.filter((item) => item.itemId !== itemId))
   }
 
   function handleSwapSelect(item: ItemSearchResult) {
@@ -53,14 +53,14 @@ export function MoodSheetReviewStep({
     const index = overlay.index
     setHasEdited(true)
     setReviewItems((prev) =>
-      prev.map((existing, i) => (i === index ? { id: item.id, subject: item.subject, reason: 'Added by you' } : existing)),
+      prev.map((existing, i) => (i === index ? { itemId: item.id, subject: item.subject, reason: 'Added by you' } : existing)),
     )
     setOverlay(null)
   }
 
   function handleAddSelect(item: ItemSearchResult) {
     setHasEdited(true)
-    setReviewItems((prev) => [...prev, { id: item.id, subject: item.subject, reason: 'Added by you' }])
+    setReviewItems((prev) => [...prev, { itemId: item.id, subject: item.subject, reason: 'Added by you' }])
     setOverlay(null)
   }
 
@@ -68,7 +68,7 @@ export function MoodSheetReviewStep({
     return (
       <ItemSearchPicker
         title={overlay.kind === 'swap' ? 'Swap this save' : 'Add another save'}
-        excludeIds={reviewItems.map((item) => item.id)}
+        excludeIds={reviewItems.map((item) => item.itemId)}
         onSelect={overlay.kind === 'swap' ? handleSwapSelect : handleAddSelect}
         onCancel={() => setOverlay(null)}
       />
@@ -84,7 +84,7 @@ export function MoodSheetReviewStep({
       <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
         {reviewItems.map((item, index) => (
           <li
-            key={item.id}
+            key={item.itemId}
             className="flex items-start gap-2 rounded-[10px] border-stroke border-ink bg-card p-3 shadow-ink-sm"
           >
             <div className="min-w-0 flex-1">
@@ -107,7 +107,7 @@ export function MoodSheetReviewStep({
                 variant="ghost"
                 size="icon"
                 className="h-11 w-11"
-                onClick={() => handleRemove(item.id)}
+                onClick={() => handleRemove(item.itemId)}
                 aria-label={`Remove ${item.subject ?? 'this save'}`}
               >
                 <X size={16} />
@@ -141,7 +141,7 @@ export function MoodSheetReviewStep({
           type="button"
           className="h-11 gap-1.5"
           disabled={!canMakePlan}
-          onClick={() => onMakePlan(reviewItems.map((item) => item.id))}
+          onClick={() => onMakePlan(reviewItems.map((item) => item.itemId))}
         >
           {isGenerating && <Loader2 size={16} className="animate-spin" />}
           Make my plan

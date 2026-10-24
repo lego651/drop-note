@@ -1,12 +1,13 @@
 /**
- * POST /api/envelopes/suggest contract (DRO-299/DRO-300, slice 1) as given to
- * this slice (DRO-301): `{ query, seedTerms? }` -> `{ items, candidateCount,
- * insufficientMatches }`. Kept local to the Mood Sheet rather than in
- * packages/shared so this slice doesn't collide with slice 1's own route +
- * schema landing in parallel; reconcile into one shared type once both merge.
+ * POST /api/envelopes/suggest response shape (DRO-300, now on main):
+ * `{ query, seedTerms? }` -> `{ items, candidateCount, insufficientMatches }`,
+ * each item `{ itemId, subject, reason }`. Kept local rather than imported
+ * from packages/shared since shared only exports the AI-provider-facing pick
+ * schema (`itemId` + `reason`, no `subject`/`candidateCount`/`insufficientMatches`),
+ * not this route's full HTTP response shape.
  */
 export interface EnvelopeSuggestItem {
-  id: string
+  itemId: string
   subject: string | null
   reason: string
 }
