@@ -82,14 +82,28 @@ describe('ItemsPageClient — envelopes entry banner + FAB (DRO-227)', () => {
     expect(screen.getByRole('button', { name: /^Make a plan$/ })).toBeInTheDocument()
   })
 
-  it('clicking the floating FAB enters pick mode and swaps the FAB for the tray', () => {
+  // DRO-301: the FAB's primary tap target now opens the Mood Sheet instead of
+  // entering item-selection directly — "Pick them myself" inside the sheet is
+  // the new path to the old behavior (see MoodSheet tests for that flow).
+  it('clicking the floating FAB opens the Mood Sheet instead of entering pick mode directly', () => {
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
 
     fireEvent.click(screen.getByRole('button', { name: /^Make a plan$/ }))
 
+    expect(screen.getByRole('heading', { name: 'What do you feel like?' })).toBeInTheDocument()
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  it('"Pick them myself" inside the Mood Sheet enters pick mode the same way the old FAB did', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Make a plan$/ }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pick them myself' }))
+
     expect(screen.getAllByRole('checkbox').length).toBeGreaterThan(0)
-    expect(screen.queryByRole('button', { name: /^Make a plan$/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'What do you feel like?' })).not.toBeInTheDocument()
     expect(screen.getByText('0 of 2–8 · tap cards to add')).toBeInTheDocument()
   })
 
