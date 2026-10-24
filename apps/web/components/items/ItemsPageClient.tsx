@@ -17,6 +17,7 @@ import { WelcomeModal } from '@/components/dashboard/WelcomeModal'
 import { EnvelopeEntryBanner } from '@/components/envelopes/EnvelopeEntryBanner'
 import { EnvelopeMakePlanFab } from '@/components/envelopes/EnvelopeMakePlanFab'
 import { EnvelopeTray } from '@/components/envelopes/EnvelopeTray'
+import { MoodSheet } from '@/components/envelopes/MoodSheet'
 import { StatsBar } from '@/components/items/StatsBar'
 import { ItemsPageHeader } from '@/components/items/ItemsPageHeader'
 import { SortDropdown } from '@/components/items/SortDropdown'
@@ -93,6 +94,18 @@ export function ItemsPageClient({
   // Defaults to true so the FAB doesn't flash in before the observer attaches.
   const [bannerOccupiesCta, setBannerOccupiesCta] = useState(true)
   const handleFullCardInViewChange = useCallback((inView: boolean) => setBannerOccupiesCta(inView), [])
+
+  // DRO-301: the floating FAB opens this instead of entering item-selection
+  // directly; its "Pick them myself" link (and the insufficient-matches
+  // fallback) falls back to the manual flow via enterSelectMode/selectAll.
+  const [moodSheetOpen, setMoodSheetOpen] = useState(false)
+  const handlePickManually = useCallback(
+    (prefillIds?: string[]) => {
+      enterSelectMode()
+      if (prefillIds && prefillIds.length > 0) selectAll(prefillIds)
+    },
+    [enterSelectMode, selectAll],
+  )
 
   const [view, setView] = useState<ViewMode>('card')
   const [searchQuery, setSearchQuery] = useState(initialQuery)
@@ -648,8 +661,10 @@ export function ItemsPageClient({
       )}
       </div>{/* end p-6 */}
 
-      {/* Floating envelopes entry (DRO-227) — tray while picking, otherwise the FAB once the banner is out of view */}
-      {isBulkMode ? <EnvelopeTray /> : showFab && <EnvelopeMakePlanFab onClick={enterSelectMode} />}
+      {/* Floating envelopes entry (DRO-227) — tray while picking, otherwise the FAB once the banner is out of view.
+          DRO-301: the idle FAB now opens the Mood Sheet instead of entering item-selection directly. */}
+      {isBulkMode ? <EnvelopeTray /> : showFab && <EnvelopeMakePlanFab onClick={() => setMoodSheetOpen(true)} />}
+      <MoodSheet open={moodSheetOpen} onOpenChange={setMoodSheetOpen} onPickManually={handlePickManually} />
     </div>
   )
 }
