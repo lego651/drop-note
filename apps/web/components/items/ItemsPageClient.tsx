@@ -411,7 +411,10 @@ export function ItemsPageClient({
       />
 
       {/* Envelopes entry (DRO-227) */}
-      <EnvelopeEntryBanner onFullCardInViewChange={handleFullCardInViewChange} />
+      <EnvelopeEntryBanner
+        onFullCardInViewChange={handleFullCardInViewChange}
+        onMakePlan={() => setMoodSheetOpen(true)}
+      />
 
       {/* Search bar + Filters */}
       <div className="flex items-center gap-3">

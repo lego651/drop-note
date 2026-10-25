@@ -19,6 +19,13 @@ interface EnvelopeEntryBannerProps {
    * creating two competing cobalt CTAs (DRO-227).
    */
   onFullCardInViewChange: (inView: boolean) => void
+  /**
+   * Opens the Mood Sheet (DRO-318) — the full card's primary button and the
+   * stripped one-line strip both call this instead of entering manual pick
+   * mode directly. Manual picking is still reachable from inside the Mood
+   * Sheet ("Pick them myself") and via "Edit items" once a plan exists.
+   */
+  onMakePlan: () => void
 }
 
 /**
@@ -28,8 +35,8 @@ interface EnvelopeEntryBannerProps {
  * flag: full card -> one-line strip -> step bar once pick mode is entered
  * (from here, the floating FAB, the /envelopes empty state, or "Edit items").
  */
-export function EnvelopeEntryBanner({ onFullCardInViewChange }: EnvelopeEntryBannerProps) {
-  const { isBulkMode, selectedIds, enterSelectMode, exitSelectMode } = useBulkSelect()
+export function EnvelopeEntryBanner({ onFullCardInViewChange, onMakePlan }: EnvelopeEntryBannerProps) {
+  const { isBulkMode, selectedIds, exitSelectMode } = useBulkSelect()
   const [stripped, setStripped] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -99,7 +106,7 @@ export function EnvelopeEntryBanner({ onFullCardInViewChange }: EnvelopeEntryBan
     return (
       <button
         type="button"
-        onClick={enterSelectMode}
+        onClick={onMakePlan}
         className="flex h-11 w-full items-center gap-2 rounded-[10px] border-stroke border-ink bg-[hsl(var(--primary)/0.08)] px-4 text-left text-sm font-semibold text-foreground transition-colors hover:bg-[hsl(var(--primary)/0.12)]"
       >
         <Mail size={16} className="text-primary" />
@@ -123,8 +130,7 @@ export function EnvelopeEntryBanner({ onFullCardInViewChange }: EnvelopeEntryBan
             Turn saves into a plan
           </p>
           <p className="mt-1 max-w-[70ch] text-sm text-foreground">
-            Pick {ENVELOPE_MIN_ITEMS}–{ENVELOPE_MAX_ITEMS} saves and say what they&apos;re for. drop-note turns them
-            into a checklist, itinerary or notes.
+            Tap a mood or say what you want — drop-note picks the saves and builds a plan.
           </p>
           <ol className="mt-2 hidden flex-wrap gap-4 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground sm:flex">
             <li>1 · PICK ITEMS</li>
@@ -134,9 +140,9 @@ export function EnvelopeEntryBanner({ onFullCardInViewChange }: EnvelopeEntryBan
         </div>
       </div>
       <div className="flex items-center gap-2 sm:ml-auto sm:shrink-0">
-        <Button onClick={enterSelectMode} size="lg" className="flex-1 gap-2 sm:flex-initial">
+        <Button onClick={onMakePlan} size="lg" className="flex-1 gap-2 sm:flex-initial">
           <Mail size={16} />
-          Pick items to plan
+          Make a plan
         </Button>
         <Button variant="ghost" size="lg" onClick={handleNotNow}>
           Not now

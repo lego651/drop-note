@@ -8,7 +8,6 @@ import { markEnvelopeEntryPlanMade } from '../envelope-entry-storage'
 let bulkState: {
   isBulkMode: boolean
   selectedIds: Set<string>
-  enterSelectMode: ReturnType<typeof vi.fn>
   exitSelectMode: ReturnType<typeof vi.fn>
 }
 vi.mock('@/components/items/BulkSelectProvider', () => ({
@@ -20,24 +19,24 @@ beforeEach(() => {
   bulkState = {
     isBulkMode: false,
     selectedIds: new Set(),
-    enterSelectMode: vi.fn(),
     exitSelectMode: vi.fn(),
   }
 })
 
-describe('EnvelopeEntryBanner (DRO-227)', () => {
-  it('shows the full card by default, and entering pick mode on primary click', () => {
-    render(<EnvelopeEntryBanner onFullCardInViewChange={vi.fn()} />)
+describe('EnvelopeEntryBanner (DRO-227, DRO-318)', () => {
+  it('shows the full card by default, and opens the Mood Sheet on primary click', () => {
+    const onMakePlan = vi.fn()
+    render(<EnvelopeEntryBanner onFullCardInViewChange={vi.fn()} onMakePlan={onMakePlan} />)
 
     expect(screen.getByText('Turn saves into a plan')).toBeInTheDocument()
     expect(screen.getByText('1 · PICK ITEMS')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /Pick items to plan/ }))
-    expect(bulkState.enterSelectMode).toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: /Make a plan/ }))
+    expect(onMakePlan).toHaveBeenCalled()
   })
 
   it('"Not now" collapses the card to the one-line strip and persists it', () => {
-    render(<EnvelopeEntryBanner onFullCardInViewChange={vi.fn()} />)
+    render(<EnvelopeEntryBanner onFullCardInViewChange={vi.fn()} onMakePlan={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
 
@@ -46,22 +45,22 @@ describe('EnvelopeEntryBanner (DRO-227)', () => {
     expect(localStorage.getItem('dropnote.envelopeEntry.notNowUntil')).not.toBeNull()
   })
 
-  it('clicking the strip enters pick mode', () => {
+  it('clicking the strip opens the Mood Sheet', () => {
     markEnvelopeEntryPlanMade()
-    render(<EnvelopeEntryBanner onFullCardInViewChange={vi.fn()} />)
+    const onMakePlan = vi.fn()
+    render(<EnvelopeEntryBanner onFullCardInViewChange={vi.fn()} onMakePlan={onMakePlan} />)
 
     fireEvent.click(screen.getByRole('button', { name: /Turn saves into a plan/ }))
-    expect(bulkState.enterSelectMode).toHaveBeenCalled()
+    expect(onMakePlan).toHaveBeenCalled()
   })
 
   it('shows the step bar with a live picked count in pick mode, and Cancel exits it', () => {
     bulkState = {
       isBulkMode: true,
       selectedIds: new Set(['a', 'b']),
-      enterSelectMode: vi.fn(),
       exitSelectMode: vi.fn(),
     }
-    render(<EnvelopeEntryBanner onFullCardInViewChange={vi.fn()} />)
+    render(<EnvelopeEntryBanner onFullCardInViewChange={vi.fn()} onMakePlan={vi.fn()} />)
 
     // Text spans multiple nested nodes now (bold step label, a mobile-hidden
     // clause, and the live-region count) — assert the pieces, not one string.
@@ -75,7 +74,7 @@ describe('EnvelopeEntryBanner (DRO-227)', () => {
   it('reports false to onFullCardInViewChange once it is no longer the full card (stripped)', () => {
     markEnvelopeEntryPlanMade()
     const onFullCardInViewChange = vi.fn()
-    render(<EnvelopeEntryBanner onFullCardInViewChange={onFullCardInViewChange} />)
+    render(<EnvelopeEntryBanner onFullCardInViewChange={onFullCardInViewChange} onMakePlan={vi.fn()} />)
 
     expect(onFullCardInViewChange).toHaveBeenCalledWith(false)
   })
