@@ -68,10 +68,33 @@ function renderPage() {
 }
 
 describe('ItemsPageClient — envelopes entry banner + FAB (DRO-227)', () => {
-  it('shows the full banner and no floating FAB on a fresh page', () => {
+  it('shows the full banner with a single Make a plan CTA and no competing floating FAB on a fresh page', () => {
     renderPage()
     expect(screen.getByText('Turn saves into a plan')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^Make a plan$/ })).not.toBeInTheDocument()
+    // Only the banner's own CTA exists while its full card occupies the
+    // viewport — the floating FAB stays hidden so there's never two.
+    expect(screen.getAllByRole('button', { name: /^Make a plan$/ })).toHaveLength(1)
+  })
+
+  // DRO-318: the full card's primary button was still calling the old manual
+  // pick flow, leaving no visible way to open the Mood Sheet at the top of
+  // /items (the FAB that opens it stays hidden while the full card is in view).
+  it('clicking the full banner\'s Make a plan CTA opens the Mood Sheet (DRO-318)', () => {
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: /^Make a plan$/ }))
+
+    expect(screen.getByRole('heading', { name: 'What do you feel like?' })).toBeInTheDocument()
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  it('clicking the stripped banner also opens the Mood Sheet (DRO-318)', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Not now' }))
+
+    fireEvent.click(screen.getByRole('button', { name: /Turn saves into a plan/ }))
+
+    expect(screen.getByRole('heading', { name: 'What do you feel like?' })).toBeInTheDocument()
   })
 
   it('shows the floating FAB once the banner is dismissed to its strip', () => {
