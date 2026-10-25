@@ -1,40 +1,46 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Shuffle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { ENVELOPE_MOOD_STARTER_CHIPS, ENVELOPE_TEXT_MAX_LENGTH } from '@drop-note/shared'
+import { ENVELOPE_TEXT_MAX_LENGTH, type EnvelopeIdea } from '@drop-note/shared'
 
 interface MoodSheetMoodStepProps {
   isSubmitting: boolean
+  /** The chips to render — either the personalized pool's current random draw, or the 4 static starter ideas. */
+  ideas: readonly EnvelopeIdea[]
+  /** Only true once a personalized pool (not the starter fallback) is loaded — the starter case shows no Shuffle control, matching its pre-pool appearance. */
+  showShuffle: boolean
+  onShuffle: () => void
   onSubmitChip: (query: string, seedTerms?: string[]) => void
   onSubmitFreeText: (text: string) => void
+  onSurpriseMe: () => void
   onPickManually: () => void
 }
 
 /**
- * Step 1 of the Mood Sheet (DRO-301): chips + free text, each of which calls
- * POST /api/envelopes/suggest and hands the response to the review step.
- * Until slice 3's personalized idea pool ships, the chip set is just the 4
- * static starter chips + Surprise me — no match counts or shuffle yet (both
- * need the pool), see ENVELOPE_MOOD_STARTER_CHIPS.
+ * Step 1 of the Mood Sheet (DRO-301, wired to the idea pool in DRO-309):
+ * chips + free text, each of which calls POST /api/envelopes/suggest and
+ * hands the response to the review step. `ideas` is supplied by MoodSheet,
+ * which fetches GET /api/envelopes/ideas once per sheet open and redraws
+ * Shuffle/Surprise me from that same stored pool client-side — no extra
+ * network/AI call here.
  */
 export function MoodSheetMoodStep({
   isSubmitting,
+  ideas,
+  showShuffle,
+  onShuffle,
   onSubmitChip,
   onSubmitFreeText,
+  onSurpriseMe,
   onPickManually,
 }: MoodSheetMoodStepProps) {
   const [text, setText] = useState('')
   const trimmed = text.trim()
   const canSubmit = trimmed.length > 0 && trimmed.length <= ENVELOPE_TEXT_MAX_LENGTH && !isSubmitting
-
-  function handleSurpriseMe() {
-    const pick = ENVELOPE_MOOD_STARTER_CHIPS[Math.floor(Math.random() * ENVELOPE_MOOD_STARTER_CHIPS.length)]
-    onSubmitChip(pick.query, pick.seedTerms)
-  }
 
   function handleFreeTextSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -49,25 +55,42 @@ export function MoodSheetMoodStep({
       </SheetHeader>
 
       <div className="flex flex-wrap gap-2" role="group" aria-label="Mood suggestions">
-        {ENVELOPE_MOOD_STARTER_CHIPS.map((chip) => (
+        {ideas.map((idea, i) => (
           <button
-            key={chip.id}
+            key={`${idea.label}-${i}`}
             type="button"
             disabled={isSubmitting}
-            onClick={() => onSubmitChip(chip.query, chip.seedTerms)}
+            onClick={() => onSubmitChip(idea.label, idea.seedTerms)}
             className="inline-flex min-h-11 items-center rounded-full border-stroke border-ink bg-card px-4 text-sm font-medium shadow-ink-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {chip.label}
+            {idea.label}
+            {idea.matchingItemIds.length > 0 && (
+              <span className="ml-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+                {idea.matchingItemIds.length}
+              </span>
+            )}
           </button>
         ))}
         <button
           type="button"
           disabled={isSubmitting}
-          onClick={handleSurpriseMe}
+          onClick={onSurpriseMe}
           className="inline-flex min-h-11 items-center gap-1.5 rounded-full border-stroke border-ink bg-card px-4 text-sm font-medium shadow-ink-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
           🎲 Surprise me
         </button>
+        {showShuffle && (
+          <button
+            type="button"
+            disabled={isSubmitting}
+            onClick={onShuffle}
+            aria-label="Shuffle suggestions"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border-stroke border-ink bg-card px-4 text-sm font-medium shadow-ink-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Shuffle size={16} />
+            Shuffle
+          </button>
+        )}
       </div>
 
       <form onSubmit={handleFreeTextSubmit} className="flex items-center gap-2">

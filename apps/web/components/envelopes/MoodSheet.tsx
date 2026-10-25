@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { MoodSheetMoodStep } from '@/components/envelopes/MoodSheetMoodStep'
@@ -8,6 +8,22 @@ import { MoodSheetReviewStep } from '@/components/envelopes/MoodSheetReviewStep'
 import { markEnvelopeEntryPlanMade } from '@/components/envelopes/envelope-entry-storage'
 import { toast } from '@/hooks/use-toast'
 import type { EnvelopeSuggestItem, EnvelopeSuggestResponse } from '@/components/envelopes/envelope-suggest-types'
+import {
+  ENVELOPE_IDEAS_SHOWN_PER_OPEN,
+  ENVELOPE_STARTER_IDEAS,
+  pickRandomEnvelopeIdeas,
+  pickSurpriseEnvelopeIdea,
+  type EnvelopeIdea,
+} from '@drop-note/shared'
+
+interface EnvelopeIdeasResponse {
+  ideas: EnvelopeIdea[]
+  source: 'pool' | 'starter'
+}
+
+type IdeaPoolState = { ideas: readonly EnvelopeIdea[]; source: 'pool' | 'starter' }
+
+const STARTER_IDEA_POOL: IdeaPoolState = { ideas: ENVELOPE_STARTER_IDEAS, source: 'starter' }
 
 interface MoodSheetProps {
   open: boolean
@@ -33,10 +49,46 @@ export function MoodSheet({ open, onOpenChange, onPickManually }: MoodSheetProps
   const [step, setStep] = useState<Step>({ kind: 'mood' })
   const [isSuggesting, setIsSuggesting] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [ideaPool, setIdeaPool] = useState<IdeaPoolState>(STARTER_IDEA_POOL)
+  const [displayedIdeas, setDisplayedIdeas] = useState<readonly EnvelopeIdea[]>(STARTER_IDEA_POOL.ideas)
+
+  // Fetches the Mood Sheet's chip pool every time the sheet opens (DRO-309) —
+  // the stored pool is cached server-side, so this is cheap, and it's how a
+  // regenerated/no-longer-stale pool reaches an already-mounted sheet.
+  // Starts from the starter fallback above so there's no empty-chips flash,
+  // and silently keeps it on failure — the sheet must never block on this.
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    fetch('/api/envelopes/ideas')
+      .then((res) => (res.ok ? (res.json() as Promise<EnvelopeIdeasResponse>) : null))
+      .then((data) => {
+        if (cancelled || !data) return
+        setIdeaPool({ ideas: data.ideas, source: data.source })
+        setDisplayedIdeas(
+          data.source === 'pool' ? pickRandomEnvelopeIdeas(data.ideas, ENVELOPE_IDEAS_SHOWN_PER_OPEN) : data.ideas,
+        )
+      })
+      .catch(() => {
+        // Keep whatever is already shown — see comment above.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [open])
 
   function resetAndClose() {
     setStep({ kind: 'mood' })
     onOpenChange(false)
+  }
+
+  function handleShuffle() {
+    setDisplayedIdeas(pickRandomEnvelopeIdeas(ideaPool.ideas, ENVELOPE_IDEAS_SHOWN_PER_OPEN))
+  }
+
+  function handleSurpriseMe() {
+    const idea = pickSurpriseEnvelopeIdea(ideaPool.ideas)
+    if (idea) handleSuggest(idea.label, idea.seedTerms)
   }
 
   async function handleSuggest(query: string, seedTerms?: string[]) {
@@ -114,8 +166,12 @@ export function MoodSheet({ open, onOpenChange, onPickManually }: MoodSheetProps
         {step.kind === 'mood' ? (
           <MoodSheetMoodStep
             isSubmitting={isSuggesting}
+            ideas={displayedIdeas}
+            showShuffle={ideaPool.source === 'pool'}
+            onShuffle={handleShuffle}
             onSubmitChip={handleSuggest}
             onSubmitFreeText={(text) => handleSuggest(text)}
+            onSurpriseMe={handleSurpriseMe}
             onPickManually={() => {
               onPickManually()
               resetAndClose()
